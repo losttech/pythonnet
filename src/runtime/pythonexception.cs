@@ -205,7 +205,7 @@ namespace Python.Runtime
         /// </remarks>
         public override string StackTrace
         {
-            get { return this._traceback; }
+            get { return this._traceback + base.StackTrace; }
         }
 
         /// <summary>
