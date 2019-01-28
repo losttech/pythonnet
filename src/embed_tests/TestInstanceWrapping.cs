@@ -61,6 +61,19 @@ namespace Python.EmbeddingTest {
             }
         }
 
+        // regression test for https://github.com/pythonnet/pythonnet/issues/811
+        [Test]
+        public void OverloadResolution_UnknownToObject() {
+            var overloaded = new Overloaded();
+            using (Py.GIL()) {
+                var o = overloaded.ToPython();
+
+                dynamic callWithSelf = PythonEngine.Eval("lambda o: o.ObjOrClass(KeyError())");
+                callWithSelf(o);
+                Assert.AreEqual(Overloaded.Object, overloaded.Value);
+            }
+        }
+
         class Base {}
         class Derived: Base { }
 
