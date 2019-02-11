@@ -1,14 +1,15 @@
-<Project>
-  <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
+﻿<Project  Sdk="MSBuild.Sdk.Extras">
   <PropertyGroup>
-    <TargetFrameworks>net40;netstandard2.0</TargetFrameworks>
+    <TargetFrameworks>netstandard2.0</TargetFrameworks>
+    <ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
+    <RuntimeIdentifiers>linux-x64;win</RuntimeIdentifiers>
     <Platforms>AnyCPU</Platforms>
-    <Configurations>DebugMono;DebugMonoPY3;ReleaseMono;ReleaseMonoPY3;DebugWin;DebugWinPY3;ReleaseWin;ReleaseWinPY3</Configurations>
-    <AssetTargetFallback Condition="'$(TargetFramework)'=='net40' AND $(Configuration.Contains('Mono'))">net45</AssetTargetFallback>
+    <Configurations>Debug3;Release3;DebugMono;DebugMonoPY3;ReleaseMono;ReleaseMonoPY3;DebugWin;DebugWinPY3;ReleaseWin;ReleaseWinPY3</Configurations>
     <RootNamespace>Python.Runtime</RootNamespace>
     <AssemblyName>Python.Runtime</AssemblyName>
-    <PackageId>Python.Runtime</PackageId>
+    <PackageId>Python.Runtime.UnofficialNetStandard</PackageId>
     <VersionPrefix>2.4.0</VersionPrefix>
+    <DebugSymbols>true</DebugSymbols>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
     <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
@@ -16,13 +17,11 @@
     <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
     <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
     <OutputPath>bin\</OutputPath>
-    <AppendTargetFrameworkToOutputPath Condition="'$(TargetFramework)'=='net40'">false</AppendTargetFrameworkToOutputPath>
-    <DocumentationFile Condition="'$(TargetFramework)'=='net40'">$(OutputPath)\$(AssemblyName).xml</DocumentationFile>
-    <DocumentationFile Condition="'$(TargetFramework)'!='net40'">$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
+    <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
     <NoWarn>1591;NU1701</NoWarn>
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <PythonBuildDir Condition="'$(PythonBuildDir)' == ''">$(SolutionDir)\bin\</PythonBuildDir>
-    <PublishDir Condition="'$(TargetFramework)'!='net40'">$(PythonBuildDir)\$(TargetFramework)\</PublishDir>
+    <PublishDir>$(PythonBuildDir)\$(TargetFramework)\</PublishDir>
     <LangVersion>6</LangVersion>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
     <AssemblyOriginatorKeyFile>..\pythonnet.snk</AssemblyOriginatorKeyFile>
@@ -31,32 +30,25 @@
     <DefineConstants>$(DefineConstants);$(CustomDefineConstants);$(BaseDefineConstants);</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)'=='netstandard2.0'">$(DefineConstants);NETSTANDARD</DefineConstants>
     <DefineConstants Condition="'$(BuildingInsideVisualStudio)' == 'true' AND '$(CustomDefineConstants)' != '' AND $(Configuration.Contains('Debug'))">$(DefineConstants);TRACE;DEBUG</DefineConstants>
-    <FrameworkPathOverride Condition="'$(TargetFramework)'=='net40' AND $(Configuration.Contains('Mono'))">$(NuGetPackageRoot)\microsoft.targetingpack.netframework.v4.5\1.0.1\lib\net45\</FrameworkPathOverride>
     <Python2Version>$(PYTHONNET_PY2_VERSION)</Python2Version>
     <Python2Version Condition="'$(Python2Version)'==''">PYTHON27</Python2Version>
     <Python3Version>$(PYTHONNET_PY3_VERSION)</Python3Version>
-    <Python3Version Condition="'$(Python3Version)'==''">PYTHON37</Python3Version>
+    <Python3Version Condition="'$(Python3Version)'==''">PYTHON36</Python3Version>
+
+    <PythonMultiRuntimeDefineConstants>$(PYTHONNET_MULTIRUNTIME_DEFINE_CONSTANTS)</PythonMultiRuntimeDefineConstants>
+    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='win'">UCS2</PythonMultiRuntimeDefineConstants>
+    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='linux-x64'">UCS4;MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMultiRuntimeDefineConstants>
+
     <PythonWinDefineConstants>$(PYTHONNET_WIN_DEFINE_CONSTANTS)</PythonWinDefineConstants>
     <PythonWinDefineConstants Condition="'$(PythonWinDefineConstants)'==''">UCS2</PythonWinDefineConstants>
     <PythonMonoDefineConstants>$(PYTHONNET_MONO_DEFINE_CONSTANTS)</PythonMonoDefineConstants>
     <PythonMonoDefineConstants Condition="'$(PythonMonoDefineConstants)'==''">UCS4;MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMonoDefineConstants>
-    <PythonInteropFile Condition="'$(PythonInteropFile)'==''">$(PYTHONNET_INTEROP_FILE)</PythonInteropFile>
   </PropertyGroup>
-  <PropertyGroup Condition="$(Configuration.Contains('Debug')) AND '$(TargetFramework)'=='net40'">
+  <PropertyGroup Condition="$(Configuration.Contains('Debug'))">
     <Optimize>false</Optimize>
     <DebugType>full</DebugType>
   </PropertyGroup>
-  <PropertyGroup Condition="$(Configuration.Contains('Release')) AND '$(TargetFramework)'=='net40'">
-    <Optimize>true</Optimize>
-    <DebugType>pdbonly</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(Configuration.Contains('Debug')) AND '$(TargetFramework)'=='netstandard2.0'">
-    <DebugSymbols>true</DebugSymbols>
-    <Optimize>false</Optimize>
-    <DebugType>full</DebugType>
-  </PropertyGroup>
-  <PropertyGroup Condition="$(Configuration.Contains('Release')) AND '$(TargetFramework)'=='netstandard2.0'">
-    <DebugSymbols>true</DebugSymbols>
+  <PropertyGroup Condition="$(Configuration.Contains('Release'))">
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
   </PropertyGroup>
@@ -85,11 +77,15 @@
   <PropertyGroup Condition=" '$(Configuration)' == 'DebugWinPY3'">
     <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonWinDefineConstants);TRACE;DEBUG</DefineConstants>
   </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug3'">
+    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonMultiRuntimeDefineConstants);TRACE;DEBUG</DefineConstants>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release3'">
+    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonMultiRuntimeDefineConstants)</DefineConstants>
+  </PropertyGroup>
 
-  <ItemGroup Condition=" '$(PythonInteropFile)' != '' ">
-    <Compile Remove="interop*.cs" />
-    <Compile Include="interop.cs" />
-    <Compile Include="$(PythonInteropFile)" />
+  <ItemGroup>
+    <ReferenceAssemblyProjectReference Include="Python.Runtime.Ref.csproj" />
   </ItemGroup>
 
   <ItemGroup>
@@ -114,27 +110,8 @@
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
   </ItemGroup>
 
-  <ItemGroup Condition="'$(TargetFramework)' == 'net40'">
-    <Reference Include="Microsoft.CSharp" />
-  </ItemGroup>
-
-  <ItemGroup Condition="'$(TargetFramework)'=='net40'">
-    <PackageReference Include="Microsoft.TargetingPack.NETFramework.v4.5" Version="1.0.1" ExcludeAssets="All" PrivateAssets="All" />
-  </ItemGroup>
-
-  <Import Project="Sdk.targets" Sdk="Microsoft.NET.Sdk" />
-
   <PropertyGroup>
     <TargetAssembly>$(TargetPath)</TargetAssembly>
     <TargetAssemblyPdb>$(TargetDir)$(TargetName).pdb</TargetAssemblyPdb>
   </PropertyGroup>
-
-  <Target Name="BeforeBuild" Condition="'$(TargetFramework)'=='net40' AND $(Configuration.Contains('Mono')) AND '$(OS)' != 'Windows_NT'">
-    <!--Endless war!-->
-    <Exec Command="[[ -e $(NuGetPackageRoot)/microsoft.targetingpack.netframework.v4.5/1.0.1/lib/net45/System.Xml.dll ]] || cp $(NuGetPackageRoot)/microsoft.targetingpack.netframework.v4.5/1.0.1/lib/net45/System.XML.dll $(NuGetPackageRoot)/microsoft.targetingpack.netframework.v4.5/1.0.1/lib/net45/System.Xml.dll" />
-  </Target>
-  <Target Name="AfterBuild">
-    <Copy Condition="'$(TargetFramework)'=='net40'" SourceFiles="$(TargetAssembly)" DestinationFolder="$(PythonBuildDir)" />
-    <!--Copy SourceFiles="$(TargetAssemblyPdb)" Condition="Exists('$(TargetAssemblyPdb)')" DestinationFolder="$(PythonBuildDir)" /-->
-  </Target>
 </Project>

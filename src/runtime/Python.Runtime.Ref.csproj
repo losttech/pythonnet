@@ -1,0 +1,33 @@
+﻿<Project Sdk="MSBuild.Sdk.Extras">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+    <Configurations>Debug3;Release3</Configurations>
+    <IsPackable>false</IsPackable>
+    <ExtrasIsReferenceAssembly>true</ExtrasIsReferenceAssembly>
+    <RootNamespace>Python.Runtime</RootNamespace>
+    <AssemblyName>Python.Runtime</AssemblyName>
+    <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+
+    <Python2Version>$(PYTHONNET_PY2_VERSION)</Python2Version>
+    <Python2Version Condition="'$(Python2Version)'==''">PYTHON27</Python2Version>
+    <Python3Version>$(PYTHONNET_PY3_VERSION)</Python3Version>
+    <Python3Version Condition="'$(Python3Version)'==''">PYTHON36</Python3Version>
+
+    <DefineConstants>$(DefineConstants);XPLAT;NETSTANDARD;UCS2;$(Python3Version);PYTHON3</DefineConstants>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
+    <PackageReference Include="System.Security.Permissions" Version="4.4.0" />
+    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+  </ItemGroup>
+
+</Project>
