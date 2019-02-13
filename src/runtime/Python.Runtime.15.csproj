@@ -1,8 +1,8 @@
-﻿<Project  Sdk="MSBuild.Sdk.Extras">
+<Project  Sdk="MSBuild.Sdk.Extras">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0</TargetFrameworks>
     <ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
-    <RuntimeIdentifiers>linux-x64;win</RuntimeIdentifiers>
+    <RuntimeIdentifiers>unix;win</RuntimeIdentifiers>
     <Platforms>AnyCPU</Platforms>
     <Configurations>Debug3;Release3;DebugMono;DebugMonoPY3;ReleaseMono;ReleaseMonoPY3;DebugWin;DebugWinPY3;ReleaseWin;ReleaseWinPY3</Configurations>
     <RootNamespace>Python.Runtime</RootNamespace>
@@ -37,7 +37,7 @@
 
     <PythonMultiRuntimeDefineConstants>$(PYTHONNET_MULTIRUNTIME_DEFINE_CONSTANTS)</PythonMultiRuntimeDefineConstants>
     <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='win'">UCS2</PythonMultiRuntimeDefineConstants>
-    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='linux-x64'">UCS4;MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMultiRuntimeDefineConstants>
+    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='unix'">UCS4;MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMultiRuntimeDefineConstants>
 
     <PythonWinDefineConstants>$(PYTHONNET_WIN_DEFINE_CONSTANTS)</PythonWinDefineConstants>
     <PythonWinDefineConstants Condition="'$(PythonWinDefineConstants)'==''">UCS2</PythonWinDefineConstants>
