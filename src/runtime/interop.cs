@@ -468,7 +468,8 @@ namespace Python.Runtime
                 keepAlive.Add(d);
                 return fp;
             }
-            return IntPtr.Zero;
+
+            throw new NotSupportedException();
         }
 
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
