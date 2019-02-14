@@ -6,6 +6,8 @@ using System.Collections.Generic;
 
 namespace Python.Runtime
 {
+    using System.IO;
+
     [SuppressUnmanagedCodeSecurity]
     internal static class NativeMethods
     {
@@ -869,18 +871,6 @@ namespace Python.Runtime
         
         internal static IntPtr PyCFunction_Call(IntPtr func, IntPtr args, IntPtr kw) => Delegates.PyCFunction_Call(func, args, kw);
 
-        
-        internal static IntPtr PyClass_New(IntPtr bases, IntPtr dict, IntPtr name) => Delegates.PyClass_New(bases, dict, name);
-
-        
-        internal static IntPtr PyInstance_New(IntPtr cls, IntPtr args, IntPtr kw) => Delegates.PyInstance_New(cls, args, kw);
-
-        
-        internal static IntPtr PyInstance_NewRaw(IntPtr cls, IntPtr dict) => Delegates.PyInstance_NewRaw(cls, dict);
-
-        
-        internal static IntPtr PyMethod_New(IntPtr func, IntPtr self, IntPtr cls) => Delegates.PyMethod_New(func, self, cls);
-
 
         //====================================================================
         // Python abstract object API
@@ -1107,9 +1097,6 @@ namespace Python.Runtime
 
         
         internal static IntPtr PyInt_FromString(string value, IntPtr end, int radix) => Delegates.PyInt_FromString(value, end, radix);
-
-        
-        internal static int PyInt_GetMax() => Delegates.PyInt_GetMax();
 #elif PYTHON2
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         private static extern IntPtr PyInt_FromLong(IntPtr value);
@@ -1864,9 +1851,6 @@ namespace Python.Runtime
         internal static IntPtr _PyObject_GetDictPtr(IntPtr obj) => Delegates._PyObject_GetDictPtr(obj);
 
         
-        internal static IntPtr PyObject_GC_New(IntPtr tp) => Delegates.PyObject_GC_New(tp);
-
-        
         internal static void PyObject_GC_Del(IntPtr tp) => Delegates.PyObject_GC_Del(tp);
 
         
@@ -2002,10 +1986,6 @@ namespace Python.Runtime
                 PyImport_ExecCodeModule = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyImport_ExecCodeModuleDelegate>(GetFunctionByName(nameof(PyImport_ExecCodeModule), GetUnmanagedDll(_PythonDll)));
                 PyCFunction_NewEx = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyCFunction_NewExDelegate>(GetFunctionByName(nameof(PyCFunction_NewEx), GetUnmanagedDll(_PythonDll)));
                 PyCFunction_Call = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyCFunction_CallDelegate>(GetFunctionByName(nameof(PyCFunction_Call), GetUnmanagedDll(_PythonDll)));
-                PyClass_New = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyClass_NewDelegate>(GetFunctionByName(nameof(PyClass_New), GetUnmanagedDll(_PythonDll)));
-                PyInstance_New = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyInstance_NewDelegate>(GetFunctionByName(nameof(PyInstance_New), GetUnmanagedDll(_PythonDll)));
-                PyInstance_NewRaw = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyInstance_NewRawDelegate>(GetFunctionByName(nameof(PyInstance_NewRaw), GetUnmanagedDll(_PythonDll)));
-                PyMethod_New = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyMethod_NewDelegate>(GetFunctionByName(nameof(PyMethod_New), GetUnmanagedDll(_PythonDll)));
                 PyObject_HasAttrString = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_HasAttrStringDelegate>(GetFunctionByName(nameof(PyObject_HasAttrString), GetUnmanagedDll(_PythonDll)));
                 PyObject_GetAttrString = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_GetAttrStringDelegate>(GetFunctionByName(nameof(PyObject_GetAttrString), GetUnmanagedDll(_PythonDll)));
                 PyObject_SetAttrString = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_SetAttrStringDelegate>(GetFunctionByName(nameof(PyObject_SetAttrString), GetUnmanagedDll(_PythonDll)));
@@ -2037,7 +2017,6 @@ namespace Python.Runtime
                 PyInt_FromLong = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyInt_FromLongDelegate>(GetFunctionByName("PyLong_FromLong", GetUnmanagedDll(_PythonDll)));
                 PyInt_AsLong = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyInt_AsLongDelegate>(GetFunctionByName("PyLong_AsLong", GetUnmanagedDll(_PythonDll)));
                 PyInt_FromString = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyInt_FromStringDelegate>(GetFunctionByName("PyLong_FromString", GetUnmanagedDll(_PythonDll)));
-                PyInt_GetMax = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyInt_GetMaxDelegate>(GetFunctionByName("PyLong_GetMax", GetUnmanagedDll(_PythonDll)));
                 PyLong_FromLong = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyLong_FromLongDelegate>(GetFunctionByName(nameof(PyLong_FromLong), GetUnmanagedDll(_PythonDll)));
                 PyLong_FromUnsignedLong = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyLong_FromUnsignedLongDelegate>(GetFunctionByName(nameof(PyLong_FromUnsignedLong), GetUnmanagedDll(_PythonDll)));
                 PyLong_FromDouble = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyLong_FromDoubleDelegate>(GetFunctionByName(nameof(PyLong_FromDouble), GetUnmanagedDll(_PythonDll)));
@@ -2054,7 +2033,7 @@ namespace Python.Runtime
                 PyNumber_Add = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_AddDelegate>(GetFunctionByName(nameof(PyNumber_Add), GetUnmanagedDll(_PythonDll)));
                 PyNumber_Subtract = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_SubtractDelegate>(GetFunctionByName(nameof(PyNumber_Subtract), GetUnmanagedDll(_PythonDll)));
                 PyNumber_Multiply = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_MultiplyDelegate>(GetFunctionByName(nameof(PyNumber_Multiply), GetUnmanagedDll(_PythonDll)));
-                PyNumber_Divide = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_DivideDelegate>(GetFunctionByName(nameof(PyNumber_Divide), GetUnmanagedDll(_PythonDll)));
+                PyNumber_Divide = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_DivideDelegate>(GetFunctionByName("PyNumber_TrueDivide", GetUnmanagedDll(_PythonDll)));
                 PyNumber_And = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_AndDelegate>(GetFunctionByName(nameof(PyNumber_And), GetUnmanagedDll(_PythonDll)));
                 PyNumber_Xor = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_XorDelegate>(GetFunctionByName(nameof(PyNumber_Xor), GetUnmanagedDll(_PythonDll)));
                 PyNumber_Or = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_OrDelegate>(GetFunctionByName(nameof(PyNumber_Or), GetUnmanagedDll(_PythonDll)));
@@ -2065,7 +2044,7 @@ namespace Python.Runtime
                 PyNumber_InPlaceAdd = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_InPlaceAddDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceAdd), GetUnmanagedDll(_PythonDll)));
                 PyNumber_InPlaceSubtract = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_InPlaceSubtractDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceSubtract), GetUnmanagedDll(_PythonDll)));
                 PyNumber_InPlaceMultiply = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_InPlaceMultiplyDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceMultiply), GetUnmanagedDll(_PythonDll)));
-                PyNumber_InPlaceDivide = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_InPlaceDivideDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceDivide), GetUnmanagedDll(_PythonDll)));
+                PyNumber_InPlaceDivide = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_InPlaceDivideDelegate>(GetFunctionByName("PyNumber_InPlaceTrueDivide", GetUnmanagedDll(_PythonDll)));
                 PyNumber_InPlaceAnd = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_InPlaceAndDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceAnd), GetUnmanagedDll(_PythonDll)));
                 PyNumber_InPlaceXor = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_InPlaceXorDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceXor), GetUnmanagedDll(_PythonDll)));
                 PyNumber_InPlaceOr = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyNumber_InPlaceOrDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceOr), GetUnmanagedDll(_PythonDll)));
@@ -2156,7 +2135,6 @@ namespace Python.Runtime
                 PyObject_GenericGetAttr = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_GenericGetAttrDelegate>(GetFunctionByName(nameof(PyObject_GenericGetAttr), GetUnmanagedDll(_PythonDll)));
                 PyObject_GenericSetAttr = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_GenericSetAttrDelegate>(GetFunctionByName(nameof(PyObject_GenericSetAttr), GetUnmanagedDll(_PythonDll)));
                 _PyObject_GetDictPtr = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<_PyObject_GetDictPtrDelegate>(GetFunctionByName(nameof(_PyObject_GetDictPtr), GetUnmanagedDll(_PythonDll)));
-                PyObject_GC_New = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_GC_NewDelegate>(GetFunctionByName(nameof(PyObject_GC_New), GetUnmanagedDll(_PythonDll)));
                 PyObject_GC_Del = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_GC_DelDelegate>(GetFunctionByName(nameof(PyObject_GC_Del), GetUnmanagedDll(_PythonDll)));
                 PyObject_GC_Track = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_GC_TrackDelegate>(GetFunctionByName(nameof(PyObject_GC_Track), GetUnmanagedDll(_PythonDll)));
                 PyObject_GC_UnTrack = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyObject_GC_UnTrackDelegate>(GetFunctionByName(nameof(PyObject_GC_UnTrack), GetUnmanagedDll(_PythonDll)));
@@ -2179,14 +2157,25 @@ namespace Python.Runtime
                 PyMethod_Function = global::System.Runtime.InteropServices.Marshal.GetDelegateForFunctionPointer<PyMethod_FunctionDelegate>(GetFunctionByName(nameof(PyMethod_Function), GetUnmanagedDll(_PythonDll)));
             }
 
-            static global::System.IntPtr GetUnmanagedDll(string libraryName)
-            {
-                throw new NotImplementedException();
+            static global::System.IntPtr GetUnmanagedDll(string libraryName) {
+                if (string.IsNullOrEmpty(Path.GetExtension(libraryName))) {
+                    libraryName =
+                        RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? libraryName + ".dll"
+                        : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"lib{libraryName}.so"
+                        : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? $"lib{libraryName}.dylib"
+                        : throw new PlatformNotSupportedException();
+                }
+                IntPtr handle = NativeMethods.LoadLibrary(libraryName);
+                if (handle == IntPtr.Zero)
+                    throw new FileLoadException();
+                return handle;
             }
 
-            static global::System.IntPtr GetFunctionByName(string functionName, global::System.IntPtr libraryHandle)
-            {
-                throw new NotImplementedException();
+            static global::System.IntPtr GetFunctionByName(string functionName, global::System.IntPtr libraryHandle) {
+                IntPtr functionPointer = NativeMethods.GetProcAddress(libraryHandle, functionName);
+                if (functionPointer == IntPtr.Zero)
+                    throw new EntryPointNotFoundException($"Function {functionName} was not found");
+                return functionPointer;
             }
 
             internal static Py_IncRefDelegate Py_IncRef { get; }
@@ -2427,26 +2416,6 @@ namespace Python.Runtime
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             public delegate IntPtr PyCFunction_CallDelegate(IntPtr func, IntPtr args, IntPtr kw);
 
-            internal static PyClass_NewDelegate PyClass_New { get; }
-
-            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyClass_NewDelegate(IntPtr bases, IntPtr dict, IntPtr name);
-
-            internal static PyInstance_NewDelegate PyInstance_New { get; }
-
-            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyInstance_NewDelegate(IntPtr cls, IntPtr args, IntPtr kw);
-
-            internal static PyInstance_NewRawDelegate PyInstance_NewRaw { get; }
-
-            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyInstance_NewRawDelegate(IntPtr cls, IntPtr dict);
-
-            internal static PyMethod_NewDelegate PyMethod_New { get; }
-
-            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyMethod_NewDelegate(IntPtr func, IntPtr self, IntPtr cls);
-
             internal static PyObject_HasAttrStringDelegate PyObject_HasAttrString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
@@ -2601,11 +2570,6 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             public delegate IntPtr PyInt_FromStringDelegate(string value, IntPtr end, int radix);
-
-            internal static PyInt_GetMaxDelegate PyInt_GetMax { get; }
-
-            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyInt_GetMaxDelegate();
 
             internal static PyLong_FromLongDelegate PyLong_FromLong { get; }
 
@@ -3207,11 +3171,6 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             public delegate IntPtr _PyObject_GetDictPtrDelegate(IntPtr obj);
-
-            internal static PyObject_GC_NewDelegate PyObject_GC_New { get; }
-
-            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_GC_NewDelegate(IntPtr tp);
 
             internal static PyObject_GC_DelDelegate PyObject_GC_Del { get; }
 
