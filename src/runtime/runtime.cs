@@ -2163,12 +2163,16 @@ namespace Python.Runtime
                         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? libraryName + ".dll"
                         : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"lib{libraryName}.so"
                         : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? $"lib{libraryName}.dylib"
-                        : throw new PlatformNotSupportedException();
+                        : Throw<string>(new PlatformNotSupportedException());
                 }
                 IntPtr handle = NativeMethods.LoadLibrary(libraryName);
                 if (handle == IntPtr.Zero)
                     throw new FileLoadException();
                 return handle;
+            }
+
+            static T Throw<T>(Exception exception) {
+                throw exception;
             }
 
             static global::System.IntPtr GetFunctionByName(string functionName, global::System.IntPtr libraryHandle) {
