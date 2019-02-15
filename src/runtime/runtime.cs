@@ -125,7 +125,7 @@ namespace Python.Runtime
                 LoadLibrary = LinuxLoadLibrary,
                 GetProcAddress = UnixGetProcAddress,
                 FreeLibrary = h => Linux.dlclose(h),
-            } : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? new NativeMethodsImpl {
+            } : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? new NativeMethodsImpl {
                 LoadLibrary = MacLoadLibrary,
                 GetProcAddress = UnixGetProcAddress,
                 FreeLibrary = h => Mac.dlclose(h),
