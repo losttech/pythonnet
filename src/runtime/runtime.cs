@@ -32,17 +32,17 @@ namespace Python.Runtime
             return Mac.dlopen(fileName, RTLD_NOW | MAC_RTLD_GLOBAL);
         }
 
-        static readonly IntPtr RTLD_DEFAULT =
+        static readonly IntPtr? RTLD_DEFAULT =
             RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? LINUX_RTLD_DEFAULT
             : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MAC_RTLD_DEFAULT
-            : Throw<IntPtr>(new PlatformNotSupportedException());
+            : (IntPtr?)null;
 
         public static IntPtr UnixGetProcAddress(IntPtr dllHandle, string name)
         {
             // look in the exe if dllHandle is NULL
             if (dllHandle == IntPtr.Zero)
             {
-                dllHandle = RTLD_DEFAULT;
+                dllHandle = RTLD_DEFAULT.Value;
             }
 
             // clear previous errors if any
