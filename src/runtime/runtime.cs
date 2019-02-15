@@ -11,51 +11,33 @@ namespace Python.Runtime
     [SuppressUnmanagedCodeSecurity]
     internal static class NativeMethods
     {
-#if MONO_LINUX || MONO_OSX
-#if NETSTANDARD
         private static int RTLD_NOW = 0x2;
-#if MONO_LINUX
-        private static int RTLD_GLOBAL = 0x100;
-        private static IntPtr RTLD_DEFAULT = IntPtr.Zero;
-        private const string NativeDll = "libdl.so";
-        public static IntPtr LoadLibrary(string fileName)
+// MONO_LINUX
+        private static int LINUX_RTLD_GLOBAL = 0x100;
+        private static IntPtr LINUX_RTLD_DEFAULT = IntPtr.Zero;
+        private const string LinuxNativeDll = "libdl.so";
+        public static IntPtr LinuxLoadLibrary(string fileName)
         {
-            return dlopen($"lib{fileName}.so", RTLD_NOW | RTLD_GLOBAL);
+            fileName = string.IsNullOrEmpty(System.IO.Path.GetExtension(fileName)) ? $"lib{fileName}.so" : fileName;
+            return Linux.dlopen(fileName, RTLD_NOW | LINUX_RTLD_GLOBAL);
         }
-#elif MONO_OSX
-        private static int RTLD_GLOBAL = 0x8;
-        private const string NativeDll = "/usr/lib/libSystem.dylib";
-        private static IntPtr RTLD_DEFAULT = new IntPtr(-2);
+// MONO_OSX
+        private static int MAC_RTLD_GLOBAL = 0x8;
+        private const string MacNativeDll = "/usr/lib/libSystem.dylib";
+        private static IntPtr MAC_RTLD_DEFAULT = new IntPtr(-2);
 
-        public static IntPtr LoadLibrary(string fileName)
+        public static IntPtr MacLoadLibrary(string fileName)
         {
-            return dlopen($"lib{fileName}.dylib", RTLD_NOW | RTLD_GLOBAL);
-        }
-#endif
-#else
-        private static int RTLD_NOW = 0x2;
-        private static int RTLD_SHARED = 0x20;
-#if MONO_OSX
-        private static IntPtr RTLD_DEFAULT = new IntPtr(-2);
-        private const string NativeDll = "__Internal";
-#elif MONO_LINUX
-        private static IntPtr RTLD_DEFAULT = IntPtr.Zero;
-        private const string NativeDll = "libdl.so";
-#endif
-
-        public static IntPtr LoadLibrary(string fileName)
-        {
-            return dlopen(fileName, RTLD_NOW | RTLD_SHARED);
-        }
-#endif
-
-
-        public static void FreeLibrary(IntPtr handle)
-        {
-            dlclose(handle);
+            fileName = string.IsNullOrEmpty(System.IO.Path.GetExtension(fileName)) ? $"lib{fileName}.dylib" : fileName;
+            return Mac.dlopen(fileName, RTLD_NOW | MAC_RTLD_GLOBAL);
         }
 
-        public static IntPtr GetProcAddress(IntPtr dllHandle, string name)
+        static readonly IntPtr RTLD_DEFAULT =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? LINUX_RTLD_DEFAULT
+            : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MAC_RTLD_DEFAULT
+            : Throw<IntPtr>(new PlatformNotSupportedException());
+
+        public static IntPtr UnixGetProcAddress(IntPtr dllHandle, string name)
         {
             // look in the exe if dllHandle is NULL
             if (dllHandle == IntPtr.Zero)
@@ -64,9 +46,19 @@ namespace Python.Runtime
             }
 
             // clear previous errors if any
-            dlerror();
-            IntPtr res = dlsym(dllHandle, name);
-            IntPtr errPtr = dlerror();
+            IntPtr res, errPtr;
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
+                Linux.dlerror();
+                res = Linux.dlsym(dllHandle, name);
+                errPtr = Linux.dlerror();
+            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
+                Mac.dlerror();
+                res = Mac.dlsym(dllHandle, name);
+                errPtr = Mac.dlerror();
+            } else {
+                throw new PlatformNotSupportedException();
+            }
+
             if (errPtr != IntPtr.Zero)
             {
                 throw new Exception("dlsym: " + Marshal.PtrToStringAnsi(errPtr));
@@ -74,29 +66,82 @@ namespace Python.Runtime
             return res;
         }
 
-        [DllImport(NativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        public static extern IntPtr dlopen(String fileName, int flags);
+        class Linux
+        {
+            [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern IntPtr dlopen(String fileName, int flags);
 
-        [DllImport(NativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-        private static extern IntPtr dlsym(IntPtr handle, String symbol);
+            [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            internal static extern IntPtr dlsym(IntPtr handle, String symbol);
 
-        [DllImport(NativeDll, CallingConvention = CallingConvention.Cdecl)]
-        private static extern int dlclose(IntPtr handle);
+            [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl)]
+            internal static extern int dlclose(IntPtr handle);
 
-        [DllImport(NativeDll, CallingConvention = CallingConvention.Cdecl)]
-        private static extern IntPtr dlerror();
-#else // Windows
-        private const string NativeDll = "kernel32.dll";
+            [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl)]
+            internal static extern IntPtr dlerror();
+        }
 
-        [DllImport(NativeDll)]
-        public static extern IntPtr LoadLibrary(string dllToLoad);
+        class Mac
+        {
+            [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            public static extern IntPtr dlopen(String fileName, int flags);
 
-        [DllImport(NativeDll)]
-        public static extern IntPtr GetProcAddress(IntPtr hModule, string procedureName);
+            [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            internal static extern IntPtr dlsym(IntPtr handle, String symbol);
 
-        [DllImport(NativeDll)]
-        public static extern bool FreeLibrary(IntPtr hModule);
-#endif
+            [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl)]
+            internal static extern int dlclose(IntPtr handle);
+
+            [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl)]
+            internal static extern IntPtr dlerror();
+        }
+
+        // #else // Windows
+        private const string WinNativeDll = "kernel32.dll";
+
+        [DllImport(WinNativeDll, EntryPoint = "LoadLibrary")]
+        public static extern IntPtr WinLoadLibrary(string dllToLoad);
+
+        [DllImport(WinNativeDll, EntryPoint = "GetProcAddress")]
+        public static extern IntPtr WinGetProcAddress(IntPtr hModule, string procedureName);
+
+        [DllImport(WinNativeDll, EntryPoint = "FreeLibrary")]
+        public static extern bool WinFreeLibrary(IntPtr hModule);
+// #endif
+        public static IntPtr LoadLibrary(string dllToLoad) => impl.LoadLibrary(dllToLoad);
+
+        public static IntPtr GetProcAddress(IntPtr hModule, string procedureName)
+            => impl.GetProcAddress(hModule, procedureName);
+
+        public static void FreeLibrary(IntPtr hModule) => impl.FreeLibrary(hModule);
+
+
+        static readonly NativeMethodsImpl impl =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new NativeMethodsImpl {
+                LoadLibrary = WinLoadLibrary,
+                GetProcAddress = WinGetProcAddress,
+                FreeLibrary = h => WinFreeLibrary(h),
+            } : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? new NativeMethodsImpl {
+                LoadLibrary = LinuxLoadLibrary,
+                GetProcAddress = UnixGetProcAddress,
+                FreeLibrary = h => Linux.dlclose(h),
+            } : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? new NativeMethodsImpl {
+                LoadLibrary = MacLoadLibrary,
+                GetProcAddress = UnixGetProcAddress,
+                FreeLibrary = h => Mac.dlclose(h),
+            } : Throw<NativeMethodsImpl>(new PlatformNotSupportedException());
+
+        struct NativeMethodsImpl
+        {
+            public Func<string, IntPtr> LoadLibrary { get; set; }
+            public Func<IntPtr, string, IntPtr> GetProcAddress { get; set; }
+            public Action<IntPtr> FreeLibrary { get; set; }
+        }
+
+        internal static T Throw<T>(Exception exception)
+        {
+            throw exception;
+        }
     }
 
     /// <summary>
@@ -110,27 +155,8 @@ namespace Python.Runtime
         // We needs to replace all public constants to static readonly fields to allow 
         // binary substitution of different Python.Runtime.dll builds in a target application.
 
-        public static int UCS => _UCS;
-
-#if UCS4
-        internal const int _UCS = 4;
-
-        /// <summary>
-        /// EntryPoint to be used in DllImport to map to correct Unicode
-        /// methods prior to PEP393. Only used for PY27.
-        /// </summary>
-        private const string PyUnicodeEntryPoint = "PyUnicodeUCS4_";
-#elif UCS2
-        internal const int _UCS = 2;
-
-        /// <summary>
-        /// EntryPoint to be used in DllImport to map to correct Unicode
-        /// methods prior to PEP393. Only used for PY27.
-        /// </summary>
-        private const string PyUnicodeEntryPoint = "PyUnicodeUCS2_";
-#else
-#error You must define either UCS2 or UCS4!
-#endif
+        public static int UCS { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 2 : 4;
+        public static string PyUnicodeEntryPoint { get; } = UCS == 2 ? "PyUnicodeUCS2_" : "PyUnicodeUCS4_";
 
         // C# compiler copies constants to the assemblies that references this library.
         // We needs to replace all public constants to static readonly fields to allow 
@@ -266,7 +292,7 @@ namespace Python.Runtime
         /// <summary>
         /// Encoding to use to convert Unicode to/from Managed to Native
         /// </summary>
-        internal static readonly Encoding PyEncoding = _UCS == 2 ? Encoding.Unicode : Encoding.UTF32;
+        internal static readonly Encoding PyEncoding = UCS == 2 ? Encoding.Unicode : Encoding.UTF32;
 
         /// <summary>
         /// Initialize the runtime...
@@ -1349,7 +1375,7 @@ namespace Python.Runtime
         internal static IntPtr PyString_FromString(string value)
         {
 #if PYTHON3
-            return PyUnicode_FromKindAndData(_UCS, value, value.Length);
+            return PyUnicode_FromKindAndData(UCS, value, value.Length);
 #elif PYTHON2
             return PyString_FromStringAndSize(value, value.Length);
 #endif
@@ -1434,7 +1460,7 @@ namespace Python.Runtime
 
         internal static IntPtr PyUnicode_FromUnicode(string s, long size)
         {
-            return PyUnicode_FromKindAndData(_UCS, s, size);
+            return PyUnicode_FromKindAndData(UCS, s, size);
         }
 
         internal static long PyUnicode_GetSize(IntPtr ob)
@@ -1523,7 +1549,7 @@ namespace Python.Runtime
                 IntPtr p = PyUnicode_AsUnicode(op);
                 int length = (int)PyUnicode_GetSize(op);
 
-                int size = length * _UCS;
+                int size = length * UCS;
                 var buffer = new byte[size];
                 Marshal.Copy(p, buffer, 0, size);
                 return PyEncoding.GetString(buffer, 0, size);
@@ -2163,16 +2189,12 @@ namespace Python.Runtime
                         RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? libraryName + ".dll"
                         : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? $"lib{libraryName}.so"
                         : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? $"lib{libraryName}.dylib"
-                        : Throw<string>(new PlatformNotSupportedException());
+                        : NativeMethods.Throw<string>(new PlatformNotSupportedException());
                 }
                 IntPtr handle = NativeMethods.LoadLibrary(libraryName);
                 if (handle == IntPtr.Zero)
-                    throw new FileLoadException();
+                    throw new FileLoadException("Could not load " + libraryName);
                 return handle;
-            }
-
-            static T Throw<T>(Exception exception) {
-                throw exception;
             }
 
             static global::System.IntPtr GetFunctionByName(string functionName, global::System.IntPtr libraryHandle) {

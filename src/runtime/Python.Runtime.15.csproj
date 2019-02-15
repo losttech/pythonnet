@@ -36,13 +36,13 @@
     <Python3Version Condition="'$(Python3Version)'==''">PYTHON36</Python3Version>
 
     <PythonMultiRuntimeDefineConstants>$(PYTHONNET_MULTIRUNTIME_DEFINE_CONSTANTS)</PythonMultiRuntimeDefineConstants>
-    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='win'">UCS2</PythonMultiRuntimeDefineConstants>
-    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='unix'">UCS4;MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMultiRuntimeDefineConstants>
+    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='win'"></PythonMultiRuntimeDefineConstants>
+    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='unix'">MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMultiRuntimeDefineConstants>
 
     <PythonWinDefineConstants>$(PYTHONNET_WIN_DEFINE_CONSTANTS)</PythonWinDefineConstants>
-    <PythonWinDefineConstants Condition="'$(PythonWinDefineConstants)'==''">UCS2</PythonWinDefineConstants>
+    <PythonWinDefineConstants Condition="'$(PythonWinDefineConstants)'==''"></PythonWinDefineConstants>
     <PythonMonoDefineConstants>$(PYTHONNET_MONO_DEFINE_CONSTANTS)</PythonMonoDefineConstants>
-    <PythonMonoDefineConstants Condition="'$(PythonMonoDefineConstants)'==''">UCS4;MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMonoDefineConstants>
+    <PythonMonoDefineConstants Condition="'$(PythonMonoDefineConstants)'==''">MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMonoDefineConstants>
   </PropertyGroup>
   <PropertyGroup Condition="$(Configuration.Contains('Debug'))">
     <Optimize>false</Optimize>
