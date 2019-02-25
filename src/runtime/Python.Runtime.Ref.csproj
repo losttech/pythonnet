@@ -1,4 +1,4 @@
-<Project Sdk="MSBuild.Sdk.Extras">
+﻿<Project Sdk="MSBuild.Sdk.Extras">
 
   <PropertyGroup>
     <TargetFramework>netstandard2.0</TargetFramework>
@@ -8,6 +8,7 @@
     <RootNamespace>Python.Runtime</RootNamespace>
     <AssemblyName>Python.Runtime</AssemblyName>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
+    <OutputPath>bin\ref\</OutputPath>
     <DocumentationFile>$(OutputPath)\$(TargetFramework)\$(AssemblyName).xml</DocumentationFile>
 
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
@@ -22,13 +23,19 @@
     <Python3Version>$(PYTHONNET_PY3_VERSION)</Python3Version>
     <Python3Version Condition="'$(Python3Version)'==''">PYTHON36</Python3Version>
 
-    <DefineConstants>$(DefineConstants);XPLAT;NETSTANDARD;UCS2;$(Python3Version);PYTHON3</DefineConstants>
+    <DefineConstants>$(DefineConstants);XPLAT;NETSTANDARD;$(Python3Version);PYTHON3</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
     <PackageReference Include="System.Runtime.InteropServices" Version="4.3.0" />
     <PackageReference Include="System.Security.Permissions" Version="4.4.0" />
     <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <EmbeddedResource Include="resources\clr.py">
+      <LogicalName>clr.py</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
 </Project>
