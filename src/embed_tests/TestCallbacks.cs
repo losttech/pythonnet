@@ -7,7 +7,6 @@ namespace Python.EmbeddingTest {
     public class TestCallbacks {
         [OneTimeSetUp]
         public void SetUp() {
-            string path = Environment.GetEnvironmentVariable("PATH");
         }
 
         [OneTimeTearDown]
