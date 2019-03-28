@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Reflection;
 using System.Text;
 
@@ -17,16 +18,16 @@ namespace Python.Runtime
         public MethodBase[] methods;
         public bool init = false;
         public bool allow_threads = true;
-        readonly IPyArgumentConverter pyArgumentConverter = DefaultPyArgumentConverter.Instance;
+        IPyArgumentConverter pyArgumentConverter;
 
         internal MethodBinder()
         {
             list = new ArrayList();
         }
 
-        internal MethodBinder(MethodInfo mi)
+        internal MethodBinder(MethodInfo mi): this()
         {
-            list = new ArrayList { mi };
+            this.AddMethod(mi);
         }
 
         public int Count
@@ -36,6 +37,7 @@ namespace Python.Runtime
 
         internal void AddMethod(MethodBase m)
         {
+            Debug.Assert(!init);
             list.Add(m);
         }
 
@@ -163,9 +165,32 @@ namespace Python.Runtime
                 // I'm sure this could be made more efficient.
                 list.Sort(new MethodSorter());
                 methods = (MethodBase[])list.ToArray(typeof(MethodBase));
+                pyArgumentConverter = this.GetArgumentConverter();
                 init = true;
             }
             return methods;
+        }
+
+        IPyArgumentConverter GetArgumentConverter() {
+            IPyArgumentConverter converter = null;
+            Type converterType = null;
+            foreach (MethodBase method in this.methods)
+            {
+                var attribute = method.DeclaringType?.GetCustomAttribute<PyArgConverterAttribute>()
+                    ?? method.DeclaringType?.Assembly.GetCustomAttribute<PyArgConverterAttribute>();
+                if (converterType == null)
+                {
+                    if (attribute == null) continue;
+
+                    converterType = attribute.ConverterType;
+                    converter = attribute.Converter;
+                } else if (converterType != attribute?.ConverterType)
+                {
+                    throw new NotSupportedException("All methods must have the same IPyArgumentConverter");
+                }
+            }
+
+            return converter ?? DefaultPyArgumentConverter.Instance;
         }
 
         /// <summary>
