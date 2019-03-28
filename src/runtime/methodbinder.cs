@@ -17,6 +17,7 @@ namespace Python.Runtime
         public MethodBase[] methods;
         public bool init = false;
         public bool allow_threads = true;
+        readonly IPyArgumentConverter pyArgumentConverter = DefaultPyArgumentConverter.Instance;
 
         internal MethodBinder()
         {
@@ -307,7 +308,7 @@ namespace Python.Runtime
                     continue;
                 }
                 var outs = 0;
-                var margs = TryConvertArguments(pi, paramsArray, args, pynargs, defaultArgList,
+                var margs = this.TryConvertArguments(pi, paramsArray, args, pynargs, defaultArgList,
                     needsResolution: _methods.Length > 1,
                     outs: out outs);
 
@@ -362,7 +363,7 @@ namespace Python.Runtime
         /// <param name="needsResolution"><c>true</c>, if overloading resolution is required</param>
         /// <param name="outs">Returns number of output parameters</param>
         /// <returns>An array of .NET arguments, that can be passed to a method.</returns>
-        static object[] TryConvertArguments(ParameterInfo[] pi, bool paramsArray,
+        object[] TryConvertArguments(ParameterInfo[] pi, bool paramsArray,
             IntPtr args, int pyArgCount,
             ArrayList defaultArgList,
             bool needsResolution,
@@ -392,7 +393,9 @@ namespace Python.Runtime
                     : Runtime.PyTuple_GetItem(args, paramIndex);
 
                 bool isOut;
-                if (!TryConvertArgument(op, parameter.ParameterType, needsResolution, out margs[paramIndex], out isOut))
+                if (!this.pyArgumentConverter.TryConvertArgument(
+                    op, parameter.ParameterType, needsResolution,
+                    out margs[paramIndex], out isOut))
                 {
                     return null;
                 }
@@ -414,7 +417,7 @@ namespace Python.Runtime
             return margs;
         }
 
-        static bool TryConvertArgument(IntPtr op, Type parameterType, bool needsResolution,
+        internal static bool TryConvertArgument(IntPtr op, Type parameterType, bool needsResolution,
                                        out object arg, out bool isOut)
         {
             arg = null;
