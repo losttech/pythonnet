@@ -27,3 +27,6 @@ indent_style = tab
 [.bumpversion.cfg]
 trim_trailing_whitespace = false
 indent_style = tab
+
+[*.cs]
+csharp_new_line_before_open_brace = true
