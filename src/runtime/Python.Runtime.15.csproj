@@ -1,7 +1,7 @@
 <Project  Sdk="MSBuild.Sdk.Extras">
   <PropertyGroup>
-    <TargetFrameworks>netstandard2.0</TargetFrameworks>
-    <ExtrasBuildEachRuntimeIdentifier>true</ExtrasBuildEachRuntimeIdentifier>
+    <TargetFrameworks>netstandard2.0;net40</TargetFrameworks>
+    <ExtrasBuildEachRuntimeIdentifier Condition="'$(TargetFramework)'=='netstandard2.0'">true</ExtrasBuildEachRuntimeIdentifier>
     <RuntimeIdentifiers>unix;win</RuntimeIdentifiers>
     <Platforms>AnyCPU</Platforms>
     <Configurations>Debug3;Release3;DebugMono;DebugMonoPY3;ReleaseMono;ReleaseMonoPY3;DebugWin;DebugWinPY3;ReleaseWin;ReleaseWinPY3</Configurations>
@@ -28,6 +28,7 @@
     <CustomDefineConstants Condition="'$(CustomDefineConstants)' == ''">$(PYTHONNET_DEFINE_CONSTANTS)</CustomDefineConstants>
     <BaseDefineConstants>XPLAT</BaseDefineConstants>
     <DefineConstants>$(DefineConstants);$(CustomDefineConstants);$(BaseDefineConstants);</DefineConstants>
+    <DefineConstants Condition="'$(TargetFramework)'=='net40'">$(DefineConstants);NETFX</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)'=='netstandard2.0'">$(DefineConstants);NETSTANDARD</DefineConstants>
     <DefineConstants Condition="'$(BuildingInsideVisualStudio)' == 'true' AND '$(CustomDefineConstants)' != '' AND $(Configuration.Contains('Debug'))">$(DefineConstants);TRACE;DEBUG</DefineConstants>
     <Python2Version>$(PYTHONNET_PY2_VERSION)</Python2Version>

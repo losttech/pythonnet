@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -750,4 +751,20 @@ namespace Python.Runtime
             this.outs = outs;
         }
     }
+
+#if NETFX
+    static class ReflectionExtensions {
+        public static T GetCustomAttribute<T>(this Type type) {
+            return type.GetCustomAttributes(typeof(T), inherit: false)
+                .Cast<T>()
+                .SingleOrDefault();
+        }
+
+        public static T GetCustomAttribute<T>(this Assembly assembly) {
+            return assembly.GetCustomAttributes(typeof(T), inherit: false)
+                .Cast<T>()
+                .SingleOrDefault();
+        }
+    }
+#endif
 }
