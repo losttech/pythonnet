@@ -1,5 +1,7 @@
 namespace Python.Runtime {
     using System;
+    using System.Collections.Concurrent;
+    using System.Linq;
 
     /// <summary>
     /// Specifies how to convert Python objects, passed to .NET functions to the expected CLR types.
@@ -55,5 +57,26 @@ namespace Python.Runtime {
             this.Converter = (IPyArgumentConverter)ctor.Invoke(EmptyArgList);
             this.ConverterType = converterType;
         }
+
+        static readonly ConcurrentDictionary<Type, IPyArgumentConverter> ArgConverterCache =
+            new ConcurrentDictionary<Type, IPyArgumentConverter>();
+        internal static IPyArgumentConverter TryGetArgConverter(Type type) {
+            if (type == null) return null;
+
+            return ArgConverterCache.GetOrAdd(type, declaringType => {
+                var attribute = declaringType
+                           .GetCustomAttributes(typeof(PyArgConverterAttribute), inherit: false)
+                           .OfType<PyArgConverterAttribute>()
+                           .SingleOrDefault()
+                       ?? declaringType.Assembly
+                           .GetCustomAttributes(typeof(PyArgConverterAttribute), inherit: false)
+                           .OfType<PyArgConverterAttribute>()
+                           .SingleOrDefault();
+                return attribute?.Converter;
+            });
+        }
+
+        internal static IPyArgumentConverter GetArgConverter(Type type)
+            => TryGetArgConverter(type) ?? DefaultPyArgumentConverter.Instance;
     }
 }

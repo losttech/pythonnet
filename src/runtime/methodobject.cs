@@ -36,7 +36,8 @@ namespace Python.Runtime
             this.type = type;
             this.name = name;
             this.info = info;
-            binder = new MethodBinder();
+            var argConverter = PyArgConverterAttribute.GetArgConverter(type);
+            binder = new MethodBinder(argConverter);
             foreach (MethodInfo item in info)
             {
                 binder.AddMethod(item);

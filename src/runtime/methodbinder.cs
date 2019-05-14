@@ -1,6 +1,5 @@
 using System;
 using System.Collections;
-using System.Collections.Concurrent;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -20,14 +19,16 @@ namespace Python.Runtime
         public MethodBase[] methods;
         public bool init = false;
         public bool allow_threads = true;
-        IPyArgumentConverter pyArgumentConverter;
+        readonly IPyArgumentConverter argumentConverter;
 
-        internal MethodBinder()
+        internal MethodBinder(IPyArgumentConverter argumentConverter)
         {
+            if (argumentConverter == null) throw new ArgumentNullException(nameof(argumentConverter));
+            this.argumentConverter = argumentConverter;
             list = new ArrayList();
         }
 
-        internal MethodBinder(MethodInfo mi): this()
+        internal MethodBinder(MethodInfo mi, IPyArgumentConverter argumentConverter): this(argumentConverter)
         {
             this.AddMethod(mi);
         }
@@ -167,48 +168,9 @@ namespace Python.Runtime
                 // I'm sure this could be made more efficient.
                 list.Sort(new MethodSorter());
                 methods = (MethodBase[])list.ToArray(typeof(MethodBase));
-                pyArgumentConverter = this.GetArgumentConverter();
                 init = true;
             }
             return methods;
-        }
-
-        IPyArgumentConverter GetArgumentConverter() {
-            IPyArgumentConverter converter = null;
-            Type converterType = null;
-            foreach (MethodBase method in this.methods)
-            {
-                PyArgConverterAttribute attribute = TryGetArgConverter(method.DeclaringType);
-                if (converterType == null)
-                {
-                    if (attribute == null) continue;
-
-                    converterType = attribute.ConverterType;
-                    converter = attribute.Converter;
-                } else if (converterType != attribute?.ConverterType)
-                {
-                    throw new NotSupportedException("All methods must have the same IPyArgumentConverter");
-                }
-            }
-
-            return converter ?? DefaultPyArgumentConverter.Instance;
-        }
-
-        static readonly ConcurrentDictionary<Type, PyArgConverterAttribute> ArgConverterCache =
-            new ConcurrentDictionary<Type, PyArgConverterAttribute>();
-        static PyArgConverterAttribute TryGetArgConverter(Type type) {
-            if (type == null) return null;
-
-            return ArgConverterCache.GetOrAdd(type, declaringType =>
-                declaringType
-                    .GetCustomAttributes(typeof(PyArgConverterAttribute), inherit: false)
-                    .OfType<PyArgConverterAttribute>()
-                    .SingleOrDefault()
-                ?? declaringType.Assembly
-                    .GetCustomAttributes(typeof(PyArgConverterAttribute), inherit: false)
-                    .OfType<PyArgConverterAttribute>()
-                    .SingleOrDefault()
-            );
         }
 
         /// <summary>
@@ -436,7 +398,7 @@ namespace Python.Runtime
                     : Runtime.PyTuple_GetItem(args, paramIndex);
 
                 bool isOut;
-                if (!this.pyArgumentConverter.TryConvertArgument(
+                if (!this.argumentConverter.TryConvertArgument(
                     op, parameter.ParameterType, needsResolution,
                     out margs[paramIndex], out isOut))
                 {

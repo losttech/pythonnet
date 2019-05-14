@@ -306,7 +306,8 @@ namespace Python.Runtime
                                  BindingFlags.Static;
 
             MethodInfo method = d.GetType().GetMethod("Invoke", flags);
-            var binder = new MethodBinder(method);
+            var argConverter = PyArgConverterAttribute.TryGetArgConverter(d.GetType());
+            var binder = new MethodBinder(method, argConverter);
             return binder.Invoke(ob, args, kw);
         }
     }

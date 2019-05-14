@@ -11,10 +11,10 @@ namespace Python.Runtime
         public MethodBinder GetterBinder;
         public MethodBinder SetterBinder;
 
-        public Indexer()
+        public Indexer(IPyArgumentConverter argumentConverter)
         {
-            GetterBinder = new MethodBinder();
-            SetterBinder = new MethodBinder();
+            GetterBinder = new MethodBinder(argumentConverter);
+            SetterBinder = new MethodBinder(argumentConverter);
         }
 
 

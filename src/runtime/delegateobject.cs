@@ -14,7 +14,7 @@ namespace Python.Runtime
 
         internal DelegateObject(Type tp) : base(tp)
         {
-            binder = new MethodBinder(tp.GetMethod("Invoke"));
+            binder = new MethodBinder(tp.GetMethod("Invoke"), PyArgConverterAttribute.GetArgConverter(tp));
         }
 
 

@@ -15,6 +15,7 @@ namespace Python.Runtime
         private Type _containingType;
 
         internal ConstructorBinder(Type containingType)
+            : base(PyArgConverterAttribute.GetArgConverter(containingType))
         {
             _containingType = containingType;
         }

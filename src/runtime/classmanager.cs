@@ -271,6 +271,7 @@ namespace Python.Runtime
                 }
             }
 
+            var argConverter = PyArgConverterAttribute.GetArgConverter(type);
             for (i = 0; i < items.Count; i++)
             {
                 var mi = (MemberInfo)items[i];
@@ -330,7 +331,7 @@ namespace Python.Runtime
                             Indexer idx = ci.indexer;
                             if (idx == null)
                             {
-                                ci.indexer = new Indexer();
+                                ci.indexer = new Indexer(argConverter);
                                 idx = ci.indexer;
                             }
                             idx.AddProperty(pi);
