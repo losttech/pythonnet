@@ -1,14 +1,11 @@
-<Project  Sdk="MSBuild.Sdk.Extras">
+﻿<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFrameworks>netstandard2.0;net40</TargetFrameworks>
-    <ExtrasBuildEachRuntimeIdentifier Condition="'$(TargetFramework)'=='netstandard2.0'">true</ExtrasBuildEachRuntimeIdentifier>
-    <RuntimeIdentifiers>unix;win</RuntimeIdentifiers>
     <Platforms>AnyCPU</Platforms>
-    <Configurations>Debug3;Release3;DebugMono;DebugMonoPY3;ReleaseMono;ReleaseMonoPY3;DebugWin;DebugWinPY3;ReleaseWin;ReleaseWinPY3</Configurations>
     <RootNamespace>Python.Runtime</RootNamespace>
     <AssemblyName>Python.Runtime</AssemblyName>
     <PackageId>Python.Runtime.UnofficialNetStandard</PackageId>
-    <VersionPrefix>2.4.0</VersionPrefix>
+    <VersionPrefix>3.0.0</VersionPrefix>
     <DebugSymbols>true</DebugSymbols>
     <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
     <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
@@ -31,63 +28,24 @@
     <DefineConstants Condition="'$(TargetFramework)'=='net40'">$(DefineConstants);NETFX</DefineConstants>
     <DefineConstants Condition="'$(TargetFramework)'=='netstandard2.0'">$(DefineConstants);NETSTANDARD</DefineConstants>
     <DefineConstants Condition="'$(BuildingInsideVisualStudio)' == 'true' AND '$(CustomDefineConstants)' != '' AND $(Configuration.Contains('Debug'))">$(DefineConstants);TRACE;DEBUG</DefineConstants>
-    <Python2Version>$(PYTHONNET_PY2_VERSION)</Python2Version>
-    <Python2Version Condition="'$(Python2Version)'==''">PYTHON27</Python2Version>
-    <Python3Version>$(PYTHONNET_PY3_VERSION)</Python3Version>
-    <Python3Version Condition="'$(Python3Version)'==''">PYTHON36</Python3Version>
 
     <PythonMultiRuntimeDefineConstants>$(PYTHONNET_MULTIRUNTIME_DEFINE_CONSTANTS)</PythonMultiRuntimeDefineConstants>
-    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='win'"></PythonMultiRuntimeDefineConstants>
-    <PythonMultiRuntimeDefineConstants Condition="'$(PythonMultiRuntimeDefineConstants)'=='' AND '$(RuntimeIdentifier)'=='unix'">MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMultiRuntimeDefineConstants>
-
-    <PythonWinDefineConstants>$(PYTHONNET_WIN_DEFINE_CONSTANTS)</PythonWinDefineConstants>
-    <PythonWinDefineConstants Condition="'$(PythonWinDefineConstants)'==''"></PythonWinDefineConstants>
-    <PythonMonoDefineConstants>$(PYTHONNET_MONO_DEFINE_CONSTANTS)</PythonMonoDefineConstants>
-    <PythonMonoDefineConstants Condition="'$(PythonMonoDefineConstants)'==''">MONO_LINUX;PYTHON_WITH_PYMALLOC</PythonMonoDefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition="$(Configuration.Contains('Debug'))">
+  <PropertyGroup Condition="'$(Configuration)' == 'Debug'">
     <Optimize>false</Optimize>
     <DebugType>full</DebugType>
   </PropertyGroup>
-  <PropertyGroup Condition="$(Configuration.Contains('Release'))">
+  <PropertyGroup Condition="'$(Configuration)' == 'Release'">
     <Optimize>true</Optimize>
     <DebugType>portable</DebugType>
   </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(Configuration)' == 'ReleaseMono'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON2;$(Python2Version);$(PythonMonoDefineConstants)</DefineConstants>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug'">
+    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);$(PythonMultiRuntimeDefineConstants);TRACE;DEBUG</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'ReleaseMonoPY3'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonMonoDefineConstants)</DefineConstants>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release'">
+    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);$(PythonMultiRuntimeDefineConstants)</DefineConstants>
   </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'DebugMono'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON2;$(Python2Version);$(PythonMonoDefineConstants);TRACE;DEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'DebugMonoPY3'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonMonoDefineConstants);TRACE;DEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'ReleaseWin'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON2;$(Python2Version);$(PythonWinDefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'ReleaseWinPY3'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonWinDefineConstants)</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'DebugWin'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON2;$(Python2Version);$(PythonWinDefineConstants);TRACE;DEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'DebugWinPY3'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonWinDefineConstants);TRACE;DEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Debug3'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonMultiRuntimeDefineConstants);TRACE;DEBUG</DefineConstants>
-  </PropertyGroup>
-  <PropertyGroup Condition=" '$(Configuration)' == 'Release3'">
-    <DefineConstants Condition="'$(CustomDefineConstants)' == ''">$(DefineConstants);PYTHON3;$(Python3Version);$(PythonMultiRuntimeDefineConstants)</DefineConstants>
-  </PropertyGroup>
-
-  <ItemGroup>
-    <ReferenceAssemblyProjectReference Include="Python.Runtime.Ref.csproj" />
-  </ItemGroup>
 
   <ItemGroup>
     <None Include="..\pythonnet.snk" />
