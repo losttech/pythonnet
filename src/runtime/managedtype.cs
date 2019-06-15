@@ -28,12 +28,12 @@ namespace Python.Runtime
                     tp = ob;
                 }
 
-                var flags = Util.ReadCLong(tp, TypeOffset.tp_flags);
+                var flags = Util.ReadCLongAligned(tp, TypeOffset.tp_flags);
                 if ((flags & TypeFlags.Managed) != 0)
                 {
                     IntPtr op = tp == ob
-                        ? Marshal.ReadIntPtr(tp, TypeOffset.magic())
-                        : Marshal.ReadIntPtr(ob, ObjectOffset.magic(ob));
+                        ? Util.ReadIntPtrAligned(tp, TypeOffset.magic())
+                        : Util.ReadIntPtrAligned(ob, ObjectOffset.magic(ob));
                     if (op == IntPtr.Zero)
                     {
                         return null;
