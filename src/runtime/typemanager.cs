@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -119,7 +119,6 @@ namespace Python.Runtime
                 name = name.Substring(i + 1);
             }
 
-            IntPtr base_ = IntPtr.Zero;
             int ob_size = ObjectOffset.Size(Runtime.PyTypeType);
             int tp_dictoffset = ObjectOffset.DictOffset(Runtime.PyTypeType);
 
@@ -130,16 +129,6 @@ namespace Python.Runtime
             {
                 ob_size = ObjectOffset.Size(Exceptions.Exception);
                 tp_dictoffset = ObjectOffset.DictOffset(Exceptions.Exception);
-            }
-
-            if (clrType == typeof(Exception))
-            {
-                base_ = Exceptions.Exception;
-            }
-            else if (clrType.BaseType != null)
-            {
-                ClassBase bc = ClassManager.GetClass(clrType.BaseType);
-                base_ = bc.pyHandle;
             }
 
             IntPtr type = AllocateTypeObject(name);
@@ -153,6 +142,7 @@ namespace Python.Runtime
 
             InitializeSlots(type, impl.GetType());
 
+            IntPtr base_ = GetBaseType(clrType);
             if (base_ != IntPtr.Zero)
             {
                 Marshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
@@ -189,6 +179,30 @@ namespace Python.Runtime
             //DebugUtil.DumpType(type);
 
             return type;
+        }
+
+        static IntPtr GetBaseType(Type clrType) {
+            var baseTypeOverride = clrType.GetCustomAttributes(inherit: false)
+                .OfType<BaseTypeAttributeBase>().SingleOrDefault();
+            if (baseTypeOverride != null)
+            {
+                IntPtr handle = baseTypeOverride.BaseType(clrType);
+                if (handle != IntPtr.Zero)
+                {
+                    return handle;
+                }
+            }
+            if (clrType == typeof(Exception))
+            {
+                return Exceptions.Exception;
+            }
+            if (clrType.BaseType != null)
+            {
+                ClassBase bc = ClassManager.GetClass(clrType.BaseType);
+                return bc.pyHandle;
+            }
+
+            return IntPtr.Zero;
         }
 
         internal static IntPtr CreateSubType(IntPtr py_name, IntPtr py_base_type, IntPtr py_dict)
