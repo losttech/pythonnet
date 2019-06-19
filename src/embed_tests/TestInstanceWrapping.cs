@@ -1,11 +1,9 @@
-using System;
+using System.Globalization;
 
 using NUnit.Framework;
 using Python.Runtime;
 
 namespace Python.EmbeddingTest {
-    using System.Globalization;
-
     public class TestInstanceWrapping {
         [OneTimeSetUp]
         public void SetUp() {
