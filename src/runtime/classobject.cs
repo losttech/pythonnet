@@ -1,5 +1,6 @@
 using System;
 using System.Reflection;
+using System.Runtime.InteropServices;
 
 namespace Python.Runtime
 {
@@ -294,7 +295,20 @@ namespace Python.Runtime
 
             if (cb.type != typeof(Delegate))
             {
-                Exceptions.SetError(Exceptions.TypeError, "object is not callable");
+                IntPtr dict = Marshal.ReadIntPtr(tp, TypeOffset.tp_dict);
+                IntPtr methodObjectHandle = Runtime.PyDict_GetItemString(dict, "__call__");
+                if (methodObjectHandle == IntPtr.Zero || methodObjectHandle == Runtime.PyNone)
+                {
+                    Exceptions.SetError(Exceptions.TypeError, "object is not callable");
+                    return IntPtr.Zero;
+                }
+
+                if (GetManagedObject(methodObjectHandle) is MethodObject methodObject)
+                {
+                    return methodObject.Invoke(ob, args, kw);
+                }
+
+                Exceptions.SetError(Exceptions.TypeError, "instance has __call__, but it is not supported by Python.NET");
                 return IntPtr.Zero;
             }
 
