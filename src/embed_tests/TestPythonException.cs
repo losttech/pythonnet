@@ -54,5 +54,21 @@ namespace Python.EmbeddingTest
                 Assert.That(ex.PythonTypeName, Is.EqualTo("ModuleNotFoundError").Or.EqualTo("ImportError"));
             }
         }
+
+        [Test]
+        public void TestNestedExceptions()
+        {
+            try {
+                PythonEngine.Exec(@"
+try:
+  raise Exception('inner')
+except Exception as ex:
+  raise Exception('outer') from ex
+");
+            } catch (PythonException ex) {
+                Assert.That(ex.InnerException, Is.InstanceOf<PythonException>());
+                Assert.That(ex.InnerException.Message, Is.EqualTo("Exception : inner"));
+            }
+        }
     }
 }

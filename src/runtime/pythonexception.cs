@@ -11,11 +11,12 @@ namespace Python.Runtime
         private IntPtr _pyType = IntPtr.Zero;
         private IntPtr _pyValue = IntPtr.Zero;
         private IntPtr _pyTB = IntPtr.Zero;
-        private string _tb = "";
+        private string _traceback = "";
         private string _message = "";
         private string _pythonTypeName = "";
         private bool disposed = false;
 
+        [Obsolete("Please, use FromPyErr instead")]
         public PythonException()
         {
             IntPtr gs = PythonEngine.AcquireLock();
@@ -49,10 +50,82 @@ namespace Python.Runtime
                 Runtime.XIncref(_pyTB);
                 using (var pyTB = new PyObject(_pyTB))
                 {
-                    _tb = tb_module.InvokeMethod("format_tb", pyTB).ToString();
+                    this._traceback = tb_module.InvokeMethod("format_tb", pyTB).ToString();
                 }
             }
             PythonEngine.ReleaseLock(gs);
+        }
+
+        private PythonException(IntPtr pyTypeHandle, IntPtr pyValueHandle, IntPtr pyTracebackHandle,
+                                string message, string pythonTypeName, string traceback,
+                                Exception innerException)
+            : base(message, innerException)
+        {
+            _pyType = pyTypeHandle;
+            _pyValue = pyValueHandle;
+            _pyTB = pyTracebackHandle;
+            _message = message;
+            _pythonTypeName = pythonTypeName ?? _pythonTypeName;
+            _traceback = traceback ?? _traceback;
+        }
+
+        internal static PythonException FromPyErr() {
+            IntPtr gs = PythonEngine.AcquireLock();
+            IntPtr pyTypeHandle = IntPtr.Zero, pyValueHandle = IntPtr.Zero, pyTracebackHandle = IntPtr.Zero;
+            Runtime.PyErr_Fetch(ref pyTypeHandle, ref pyValueHandle, ref pyTracebackHandle);
+            Runtime.XIncref(pyTypeHandle);
+            Runtime.XIncref(pyValueHandle);
+            Runtime.XIncref(pyTracebackHandle);
+            var result = FromPyErr(pyTypeHandle, pyValueHandle, pyTracebackHandle);
+            PythonEngine.ReleaseLock(gs);
+            return result;
+        }
+
+        /// <summary>
+        /// Requires lock to be acquired eslewhere
+        /// </summary>
+        static PythonException FromPyErr(IntPtr pyTypeHandle, IntPtr pyValueHandle, IntPtr pyTracebackHandle) {
+            Exception inner = null;
+            string pythonTypeName = null, msg = "", traceback = null;
+            if (pyTypeHandle != IntPtr.Zero && pyValueHandle != IntPtr.Zero)
+            {
+                string type;
+                string message;
+                Runtime.XIncref(pyTypeHandle);
+                using (var pyType = new PyObject(pyTypeHandle))
+                using (PyObject pyTypeName = pyType.GetAttr("__name__"))
+                {
+                    type = pyTypeName.ToString();
+                }
+
+                pythonTypeName = type;
+
+                Runtime.XIncref(pyValueHandle);
+                using (var pyValue = new PyObject(pyValueHandle))
+                {
+                    message = pyValue.ToString();
+                    var cause = pyValue.GetAttr("__cause__", null);
+                    if (cause != null) {
+                        IntPtr innerTraceback = cause.GetAttr("__traceback__", null)?.Handle ?? IntPtr.Zero;
+                        Runtime.XIncref(innerTraceback);
+                        inner = FromPyErr(cause.GetPythonTypeHandle(), cause.obj, innerTraceback);
+                        Runtime.XDecref(innerTraceback);
+                    }
+                }
+                msg = type + " : " + message;
+            }
+            if (pyTracebackHandle != IntPtr.Zero)
+            {
+                PyObject tb_module = PythonEngine.ImportModule("traceback");
+                Runtime.XIncref(pyTracebackHandle);
+                using (var pyTB = new PyObject(pyTracebackHandle))
+                {
+                    traceback = tb_module.InvokeMethod("format_tb", pyTB).ToString();
+                }
+            }
+
+            return new PythonException(pyTypeHandle, pyValueHandle, pyTracebackHandle,
+                msg, pythonTypeName, traceback, inner);
         }
 
         // Ensure that encapsulated Python objects are decref'ed appropriately
@@ -132,7 +205,7 @@ namespace Python.Runtime
         /// </remarks>
         public override string StackTrace
         {
-            get { return _tb; }
+            get { return this._traceback; }
         }
 
         /// <summary>

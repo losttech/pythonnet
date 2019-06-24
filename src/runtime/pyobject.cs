@@ -156,6 +156,7 @@ namespace Python.Runtime
             GC.SuppressFinalize(this);
         }
 
+        internal IntPtr GetPythonTypeHandle() => Runtime.PyObject_Type(obj);
 
         /// <summary>
         /// GetPythonType Method
