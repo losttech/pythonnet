@@ -715,6 +715,10 @@ namespace Python.Runtime
 #endif
         }
 
+        internal static void XDecrefIgnoreNull(IntPtr op) {
+            if (op != IntPtr.Zero) { XDecref(op); }
+        }
+
         internal static unsafe long Refcount(IntPtr op)
         {
             var p = (void*)op;
@@ -1773,6 +1777,8 @@ namespace Python.Runtime
 
         internal static IntPtr PyMethod_Function(IntPtr ob) => Delegates.PyMethod_Function(ob);
 
+        internal static IntPtr PyMethod_New(IntPtr func, IntPtr self) => Delegates.PyMethod_New(func, self);
+
         public static class Delegates
         {
             static Delegates()
@@ -1993,6 +1999,7 @@ namespace Python.Runtime
                 PyErr_Print = GetDelegateForFunctionPointer<PyErr_PrintDelegate>(GetFunctionByName(nameof(PyErr_Print), GetUnmanagedDll(PythonDLL)));
                 PyMethod_Self = GetDelegateForFunctionPointer<PyMethod_SelfDelegate>(GetFunctionByName(nameof(PyMethod_Self), GetUnmanagedDll(PythonDLL)));
                 PyMethod_Function = GetDelegateForFunctionPointer<PyMethod_FunctionDelegate>(GetFunctionByName(nameof(PyMethod_Function), GetUnmanagedDll(PythonDLL)));
+                PyMethod_New = GetDelegateForFunctionPointer<PyMethod_NewDelegate>(GetFunctionByName(nameof(PyMethod_New), GetUnmanagedDll(PythonDLL)));
             }
 
             static T GetDelegateForFunctionPointer<T>(IntPtr functionPointer) {
@@ -3117,6 +3124,11 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             public delegate IntPtr PyMethod_FunctionDelegate(IntPtr ob);
+
+            internal static PyMethod_NewDelegate PyMethod_New { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            public delegate IntPtr PyMethod_NewDelegate(IntPtr func, IntPtr self);
             // end of PY3
 
             enum Py2 { }

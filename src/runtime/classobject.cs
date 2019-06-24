@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
 
@@ -299,17 +300,44 @@ namespace Python.Runtime
                 IntPtr methodObjectHandle = Runtime.PyDict_GetItemString(dict, "__call__");
                 if (methodObjectHandle == IntPtr.Zero || methodObjectHandle == Runtime.PyNone)
                 {
+                    Runtime.XDecrefIgnoreNull(methodObjectHandle);
                     Exceptions.SetError(Exceptions.TypeError, "object is not callable");
                     return IntPtr.Zero;
                 }
 
-                if (GetManagedObject(methodObjectHandle) is MethodObject methodObject)
+                try
                 {
-                    return methodObject.Invoke(ob, args, kw);
-                }
+                    if (GetManagedObject(methodObjectHandle) is MethodObject methodObject)
+                    {
+                        return methodObject.Invoke(ob, args, kw);
+                    }
 
-                Exceptions.SetError(Exceptions.TypeError, "instance has __call__, but it is not supported by Python.NET");
-                return IntPtr.Zero;
+                    IntPtr pythonBase = GetPythonBase(tp);
+                    dict = Marshal.ReadIntPtr(pythonBase, TypeOffset.tp_dict);
+                    Runtime.XDecref(methodObjectHandle);
+                    methodObjectHandle = Runtime.PyDict_GetItemString(dict, "__call__");
+                    if (methodObjectHandle == IntPtr.Zero || methodObjectHandle == Runtime.PyNone)
+                    {
+                        Exceptions.SetError(Exceptions.TypeError, "object is not callable");
+                        return IntPtr.Zero;
+                    }
+
+                    var boundMethod = Runtime.PyMethod_New(methodObjectHandle, ob);
+                    if (boundMethod == IntPtr.Zero) { return IntPtr.Zero; }
+
+                    try
+                    {
+                        return Runtime.PyObject_Call(boundMethod, args, kw);
+                    }
+                    finally
+                    {
+                        Runtime.XDecref(boundMethod);
+                    }
+                }
+                finally
+                {
+                    Runtime.XDecrefIgnoreNull(methodObjectHandle);
+                }
             }
 
             var co = (CLRObject)GetManagedObject(ob);
@@ -322,6 +350,25 @@ namespace Python.Runtime
             MethodInfo method = d.GetType().GetMethod("Invoke", flags);
             var binder = new MethodBinder(method);
             return binder.Invoke(ob, args, kw);
+        }
+
+        /// <summary>
+        /// Get the first base class in the class hierarchy
+        /// of the specified .NET type, that is defined in Python.
+        /// </summary>
+        static IntPtr GetPythonBase(IntPtr tp) {
+            Debug.Assert(IsManagedType(tp));
+            do {
+                tp = Marshal.ReadIntPtr(tp, TypeOffset.tp_base);
+            } while (IsManagedType(tp));
+
+            return tp;
+        }
+
+        internal static bool IsManagedType(IntPtr tp)
+        {
+            var flags = Util.ReadCLong(tp, TypeOffset.tp_flags);
+            return (flags & TypeFlags.Managed) != 0;
         }
     }
 }

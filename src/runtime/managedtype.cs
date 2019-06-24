@@ -55,25 +55,5 @@ namespace Python.Runtime
             }
             return result;
         }
-
-
-        internal static bool IsManagedType(IntPtr ob)
-        {
-            if (ob != IntPtr.Zero)
-            {
-                IntPtr tp = Runtime.PyObject_TYPE(ob);
-                if (tp == Runtime.PyTypeType || tp == Runtime.PyCLRMetaType)
-                {
-                    tp = ob;
-                }
-
-                var flags = Util.ReadCLong(tp, TypeOffset.tp_flags);
-                if ((flags & TypeFlags.Managed) != 0)
-                {
-                    return true;
-                }
-            }
-            return false;
-        }
     }
 }
