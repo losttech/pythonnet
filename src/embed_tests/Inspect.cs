@@ -27,7 +27,8 @@ namespace Python.EmbeddingTest {
         }
 
         class Class {
-            public void Method() { }
+            public void Method(int a, int b = 10) { }
+            public void Method(int a, object b) { }
         }
     }
 }
