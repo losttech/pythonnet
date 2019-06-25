@@ -70,5 +70,16 @@ except Exception as ex:
                 Assert.That(ex.InnerException.Message, Is.EqualTo("Exception : inner"));
             }
         }
+
+        [Test]
+        public void InnerIsEmptyWithNoCause()
+        {
+            var list = new PyList();
+            PyObject foo = null;
+
+            var ex = Assert.Throws<PythonException>(() => foo = list[0]);
+
+            Assert.IsNull(ex.InnerException);
+        }
     }
 }

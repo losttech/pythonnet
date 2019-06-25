@@ -105,7 +105,7 @@ namespace Python.Runtime
                 {
                     message = pyValue.ToString();
                     var cause = pyValue.GetAttr("__cause__", null);
-                    if (cause != null) {
+                    if (cause != null && cause.Handle != Runtime.PyNone) {
                         IntPtr innerTraceback = cause.GetAttr("__traceback__", null)?.Handle ?? IntPtr.Zero;
                         Runtime.XIncref(innerTraceback);
                         inner = FromPyErr(cause.GetPythonTypeHandle(), cause.obj, innerTraceback);
