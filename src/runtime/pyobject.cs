@@ -220,10 +220,7 @@ namespace Python.Runtime
         public PyObject GetAttr(string name)
         {
             IntPtr op = Runtime.PyObject_GetAttrString(obj, name);
-            if (op == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(op);
             return new PyObject(op);
         }
 
@@ -258,10 +255,7 @@ namespace Python.Runtime
         public PyObject GetAttr(PyObject name)
         {
             IntPtr op = Runtime.PyObject_GetAttr(obj, name.obj);
-            if (op == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(op);
             return new PyObject(op);
         }
 
@@ -298,7 +292,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttrString(obj, name, value.obj);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -316,7 +310,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttr(obj, name.obj, value.obj);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -333,7 +327,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttrString(obj, name, IntPtr.Zero);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -351,7 +345,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttr(obj, name.obj, IntPtr.Zero);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -369,7 +363,7 @@ namespace Python.Runtime
             IntPtr op = Runtime.PyObject_GetItem(obj, key.obj);
             if (op == IntPtr.Zero)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
             return new PyObject(op);
         }
@@ -422,7 +416,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetItem(obj, key.obj, value.obj);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -474,7 +468,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_DelItem(obj, key.obj);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -585,10 +579,7 @@ namespace Python.Runtime
         public PyObject GetIterator()
         {
             IntPtr r = Runtime.PyObject_GetIter(obj);
-            if (r == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(r);
             return new PyObject(r);
         }
 
@@ -618,10 +609,7 @@ namespace Python.Runtime
             var t = new PyTuple(args);
             IntPtr r = Runtime.PyObject_Call(obj, t.obj, IntPtr.Zero);
             t.Dispose();
-            if (r == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(r);
             return new PyObject(r);
         }
 
@@ -636,10 +624,7 @@ namespace Python.Runtime
         public PyObject Invoke(PyTuple args)
         {
             IntPtr r = Runtime.PyObject_Call(obj, args.obj, IntPtr.Zero);
-            if (r == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(r);
             return new PyObject(r);
         }
 
@@ -656,10 +641,7 @@ namespace Python.Runtime
             var t = new PyTuple(args);
             IntPtr r = Runtime.PyObject_Call(obj, t.obj, kw != null ? kw.obj : IntPtr.Zero);
             t.Dispose();
-            if (r == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(r);
             return new PyObject(r);
         }
 
@@ -674,10 +656,7 @@ namespace Python.Runtime
         public PyObject Invoke(PyTuple args, PyDict kw)
         {
             IntPtr r = Runtime.PyObject_Call(obj, args.obj, kw != null ? kw.obj : IntPtr.Zero);
-            if (r == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(r);
             return new PyObject(r);
         }
 
@@ -835,10 +814,7 @@ namespace Python.Runtime
         public PyList Dir()
         {
             IntPtr r = Runtime.PyObject_Dir(obj);
-            if (r == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(r);
             return new PyList(r);
         }
 
@@ -895,7 +871,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_Compare(obj, ((PyObject)o).obj);
             if (Exceptions.ErrorOccurred())
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
             return r == 0;
         }
@@ -936,7 +912,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttrString(obj, binder.Name, ptr);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
             Runtime.XDecref(ptr);
             return true;
@@ -1008,7 +984,7 @@ namespace Python.Runtime
 
             if (Runtime.PyTuple_SetItem(argtuple, i, ptr) < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 

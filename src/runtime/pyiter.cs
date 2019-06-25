@@ -34,10 +34,7 @@ namespace Python.Runtime
         public PyIter(PyObject iterable)
         {
             obj = Runtime.PyObject_GetIter(iterable.obj);
-            if (obj == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(obj);
         }
 
         protected override void Dispose(bool disposing)

@@ -172,7 +172,7 @@ namespace Python.Runtime
         {
             if (pointer == IntPtr.Zero)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -183,7 +183,7 @@ namespace Python.Runtime
         {
             if (pointer == IntPtr.Zero || ErrorOccurred())
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 

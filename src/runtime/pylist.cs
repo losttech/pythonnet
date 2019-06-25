@@ -51,10 +51,7 @@ namespace Python.Runtime
         public PyList()
         {
             obj = Runtime.PyList_New(0);
-            if (obj == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(obj);
         }
 
 
@@ -75,7 +72,7 @@ namespace Python.Runtime
                 int r = Runtime.PyList_SetItem(obj, i, ptr);
                 if (r < 0)
                 {
-                    throw new PythonException();
+                    throw PythonException.FromPyErr();
                 }
             }
         }
@@ -104,10 +101,7 @@ namespace Python.Runtime
         public static PyList AsList(PyObject value)
         {
             IntPtr op = Runtime.PySequence_List(value.obj);
-            if (op == IntPtr.Zero)
-            {
-                throw new PythonException();
-            }
+            Exceptions.ErrorCheck(op);
             return new PyList(op);
         }
 
@@ -123,7 +117,7 @@ namespace Python.Runtime
             int r = Runtime.PyList_Append(obj, item.obj);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -138,7 +132,7 @@ namespace Python.Runtime
             int r = Runtime.PyList_Insert(obj, index, item.obj);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -154,7 +148,7 @@ namespace Python.Runtime
             int r = Runtime.PyList_Reverse(obj);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
 
@@ -170,7 +164,7 @@ namespace Python.Runtime
             int r = Runtime.PyList_Sort(obj);
             if (r < 0)
             {
-                throw new PythonException();
+                throw PythonException.FromPyErr();
             }
         }
     }

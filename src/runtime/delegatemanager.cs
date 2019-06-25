@@ -248,7 +248,7 @@ namespace Python.Runtime
 
             if (op == IntPtr.Zero)
             {
-                var e = new PythonException();
+                var e = PythonException.FromPyErr();
                 throw e;
             }
 

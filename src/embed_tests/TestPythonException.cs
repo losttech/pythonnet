@@ -37,7 +37,7 @@ namespace Python.EmbeddingTest
         [Test]
         public void TestNoError()
         {
-            var e = new PythonException(); // There is no PyErr to fetch
+            var e = PythonException.FromPyErr(); // There is no PyErr to fetch
             Assert.AreEqual("", e.Message);
         }
 
