@@ -548,6 +548,10 @@ namespace Python.Runtime
         internal static IntPtr PyNone;
         internal static IntPtr Error;
 
+        private static readonly Lazy<PyObject> inspect =
+            new Lazy<PyObject>(() => PythonEngine.ImportModule("inspect"), isThreadSafe: false);
+        public static PyObject InspectModule => inspect.Value;
+
         /// <summary>
         /// Check if any Python Exceptions occurred.
         /// If any exist throw new PythonException.

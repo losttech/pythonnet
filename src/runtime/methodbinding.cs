@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace Python.Runtime
@@ -59,6 +60,47 @@ namespace Python.Runtime
             return mb.pyHandle;
         }
 
+        PyObject Singature {
+            get {
+                var infos = this.info == null ? this.m.info : new[] {this.info};
+                // this is a primitive version
+                // the overload with the maximum number of parameters should be used
+                var primary = infos.First();
+                var primaryParameters = primary.GetParameters();
+                PyObject signatureClass = Runtime.InspectModule.GetAttr("Signature");
+                var primaryReturn = primary.ReturnParameter;
+                if (infos.Any(i => i.GetParameters().Length != primaryParameters.Length
+                                   || i.ReturnParameter?.ParameterType != primaryReturn?.ParameterType)) {
+                    return signatureClass.Invoke();
+                }
+
+                var parameters = new PyList();
+                var parameterClass = primaryParameters.Length > 0 ? Runtime.InspectModule.GetAttr("Parameter") : null;
+                var positionalOrKeyword = primaryParameters.Length > 0 ? parameterClass.GetAttr("POSITIONAL_OR_KEYWORD") : null;
+                for (int i = 0; i < primaryParameters.Length; i++) {
+                    var parameter = primaryParameters[i];
+                    var alternatives = infos.Select(info => info.GetParameters()[i]);
+                    var defaultValue = alternatives
+                        .Select(alternative => alternative.DefaultValue != DBNull.Value ? alternative.DefaultValue.ToPython() : null)
+                        .FirstOrDefault(v => v != null) ?? parameterClass.GetAttr("empty");
+
+                    if (alternatives.Any(alternative => alternative.Name != parameter.Name)) {
+                        return signatureClass.Invoke();
+                    }
+
+                    var args = new PyTuple(new []{ parameter.Name.ToPython(), positionalOrKeyword});
+                    var kw = new PyDict();
+                    if (defaultValue != null) {
+                        kw["default"] = defaultValue;
+                    }
+                    var parameterInfo = parameterClass.Invoke(args: args, kw: kw);
+                    parameters.Append(parameterInfo);
+                }
+
+                // TODO: add return annotation
+                return signatureClass.Invoke(parameters);
+            }
+        }
 
         /// <summary>
         /// MethodBinding __getattribute__ implementation.
@@ -85,6 +127,9 @@ namespace Python.Runtime
                 case "Overloads":
                     var om = new OverloadMapper(self.m, self.target);
                     return om.pyHandle;
+                case "__signature__":
+                    var sig = self.Singature;
+                    return sig.Handle;
                 default:
                     return Runtime.PyObject_GenericGetAttr(ob, key);
             }
