@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+using Python.Runtime.Slots;
 
 namespace Python.Runtime
 {
@@ -141,6 +142,14 @@ namespace Python.Runtime
             Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, (IntPtr)tp_dictoffset);
 
             InitializeSlots(type, impl.GetType());
+
+            if (typeof(IGetAttr).IsAssignableFrom(clrType)) {
+                InitializeSlot(type, TypeOffset.tp_getattro, typeof(SlotOverrides).GetMethod(nameof(SlotOverrides.tp_getattro)));
+            }
+
+            if (typeof(ISetAttr).IsAssignableFrom(clrType)) {
+                InitializeSlot(type, TypeOffset.tp_setattro, typeof(SlotOverrides).GetMethod(nameof(SlotOverrides.tp_setattro)));
+            }
 
             IntPtr base_ = GetBaseType(clrType);
             if (base_ != IntPtr.Zero)
@@ -746,6 +755,11 @@ namespace Python.Runtime
             var offset = (int)fi.GetValue(typeOffset);
 
             Marshal.WriteIntPtr(type, offset, slot);
+        }
+
+        static void InitializeSlot(IntPtr type, int slotOffset, MethodInfo method) {
+            IntPtr thunk = Interop.GetThunk(method);
+            Marshal.WriteIntPtr(type, slotOffset, thunk);
         }
 
         /// <summary>
