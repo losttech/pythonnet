@@ -28,7 +28,7 @@ namespace Python.Runtime.Slots
             var self = (IGetAttr)((CLRObject)ManagedType.GetManagedObject(ob)).inst;
             string attr = Runtime.GetManagedString(key);
             return self.TryGetAttr(attr, out var value)
-                ? value.Handle
+                ? Runtime.SelfIncRef(value.Handle)
                 : Runtime.PyObject_GenericGetAttr(ob, key);
         }
 
@@ -39,7 +39,7 @@ namespace Python.Runtime.Slots
 
             var self = (ISetAttr)((CLRObject)ManagedType.GetManagedObject(ob)).inst;
             string attr = Runtime.GetManagedString(key);
-            return self.TrySetAttr(attr, new PyObject(val))
+            return self.TrySetAttr(attr, new PyObject(Runtime.SelfIncRef(val)))
                 ? 0
                 : Runtime.PyObject_GenericSetAttr(ob, key, val);
         }
