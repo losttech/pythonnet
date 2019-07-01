@@ -52,5 +52,36 @@ namespace Python.EmbeddingTest {
                 StringAssert.EndsWith("(<class 'list'>)", error.Message);
             }
         }
+
+        [Test]
+        public void TestNoInstanceOverloadException() {
+            var instance = new FunctionContainer();
+            using (Py.GIL()) {
+                dynamic callWith42 = PythonEngine.Eval($"lambda f: f.{nameof(FunctionContainer.Instance)}([42])");
+                var error = Assert.Throws<PythonException>(() => callWith42(instance.ToPython()));
+                Assert.AreEqual("TypeError", error.PythonTypeName);
+                string expectedMessageEnd =
+                    $"{nameof(FunctionContainer)}.{nameof(FunctionContainer.Instance)}: (<class 'list'>)";
+                StringAssert.EndsWith(expectedMessageEnd, error.Message);
+            }
+        }
+
+        [Test]
+        public void TestNoStaticOverloadException() {
+            using (Py.GIL()) {
+                var type = ((dynamic)new FunctionContainer().ToPython()).__class__;
+                dynamic callWith42 = PythonEngine.Eval($"lambda t: t.{nameof(FunctionContainer.Static)}([42])");
+                var error = Assert.Throws<PythonException>(() => callWith42(type));
+                Assert.AreEqual("TypeError", error.PythonTypeName);
+                string expectedMessageEnd =
+                    $"{nameof(FunctionContainer)}::{nameof(FunctionContainer.Static)}: (<class 'list'>)";
+                StringAssert.EndsWith(expectedMessageEnd, error.Message);
+            }
+        }
+
+        class FunctionContainer {
+            public void Instance(int arg) { }
+            public static void Static(int arg) { }
+        }
     }
 }

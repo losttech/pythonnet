@@ -512,9 +512,16 @@ namespace Python.Runtime
             if (binding == null)
             {
                 var value = new StringBuilder("No method matches given arguments");
-                if (methodinfo != null && methodinfo.Length > 0)
-                {
-                    value.Append($" for {methodinfo[0].Name}");
+                if (methodinfo != null && methodinfo.Length > 0) {
+                    value.Append(" for ");
+                    if (inst != IntPtr.Zero && inst != Runtime.PyNone) {
+                        value.Append(Runtime.PyObject_GetTypeName(inst));
+                        value.Append(methodinfo[0].IsStatic ? "::": ".");
+                    } else {
+                        value.Append(methodinfo[0].DeclaringType.Name);
+                        value.Append("::");
+                    }
+                    value.Append(methodinfo[0].Name);
                 }
 
                 long argCount = Runtime.PyTuple_Size(args);
