@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
@@ -167,16 +168,16 @@ namespace Python.Runtime
                 // I'm sure this could be made more efficient.
                 list.Sort(new MethodSorter());
                 methods = (MethodBase[])list.ToArray(typeof(MethodBase));
-                pyArgumentConverter = this.GetArgumentConverter();
+                pyArgumentConverter = GetArgumentConverter(this.methods);
                 init = true;
             }
             return methods;
         }
 
-        IPyArgumentConverter GetArgumentConverter() {
+        static IPyArgumentConverter GetArgumentConverter(IEnumerable<MethodBase> methods) {
             IPyArgumentConverter converter = null;
             Type converterType = null;
-            foreach (MethodBase method in this.methods)
+            foreach (MethodBase method in methods)
             {
                 PyArgConverterAttribute attribute = TryGetArgConverter(method.DeclaringType);
                 if (converterType == null)
@@ -326,14 +327,17 @@ namespace Python.Runtime
             MethodBase[] _methods = null;
             var pynargs = (int)Runtime.PyTuple_Size(args);
             var isGeneric = false;
+            IPyArgumentConverter argumentConverter;
             if (info != null)
             {
                 _methods = new MethodBase[1];
                 _methods.SetValue(info, 0);
+                argumentConverter = GetArgumentConverter(_methods);
             }
             else
             {
                 _methods = GetMethods();
+                argumentConverter = this.pyArgumentConverter;
             }
 
             // TODO: Clean up
@@ -351,7 +355,7 @@ namespace Python.Runtime
                     continue;
                 }
                 var outs = 0;
-                var margs = this.TryConvertArguments(pi, paramsArray, args, pynargs, defaultArgList,
+                var margs = TryConvertArguments(pi, paramsArray, argumentConverter, args, pynargs, defaultArgList,
                     needsResolution: _methods.Length > 1,
                     outs: out outs);
 
@@ -406,7 +410,8 @@ namespace Python.Runtime
         /// <param name="needsResolution"><c>true</c>, if overloading resolution is required</param>
         /// <param name="outs">Returns number of output parameters</param>
         /// <returns>An array of .NET arguments, that can be passed to a method.</returns>
-        object[] TryConvertArguments(ParameterInfo[] pi, bool paramsArray,
+        static object[] TryConvertArguments(ParameterInfo[] pi, bool paramsArray,
+            IPyArgumentConverter argumentConverter,
             IntPtr args, int pyArgCount,
             ArrayList defaultArgList,
             bool needsResolution,
@@ -436,7 +441,7 @@ namespace Python.Runtime
                     : Runtime.PyTuple_GetItem(args, paramIndex);
 
                 bool isOut;
-                if (!this.pyArgumentConverter.TryConvertArgument(
+                if (!argumentConverter.TryConvertArgument(
                     op, parameter.ParameterType, needsResolution,
                     out margs[paramIndex], out isOut))
                 {
