@@ -174,7 +174,7 @@ namespace Python.Runtime
                 {
                     byte[] bStr = PyEncoding.GetBytes(argv[i] + "\0");
                     Marshal.Copy(bStr, 0, curStrPtr, bStr.Length);
-                    Marshal.WriteIntPtr(mem + i * IntPtr.Size, curStrPtr);
+                    SafeMarshal.WriteIntPtr(mem + i * IntPtr.Size, curStrPtr);
                     curStrPtr += bStr.Length;
                 }
             }

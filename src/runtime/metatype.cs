@@ -119,7 +119,7 @@ namespace Python.Runtime
 
             // for now, move up hidden handle...
             IntPtr gc = Marshal.ReadIntPtr(base_type, TypeOffset.magic());
-            Marshal.WriteIntPtr(type, TypeOffset.magic(), gc);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.magic(), gc);
 
             return type;
         }

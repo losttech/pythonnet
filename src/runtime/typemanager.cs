@@ -83,10 +83,10 @@ namespace Python.Runtime
             int ob_size = ObjectOffset.Size(type);
 
             // Set tp_basicsize to the size of our managed instance objects.
-            Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
 
             var offset = (IntPtr)ObjectOffset.DictOffset(type);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, offset);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, offset);
 
             InitializeSlots(type, impl);
 
@@ -146,12 +146,12 @@ namespace Python.Runtime
 
             IntPtr type = AllocateTypeObject(name);
 
-            Marshal.WriteIntPtr(type, TypeOffset.ob_type, Runtime.PyCLRMetaType);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.ob_type, Runtime.PyCLRMetaType);
             Runtime.XIncref(Runtime.PyCLRMetaType);
 
-            Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_itemsize, IntPtr.Zero);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, (IntPtr)tp_dictoffset);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_itemsize, IntPtr.Zero);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, (IntPtr)tp_dictoffset);
 
             InitializeSlots(type, impl.GetType());
 
@@ -165,7 +165,7 @@ namespace Python.Runtime
 
             if (base_ != IntPtr.Zero)
             {
-                Marshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
+                SafeMarshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
                 Runtime.XIncref(base_);
             }
 
@@ -189,7 +189,7 @@ namespace Python.Runtime
 
             // Hide the gchandle of the implementation in a magic type slot.
             GCHandle gc = GCHandle.Alloc(impl);
-            Marshal.WriteIntPtr(type, TypeOffset.magic(), (IntPtr)gc);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.magic(), (IntPtr)gc);
 
             // Set the handle attributes on the implementing instance.
             impl.tpHandle = Runtime.PyCLRMetaType;
@@ -283,10 +283,10 @@ namespace Python.Runtime
 
         internal static IntPtr WriteMethodDef(IntPtr mdef, IntPtr name, IntPtr func, int flags, IntPtr doc)
         {
-            Marshal.WriteIntPtr(mdef, name);
-            Marshal.WriteIntPtr(mdef, 1 * IntPtr.Size, func);
-            Marshal.WriteInt32(mdef, 2 * IntPtr.Size, flags);
-            Marshal.WriteIntPtr(mdef, 3 * IntPtr.Size, doc);
+            SafeMarshal.WriteIntPtr(mdef, name);
+            SafeMarshal.WriteIntPtr(mdef, 1 * IntPtr.Size, func);
+            SafeMarshal.WriteInt32(mdef, 2 * IntPtr.Size, flags);
+            SafeMarshal.WriteIntPtr(mdef, 3 * IntPtr.Size, doc);
             return mdef + 4 * IntPtr.Size;
         }
 
@@ -314,7 +314,7 @@ namespace Python.Runtime
             IntPtr type = AllocateTypeObject("CLR Metatype");
             IntPtr py_type = Runtime.PyTypeType;
 
-            Marshal.WriteIntPtr(type, TypeOffset.tp_base, py_type);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_base, py_type);
             Runtime.XIncref(py_type);
 
             // Copy gc and other type slots from the base Python metatype.
@@ -358,7 +358,7 @@ namespace Python.Runtime
             // FIXME: mdef is not used
             mdef = WriteMethodDefSentinel(mdef);
 
-            Marshal.WriteIntPtr(type, TypeOffset.tp_methods, mdefStart);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_methods, mdefStart);
 
             Runtime.PyType_Ready(type);
 
@@ -378,16 +378,16 @@ namespace Python.Runtime
             // a managed type able to override implementation
 
             IntPtr type = AllocateTypeObject(name);
-            //Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)obSize);
-            //Marshal.WriteIntPtr(type, TypeOffset.tp_itemsize, IntPtr.Zero);
+            //SafeMarshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)obSize);
+            //SafeMarshal.WriteIntPtr(type, TypeOffset.tp_itemsize, IntPtr.Zero);
 
             //IntPtr offset = (IntPtr)ObjectOffset.ob_dict;
-            //Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, offset);
+            //SafeMarshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, offset);
 
             //IntPtr dc = Runtime.PyDict_Copy(dict);
-            //Marshal.WriteIntPtr(type, TypeOffset.tp_dict, dc);
+            //SafeMarshal.WriteIntPtr(type, TypeOffset.tp_dict, dc);
 
-            Marshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
             Runtime.XIncref(base_);
 
             int flags = TypeFlags.Default;
@@ -433,30 +433,30 @@ namespace Python.Runtime
             IntPtr temp = Runtime.PyString_FromString(name);
             IntPtr raw = Runtime.PyString_AsString(temp);
 #endif
-            Marshal.WriteIntPtr(type, TypeOffset.tp_name, raw);
-            Marshal.WriteIntPtr(type, TypeOffset.name, temp);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_name, raw);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.name, temp);
 
 #if PYTHON3
-            Marshal.WriteIntPtr(type, TypeOffset.qualname, temp);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.qualname, temp);
 #endif
 
             long ptr = type.ToInt64(); // 64-bit safe
 
             temp = new IntPtr(ptr + TypeOffset.nb_add);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_as_number, temp);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_as_number, temp);
 
             temp = new IntPtr(ptr + TypeOffset.sq_length);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_as_sequence, temp);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_as_sequence, temp);
 
             temp = new IntPtr(ptr + TypeOffset.mp_length);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_as_mapping, temp);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_as_mapping, temp);
 
 #if PYTHON3
             temp = new IntPtr(ptr + TypeOffset.bf_getbuffer);
 #elif PYTHON2
             temp = new IntPtr(ptr + TypeOffset.bf_getreadbuffer);
 #endif
-            Marshal.WriteIntPtr(type, TypeOffset.tp_as_buffer, temp);
+            SafeMarshal.WriteIntPtr(type, TypeOffset.tp_as_buffer, temp);
             return type;
         }
 
@@ -771,12 +771,12 @@ namespace Python.Runtime
             FieldInfo fi = typeOffset.GetField(name);
             var offset = (int)fi.GetValue(typeOffset);
 
-            Marshal.WriteIntPtr(type, offset, slot);
+            SafeMarshal.WriteIntPtr(type, offset, slot);
         }
 
         static void InitializeSlot(IntPtr type, int slotOffset, MethodInfo method) {
             IntPtr thunk = Interop.GetThunk(method);
-            Marshal.WriteIntPtr(type, slotOffset, thunk);
+            SafeMarshal.WriteIntPtr(type, slotOffset, thunk);
         }
 
         /// <summary>
@@ -822,7 +822,7 @@ namespace Python.Runtime
         internal static void CopySlot(IntPtr from, IntPtr to, int offset)
         {
             IntPtr fp = Marshal.ReadIntPtr(from, offset);
-            Marshal.WriteIntPtr(to, offset, fp);
+            SafeMarshal.WriteIntPtr(to, offset, fp);
         }
     }
 }

@@ -22,11 +22,11 @@ namespace Python.Runtime
         {
             if (Runtime.IsWindows || Runtime.Is32Bit)
             {
-                Marshal.WriteInt32(type, offset, (Int32)(flags & 0xffffffffL));
+                SafeMarshal.WriteInt32(type, offset, (Int32)(flags & 0xffffffffL));
             }
             else
             {
-                Marshal.WriteInt64(type, offset, flags);
+                SafeMarshal.WriteInt64(type, offset, flags);
             }
         }
     }

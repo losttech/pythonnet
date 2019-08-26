@@ -53,7 +53,7 @@ namespace Python.Runtime
             Runtime.XDecref(pyfilename);
             Runtime.XDecref(pydocstring);
 
-            Marshal.WriteIntPtr(pyHandle, ObjectOffset.DictOffset(pyHandle), dict);
+            SafeMarshal.WriteIntPtr(pyHandle, ObjectOffset.DictOffset(pyHandle), dict);
 
             InitializeModuleMembers();
         }
@@ -329,7 +329,7 @@ namespace Python.Runtime
                 IntPtr type = tpHandle;
                 IntPtr mro = Marshal.ReadIntPtr(type, TypeOffset.tp_mro);
                 IntPtr ext = Runtime.ExtendTuple(mro, Runtime.PyModuleType);
-                Marshal.WriteIntPtr(type, TypeOffset.tp_mro, ext);
+                SafeMarshal.WriteIntPtr(type, TypeOffset.tp_mro, ext);
                 Runtime.XDecref(mro);
                 hacked = true;
             }

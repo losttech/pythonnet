@@ -155,13 +155,13 @@ namespace Python.Runtime
                 args = Runtime.PyTuple_New(0);
             }
 
-            Marshal.WriteIntPtr(ob, ExceptionOffset.args, args);
+            SafeMarshal.WriteIntPtr(ob, ExceptionOffset.args, args);
 
 #if PYTHON3
             if (e.InnerException != null)
             {
                 IntPtr cause = CLRObject.GetInstHandle(e.InnerException);
-                Marshal.WriteIntPtr(ob, ExceptionOffset.cause, cause);
+                SafeMarshal.WriteIntPtr(ob, ExceptionOffset.cause, cause);
             }
 #endif
         }

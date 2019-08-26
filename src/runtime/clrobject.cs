@@ -18,12 +18,12 @@ namespace Python.Runtime
                 if (dict == IntPtr.Zero)
                 {
                     dict = Runtime.PyDict_New();
-                    Marshal.WriteIntPtr(py, ObjectOffset.DictOffset(tp), dict);
+                    SafeMarshal.WriteIntPtr(py, ObjectOffset.DictOffset(tp), dict);
                 }
             }
 
             GCHandle gc = GCHandle.Alloc(this);
-            Marshal.WriteIntPtr(py, ObjectOffset.magic(tp), (IntPtr)gc);
+            SafeMarshal.WriteIntPtr(py, ObjectOffset.magic(tp), (IntPtr)gc);
             tpHandle = tp;
             pyHandle = py;
             gcHandle = gc;
