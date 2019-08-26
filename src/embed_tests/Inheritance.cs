@@ -70,12 +70,19 @@ namespace Python.EmbeddingTest {
         }
     }
 
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     class CustomBaseTypeAttribute : BaseTypeAttributeBase {
         internal static PyObject BaseClass;
         public override IntPtr BaseType(Type type)
             => type != typeof(InheritanceTestBaseClassWrapper) ? IntPtr.Zero : BaseClass.Handle;
     }
 
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
+    class DefaultBaseTypeAttribute : BaseTypeAttributeBase {
+        public override IntPtr BaseType(Type type) => IntPtr.Zero;
+    }
+
+    [DefaultBaseType]
     public class PythonWrapperBase { }
 
     [CustomBaseType]

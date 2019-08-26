@@ -6,7 +6,9 @@ namespace Python.Runtime
     /// Base class for all attributes, that override base type for C# classes as seen from Python
     /// </summary>
     [AttributeUsage(AttributeTargets.Class | AttributeTargets.Delegate | AttributeTargets.Enum
-                    | AttributeTargets.Interface | AttributeTargets.Struct)]
+                    | AttributeTargets.Interface | AttributeTargets.Struct,
+        AllowMultiple = false,
+        Inherited = true)]
     public abstract class BaseTypeAttributeBase : Attribute
     {
         /// <summary>
