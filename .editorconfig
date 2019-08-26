@@ -29,9 +29,9 @@ trim_trailing_whitespace = false
 indent_style = tab
 
 [*.cs]
-csharp_new_line_before_open_brace = true
-csharp_new_line_before_else = true
-csharp_new_line_before_catch = true
-csharp_new_line_before_finally = true
+csharp_new_line_before_open_brace = true:suggestion
+csharp_new_line_before_else = true:suggestion
+csharp_new_line_before_catch = true:suggestion
+csharp_new_line_before_finally = true:suggestion
 
 csharp_prefer_braces = true:suggestion
