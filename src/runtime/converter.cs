@@ -115,13 +115,25 @@ namespace Python.Runtime
 
         internal static IntPtr ToPython(object value, Type type)
         {
-            if (value is PyObject)
+            if (value is PyObject pyObject)
             {
-                IntPtr handle = ((PyObject)value).Handle;
+                IntPtr handle = pyObject.Handle;
                 Runtime.XIncref(handle);
                 return handle;
             }
-            IntPtr result = IntPtr.Zero;
+
+            if (value is IConvertibleToPython convertible)
+            {
+                pyObject = convertible.TryConvertToPython();
+                if (pyObject != null)
+                {
+                    IntPtr handle = pyObject.Handle;
+                    Runtime.XIncref(handle);
+                    return handle;
+                }
+            }
+
+            IntPtr result;
 
             // Null always converts to None in Python.
 

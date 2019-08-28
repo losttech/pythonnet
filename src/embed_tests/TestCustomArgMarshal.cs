@@ -38,6 +38,28 @@ namespace Python.EmbeddingTest
             }
             Assert.AreEqual(expected: 42, actual: obj.LastArgument);
         }
+
+        [Test]
+        public void ConvertibleToPython() {
+            var obj = new Convertible(convert: true);
+            int converted;
+            using (Py.GIL()) {
+                dynamic identity = PythonEngine.Eval("lambda o: o");
+                converted = identity(obj);
+            }
+            Assert.AreEqual(expected: Convertible.Value, actual: converted);
+        }
+
+        [Test]
+        public void ConvertibleToPythonBypass() {
+            var obj = new Convertible(convert: false);
+            Convertible converted;
+            using (Py.GIL()) {
+                dynamic identity = PythonEngine.Eval("lambda o: o");
+                converted = identity(obj);
+            }
+            Assert.AreEqual(expected: obj, actual: converted);
+        }
     }
 
     [PyArgConverter(typeof(CustomArgConverter))]
@@ -82,5 +104,12 @@ namespace Python.EmbeddingTest
             arg = number;
             return true;
         }
+    }
+
+    class Convertible : IConvertibleToPython {
+        public const int Value = 42;
+        readonly bool convert;
+        public Convertible(bool convert) { this.convert = convert; }
+        public PyObject TryConvertToPython() => this.convert ? Value.ToPython() : null;
     }
 }
