@@ -16,8 +16,8 @@ namespace Python.Runtime
         /// If conversion this converter does not support source or target type, it returns <c>false</c> instead.
         /// </summary>
         /// <typeparam name="T">.NET type to convert Python object to</typeparam>
-        /// <param name="pyObj">A pointer to Python object to convert</param>
-        /// <param name="value">A variable, that will receive the converted object</param>
-        public abstract bool TryConvertFromPython<T>(IntPtr pyObj, out T value);
+        /// <param name="pyObj">The Python object to convert</param>
+        /// <param name="value">The variable, that will receive the converted object</param>
+        public abstract bool TryConvertFromPython<T>(PyObject pyObj, out T value);
     }
 }

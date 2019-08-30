@@ -139,8 +139,8 @@ namespace Python.EmbeddingTest
     }
 
     class ConvertibleAttribute : ConvertibleFromPythonAttribute {
-        public override bool TryConvertFromPython<T>(IntPtr pyObj, out T value) {
-            if (Runtime.PyString_Check(pyObj)) {
+        public override bool TryConvertFromPython<T>(PyObject pyObj, out T value) {
+            if (Runtime.PyString_Check(pyObj.Handle)) {
                 value = default;
                 return false;
             }

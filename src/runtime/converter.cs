@@ -475,8 +475,9 @@ namespace Python.Runtime
             }
             convert = convert.MakeGenericMethod(targetType);
 
-            bool TryConvert(IntPtr pyObj, out object result) {
-                var @params = new object[] {pyObj, null};
+            bool TryConvert(IntPtr pyHandle, out object result) {
+                var pyObj = new PyObject(Runtime.SelfIncRef(pyHandle));
+                var @params = new object[] { pyObj, null };
                 bool success = (bool)convert.Invoke(converterAttribute, @params);
                 result = @params[1];
                 return success;
