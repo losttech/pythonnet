@@ -1,4 +1,4 @@
-﻿<Project>
+<Project>
   <Import Project="Sdk.props" Sdk="Microsoft.NET.Sdk" />
 
   <PropertyGroup>
@@ -22,7 +22,7 @@
     <SolutionDir Condition="$(SolutionDir) == '' Or $(SolutionDir) == '*Undefined*'">..\..\</SolutionDir>
     <PythonBuildDir Condition="'$(TargetFramework)'=='net40' AND '$(PythonBuildDir)' == ''">$(SolutionDir)\bin\</PythonBuildDir>
     <PublishDir Condition="'$(TargetFramework)'!='net40'">$(OutputPath)\$(TargetFramework)_publish</PublishDir>
-    <LangVersion>6</LangVersion>
+    <LangVersion>7.3</LangVersion>
     <ErrorReport>prompt</ErrorReport>
     <CustomDefineConstants Condition="'$(CustomDefineConstants)' == ''">$(PYTHONNET_DEFINE_CONSTANTS)</CustomDefineConstants>
     <BaseDefineConstants>XPLAT</BaseDefineConstants>
