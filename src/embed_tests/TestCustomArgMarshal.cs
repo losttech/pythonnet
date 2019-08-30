@@ -4,6 +4,8 @@ using Python.Runtime;
 
 namespace Python.EmbeddingTest
 {
+    using Runtime = Python.Runtime.Runtime;
+
     class TestCustomArgMarshal
     {
         [OneTimeSetUp]
@@ -60,6 +62,29 @@ namespace Python.EmbeddingTest
             }
             Assert.AreEqual(expected: obj, actual: converted);
         }
+
+        [Test]
+        public void ConvertibleFromPython() {
+            using (Py.GIL()) {
+                bool ok = false;
+                void Accept(ConvertibleFromPython obj) => ok = true;
+                dynamic callWithInt = PythonEngine.Eval("lambda f: f(42)");
+                callWithInt(new Action<ConvertibleFromPython>(Accept));
+                Assert.IsTrue(ok);
+            }
+        }
+
+        [Test]
+        public void ConvertibleFromPythonBypass() {
+            using (Py.GIL()) {
+                bool ok = false;
+                void Accept(ConvertibleFromPython obj) => ok = true;
+                dynamic callWithInt = PythonEngine.Eval("lambda f: f('42')");
+                Assert.Throws<PythonException>(() =>
+                    callWithInt(new Action<ConvertibleFromPython>(Accept)),
+                    message: "Python.Runtime.PythonException : TypeError : No method matches given arguments: (<class 'str'>)");
+            }
+        }
     }
 
     [PyArgConverter(typeof(CustomArgConverter))]
@@ -112,4 +137,19 @@ namespace Python.EmbeddingTest
         public Convertible(bool convert) { this.convert = convert; }
         public PyObject TryConvertToPython() => this.convert ? Value.ToPython() : null;
     }
+
+    class ConvertibleAttribute : ConvertibleFromPythonAttribute {
+        public override bool TryConvertFromPython<T>(IntPtr pyObj, out T value) {
+            if (Runtime.PyString_Check(pyObj)) {
+                value = default;
+                return false;
+            }
+
+            value = Activator.CreateInstance<T>();
+            return true;
+        }
+    }
+
+    [Convertible]
+    class ConvertibleFromPython { }
 }

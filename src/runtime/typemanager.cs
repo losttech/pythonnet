@@ -236,7 +236,7 @@ namespace Python.Runtime
 
         static IntPtr GetBaseType(Type clrType)
         {
-            var baseOverride = GetLatestAttribute<BaseTypeAttributeBase>(clrType);
+            var baseOverride = Util.GetLatestAttribute<BaseTypeAttributeBase>(clrType);
             IntPtr handle = baseOverride?.BaseType(clrType) ?? IntPtr.Zero;
             if (handle != IntPtr.Zero)
             {
@@ -254,38 +254,6 @@ namespace Python.Runtime
             }
 
             return IntPtr.Zero;
-        }
-
-        /// <summary>
-        /// Walks the hierarchy of <paramref name="type"/> searching for the first
-        /// attribute of type <typeparamref name="T"/> from the <paramref name="type"/> down to <see cref="object"/>.
-        /// </summary>
-        /// <typeparam name="T">Type of the attribute to search for</typeparam>
-        /// <param name="type">The type potentially marked with the desired attribute</param>
-        static T GetLatestAttribute<T>(Type type) where T : Attribute
-        {
-            if (type == null)
-            {
-                throw new ArgumentNullException(nameof(type));
-            }
-
-            while (type != null)
-            {
-                var attribute = (T)type.GetCustomAttributes(attributeType: typeof(T), inherit: false).SingleOrDefault();
-                if (attribute != null)
-                {
-                    return attribute;
-                }
-
-                if (type == typeof(object))
-                {
-                    return null;
-                }
-
-                type = type.BaseType;
-            }
-
-            return null;
         }
 
         internal static IntPtr CreateSubType(IntPtr py_name, IntPtr py_base_type, IntPtr py_dict)

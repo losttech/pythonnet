@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Reflection;
@@ -352,11 +353,6 @@ namespace Python.Runtime
                 return ToArray(value, obType, out result, setError);
             }
 
-            if (obType.IsEnum)
-            {
-                return ToEnum(value, obType, out result, setError);
-            }
-
             // Conversion to 'Object' is done based on some reasonable default
             // conversions (Python string -> managed string, Python int -> Int32 etc.).
             if (obType == objectType)
@@ -443,8 +439,55 @@ namespace Python.Runtime
                 return false;
             }
 
+            TypeCode typeCode = Type.GetTypeCode(obType);
+            if (typeCode == TypeCode.Object)
+            {
+                var converter = TypeConverterCache.GetOrAdd(obType, GetConverter);
+
+                if (converter != null && converter(value, out result))
+                {
+                    return true;
+                }
+            }
+
+            if (obType.IsEnum)
+            {
+                return ToEnum(value, obType, out result, setError);
+            }
+
             return ToPrimitive(value, obType, out result, setError);
         }
+
+        static TryConvertFromPythonDelegate GetConverter(Type targetType)
+        {
+            var converterAttribute = Util.GetLatestAttribute<ConvertibleFromPythonAttribute>(targetType);
+            if (converterAttribute == null)
+            {
+                return null;
+            }
+
+            var convert = converterAttribute.GetType()
+                .GetMethod(nameof(converterAttribute.TryConvertFromPython),
+                           BindingFlags.Instance | BindingFlags.Public);
+            if (convert == null)
+            {
+                throw new NotSupportedException($"The type {converterAttribute.GetType()} must have exactly one public conversion method");
+            }
+            convert = convert.MakeGenericMethod(targetType);
+
+            bool TryConvert(IntPtr pyObj, out object result) {
+                var @params = new object[] {pyObj, null};
+                bool success = (bool)convert.Invoke(converterAttribute, @params);
+                result = @params[1];
+                return success;
+            }
+
+            return TryConvert;
+        }
+
+        delegate bool TryConvertFromPythonDelegate(IntPtr pyObj, out object result);
+        static readonly ConcurrentDictionary<Type, TryConvertFromPythonDelegate> TypeConverterCache =
+            new ConcurrentDictionary<Type, TryConvertFromPythonDelegate>();
 
         /// <summary>
         /// Convert a Python value to an instance of a primitive managed type.

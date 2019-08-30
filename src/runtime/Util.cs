@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Runtime.InteropServices;
 
 namespace Python.Runtime
@@ -28,6 +29,38 @@ namespace Python.Runtime
             {
                 Marshal.WriteInt64(type, offset, flags);
             }
+        }
+
+        /// <summary>
+        /// Walks the hierarchy of <paramref name="type"/> searching for the first
+        /// attribute of type <typeparamref name="T"/> from the <paramref name="type"/> down to <see cref="object"/>.
+        /// </summary>
+        /// <typeparam name="T">Type of the attribute to search for</typeparam>
+        /// <param name="type">The type potentially marked with the desired attribute</param>
+        internal static T GetLatestAttribute<T>(Type type) where T : Attribute
+        {
+            if (type == null)
+            {
+                throw new ArgumentNullException(nameof(type));
+            }
+
+            while (type != null)
+            {
+                var attribute = (T)type.GetCustomAttributes(attributeType: typeof(T), inherit: false).SingleOrDefault();
+                if (attribute != null)
+                {
+                    return attribute;
+                }
+
+                if (type == typeof(object))
+                {
+                    return null;
+                }
+
+                type = type.BaseType;
+            }
+
+            return null;
         }
     }
 }
