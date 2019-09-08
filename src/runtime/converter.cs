@@ -20,18 +20,18 @@ namespace Python.Runtime
         {
         }
 
-        private static NumberFormatInfo nfi;
-        private static Type objectType;
-        private static Type stringType;
-        private static Type singleType;
-        private static Type doubleType;
-        private static Type decimalType;
-        private static Type int16Type;
-        private static Type int32Type;
-        private static Type int64Type;
-        private static Type flagsType;
-        private static Type boolType;
-        private static Type typeType;
+        private static readonly NumberFormatInfo nfi;
+        private static readonly Type objectType;
+        private static readonly Type stringType;
+        private static readonly Type singleType;
+        private static readonly Type doubleType;
+        private static readonly Type decimalType;
+        private static readonly Type int16Type;
+        private static readonly Type int32Type;
+        private static readonly Type int64Type;
+        private static readonly Type flagsType;
+        private static readonly Type boolType;
+        private static readonly Type typeType;
 
         static Converter()
         {
