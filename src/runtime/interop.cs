@@ -264,6 +264,9 @@ namespace Python.Runtime
     internal class TypeFlags
     {
         public static int HeapType = (1 << 9);
+        /// <summary>
+        /// Unless this flag is set, the type can't be inherited from (equivalent to C# sealed)
+        /// </summary>
         public static int BaseType = (1 << 10);
         public static int Ready = (1 << 12);
         public static int Readying = (1 << 13);

@@ -238,8 +238,11 @@ namespace Python.Runtime
         {
             var baseOverride = Util.GetLatestAttribute<BaseTypeAttributeBase>(clrType);
             IntPtr handle = baseOverride?.BaseType(clrType) ?? IntPtr.Zero;
-            if (handle != IntPtr.Zero)
-            {
+            if (handle != IntPtr.Zero) {
+                if ((Util.ReadCLong(handle, TypeOffset.tp_flags) & TypeFlags.BaseType) == 0) {
+                    throw new InvalidProgramException("The specified base Python type can not be inherited from");
+                }
+
                 return handle;
             }
 
