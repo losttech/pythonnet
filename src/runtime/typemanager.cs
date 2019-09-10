@@ -136,10 +136,6 @@ namespace Python.Runtime
                 InitializeSlot(type, TypeOffset.tp_getattro, typeof(SlotOverrides).GetMethod(nameof(SlotOverrides.tp_getattro)));
             }
 
-            if (typeof(ISetAttr).IsAssignableFrom(clrType)) {
-                InitializeSlot(type, TypeOffset.tp_setattro, typeof(SlotOverrides).GetMethod(nameof(SlotOverrides.tp_setattro)));
-            }
-
             IntPtr base_ = GetBaseType(clrType);
             if (base_ != IntPtr.Zero)
             {

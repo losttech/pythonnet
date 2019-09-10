@@ -90,18 +90,6 @@ namespace Python.EmbeddingTest {
         }
 
         [Test]
-        public void SetAttrCanBeOverriden() {
-            var overloaded = new Overloaded();
-            using (Py.GIL())
-            using (var scope = Py.CreateScope()) {
-                var o = overloaded.ToPython();
-                scope.Set(nameof(o), o);
-                scope.Exec($"{nameof(o)}.non_existing_attr = 42");
-                Assert.AreEqual(42, overloaded.Value);
-            }
-        }
-
-        [Test]
         public void GetAttrCanCallBase() {
             var obj = new GetSetAttrDoubleInherited();
             using (Py.GIL()) {
@@ -112,26 +100,12 @@ namespace Python.EmbeddingTest {
             }
         }
 
-        [Test]
-        public void SetAttrCanCallBase() {
-            var obj = new GetSetAttrDoubleInherited();
-            using (Py.GIL())
-            using (var scope = Py.CreateScope()) {
-                var pyObj = obj.ToPython();
-                dynamic receiver = scope.Eval("dict()");
-                scope.Set(nameof(pyObj), pyObj);
-                scope.Set(nameof(receiver), receiver);
-                scope.Exec($"{nameof(pyObj)}.non_existing_attr = {nameof(receiver)}");
-                Assert.AreEqual("non_existing_attr", receiver["non_existing_attr"]);
-            }
-        }
-
         const string GetAttrFallbackValue = "undefined";
 
         class Base {}
         class Derived: Base { }
 
-        class Overloaded: Derived, IGetAttr, ISetAttr
+        class Overloaded: Derived, IGetAttr
         {
             public int Value { get; set; }
             public void IntOrStr(int arg) => this.Value = arg;
@@ -152,14 +126,9 @@ namespace Python.EmbeddingTest {
                 value = GetAttrFallbackValue.ToPython();
                 return true;
             }
-
-            public bool TrySetAttr(string name, PyObject value) {
-                this.Value = value.As<int>();
-                return true;
-            }
         }
 
-        class GetSetAttrInherited : InheritanceTestBaseClassWrapper, IGetAttr, ISetAttr {
+        class GetSetAttrInherited : InheritanceTestBaseClassWrapper, IGetAttr {
             public bool TryGetAttr(string name, out PyObject value) {
                 if (name == "NonInherited") {
                     value = "NonInherited".ToPython();
@@ -167,14 +136,6 @@ namespace Python.EmbeddingTest {
                 }
 
                 return GetAttr.TryGetBaseAttr(this.ToPython(), name, out value);
-            }
-
-            public bool TrySetAttr(string name, PyObject value) {
-                if (name == "NonInherited") return false;
-
-                var self = this.ToPython();
-                bool result = SetAttr.TrySetBaseAttr(self, name, value);
-                return result;
             }
         }
 
