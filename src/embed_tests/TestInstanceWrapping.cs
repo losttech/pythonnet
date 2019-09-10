@@ -103,7 +103,7 @@ namespace Python.EmbeddingTest {
 
         [Test]
         public void GetAttrCanCallBase() {
-            var obj = new GetSetAttrInherited();
+            var obj = new GetSetAttrDoubleInherited();
             using (Py.GIL()) {
                 var pyObj = obj.ToPython();
                 dynamic getNonexistingAttr = PythonEngine.Eval("lambda o: o.non_existing_attr");
@@ -114,7 +114,7 @@ namespace Python.EmbeddingTest {
 
         [Test]
         public void SetAttrCanCallBase() {
-            var obj = new GetSetAttrInherited();
+            var obj = new GetSetAttrDoubleInherited();
             using (Py.GIL())
             using (var scope = Py.CreateScope()) {
                 var pyObj = obj.ToPython();
@@ -166,7 +166,7 @@ namespace Python.EmbeddingTest {
                     return true;
                 }
 
-                return GetAttr.TryGetBaseAttr(this.ToPython(), CustomBaseTypeAttribute.BaseClass, name, out value);
+                return GetAttr.TryGetBaseAttr(this.ToPython(), name, out value);
             }
 
             public bool TrySetAttr(string name, PyObject value) {
@@ -177,5 +177,7 @@ namespace Python.EmbeddingTest {
                 return result;
             }
         }
+
+        class GetSetAttrDoubleInherited: GetSetAttrInherited { }
     }
 }

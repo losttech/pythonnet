@@ -349,6 +349,7 @@ namespace Python.Runtime
             PyNone = PyObject_GetAttrString(op, "None");
             PyTrue = PyObject_GetAttrString(op, "True");
             PyFalse = PyObject_GetAttrString(op, "False");
+            PySuper = PyObject_GetAttrString(op, "super");
 
             PyBoolType = PyObject_Type(PyTrue);
             PyNoneType = PyObject_Type(PyNone);
@@ -547,6 +548,7 @@ namespace Python.Runtime
         internal static IntPtr PyFalse;
         internal static IntPtr PyNone;
         internal static IntPtr Error;
+        internal static IntPtr PySuper;
 
         private static readonly Lazy<PyObject> inspect =
             new Lazy<PyObject>(() => PythonEngine.ImportModule("inspect"), isThreadSafe: false);

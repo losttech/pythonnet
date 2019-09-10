@@ -692,6 +692,37 @@ namespace Python.Runtime
             return result;
         }
 
+        /// <summary>
+        /// InvokeMethod Method
+        /// </summary>
+        /// <remarks>
+        /// Invoke the named method of the object with the given arguments.
+        /// A PythonException is raised if the invokation is unsuccessful.
+        /// </remarks>
+        public PyObject InvokeMethod(PyObject name, params PyObject[] args)
+        {
+            PyObject method = GetAttr(name);
+            PyObject result = method.Invoke(args);
+            method.Dispose();
+            return result;
+        }
+
+
+        /// <summary>
+        /// InvokeMethod Method
+        /// </summary>
+        /// <remarks>
+        /// Invoke the named method of the object with the given arguments.
+        /// A PythonException is raised if the invokation is unsuccessful.
+        /// </remarks>
+        public PyObject InvokeMethod(PyObject name, PyTuple args)
+        {
+            PyObject method = GetAttr(name);
+            PyObject result = method.Invoke(args);
+            method.Dispose();
+            return result;
+        }
+
 
         /// <summary>
         /// InvokeMethod Method

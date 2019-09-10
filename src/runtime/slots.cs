@@ -1,5 +1,5 @@
 using System;
-using System.Runtime.InteropServices;
+using System.Runtime.CompilerServices;
 
 namespace Python.Runtime.Slots
 {
@@ -28,6 +28,7 @@ namespace Python.Runtime.Slots
 
             var self = (IGetAttr)((CLRObject)ManagedType.GetManagedObject(ob)).inst;
             string attr = Runtime.GetManagedString(key);
+            RuntimeHelpers.EnsureSufficientExecutionStack();
             return self.TryGetAttr(attr, out var value)
                 ? Runtime.SelfIncRef(value.Handle)
                 : Runtime.PyObject_GenericGetAttr(ob, key);
@@ -40,6 +41,7 @@ namespace Python.Runtime.Slots
 
             var self = (ISetAttr)((CLRObject)ManagedType.GetManagedObject(ob)).inst;
             string attr = Runtime.GetManagedString(key);
+            RuntimeHelpers.EnsureSufficientExecutionStack();
             return self.TrySetAttr(attr, new PyObject(Runtime.SelfIncRef(val)))
                 ? 0
                 : Runtime.PyObject_GenericSetAttr(ob, key, val);
@@ -47,41 +49,7 @@ namespace Python.Runtime.Slots
     }
 
     public static class GetAttr {
-        static bool TryGetBaseAttr(PyObject self, IntPtr @base, string name, out PyObject result) {
-            if (self == null) throw new ArgumentNullException(nameof(self));
-            if (@base == IntPtr.Zero) throw new ArgumentNullException(nameof(@base));
-            if (name == null) throw new ArgumentNullException(nameof(name));
-
-            result = null;
-
-            for (; @base != IntPtr.Zero; @base = Marshal.ReadIntPtr(@base, TypeOffset.tp_base)) {
-                IntPtr getAttr = Marshal.ReadIntPtr(@base, TypeOffset.tp_getattro);
-                if (getAttr == IntPtr.Zero) continue;
-                IntPtr resultPtr = NativeCall.Call_2(fp: getAttr, self.Handle, name.ToPython().Handle);
-                if (resultPtr != IntPtr.Zero) {
-                    result = new PyObject(Runtime.SelfIncRef(resultPtr));
-                    return true;
-                }
-
-                return false;
-            }
-
-            return false;
-        }
-
-        /// <summary>
-        /// Tries to call base type's __getattr__ on the specified instance.
-        /// <para>Only use when base.TryGetAttr is not available.</para>
-        /// </summary>
-        /// <param name="self">Python object to call __getattr__ on</param>
-        /// <param name="baseType">Type in the object base type hierarchy, whose __getattr__ to call</param>
-        /// <param name="name">Name of the attribute to retrieve</param>
-        /// <param name="result">Reference to a variable, that will receive the attribute value</param>
-        public static bool TryGetBaseAttr(PyObject self, PyObject baseType, string name, out PyObject result) {
-            if (baseType == null) throw new ArgumentNullException(nameof(baseType));
-
-            return TryGetBaseAttr(self, baseType.Handle, name, out result);
-        }
+        static readonly PyObject getAttr = "__getattr__".ToPython();
 
         /// <summary>
         /// Tries to call base type's __getattr__ on the specified instance.
@@ -92,41 +60,48 @@ namespace Python.Runtime.Slots
         /// <param name="result">Reference to a variable, that will receive the attribute value</param>
         public static bool TryGetBaseAttr(PyObject self, string name, out PyObject result) {
             if (self == null) throw new ArgumentNullException(nameof(self));
+            if (name == null) throw new ArgumentNullException(nameof(name));
 
-            IntPtr pythonType = Runtime.PyObject_TYPE(self.Handle);
-            IntPtr pythonBase = ClassObject.GetPythonBase(pythonType);
-            return TryGetBaseAttr(self, pythonBase, name, out result);
+            using (var super = new PyObject(Runtime.PySuper))
+            using (var @class = self.GetAttr("__class__"))
+            using (var @base = super.Invoke(@class, self)) {
+                if (!@base.HasAttr(getAttr)) {
+                    result = null;
+                    return false;
+                }
+
+                using (var pythonName = name.ToPython()) {
+                    result = @base.InvokeMethod(getAttr, pythonName);
+                    return true;
+                }
+            }
         }
     }
 
     public static class SetAttr {
-        public static bool TrySetBaseAttr(PyObject self, PyObject baseType, string name, PyObject value) {
-            if (baseType == null) throw new ArgumentNullException(nameof(baseType));
-            return TrySetBaseAttr(self, baseType.Handle, name, value);
-        }
+        static readonly PyObject setAttr = "__setattr__".ToPython();
+
+        /// <summary>
+        /// Tries to call base type's __setattr__ on the specified instance.
+        /// <para>Only use when base.TrySetAttr is not available.</para>
+        /// </summary>
+        /// <param name="self">Python object to call __setattr__ on</param>
+        /// <param name="name">Name of the attribute to write</param>
+        /// <param name="value">New value for the attribute</param>
         public static bool TrySetBaseAttr(PyObject self, string name, PyObject value) {
-            if (self == null) throw new ArgumentNullException(nameof(self));
-
-            IntPtr pythonType = Runtime.PyObject_TYPE(self.Handle);
-            IntPtr pythonBase = ClassObject.GetPythonBase(pythonType);
-            return TrySetBaseAttr(self, pythonBase, name, value);
-        }
-
-        static bool TrySetBaseAttr(PyObject self, IntPtr @base, string name, PyObject value) {
             if (self == null) throw new ArgumentNullException(nameof(self));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            for (; @base != IntPtr.Zero; @base = Marshal.ReadIntPtr(@base, TypeOffset.tp_base)) {
-                IntPtr setAttr = Marshal.ReadIntPtr(@base, TypeOffset.tp_setattro);
-                if (setAttr == IntPtr.Zero) continue;
+            using (var super = new PyObject(Runtime.PySuper))
+            using (var @class = self.GetAttr("__class__"))
+            using (var @base = super.Invoke(@class, self)) {
+                if (!@base.HasAttr(setAttr)) return false;
 
-                int result = NativeCall.Int_Call_3(fp: setAttr, self.Handle, name.ToPython().Handle,
-                    value?.Handle ?? IntPtr.Zero);
-                if (result != 0) throw PythonException.FromPyErr();
-                return true;
+                using (var pythonName = name.ToPython()) {
+                    @base.InvokeMethod(setAttr, pythonName, value)?.Dispose();
+                    return true;
+                }
             }
-
-            return false;
         }
     }
 }
