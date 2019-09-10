@@ -88,7 +88,13 @@ namespace Python.EmbeddingTest {
     [CustomBaseType]
     public class InheritanceTestBaseClassWrapper : PythonWrapperBase {
         public const string ClassName = "InheritanceTestBaseClass";
-        public const string ClassSourceCode = "class " + ClassName + ": pass\n" + ClassName + " = " + ClassName + "\n";
+        public const string ClassSourceCode = "class " + ClassName +
+@":
+  def __getattr__(self, name):
+    return '__getattr__:' + name
+  def __setattr__(self, name, value):
+    value[name] = name
+" + ClassName + " = " + ClassName + "\n";
     }
 
     public class Inherited : InheritanceTestBaseClassWrapper {

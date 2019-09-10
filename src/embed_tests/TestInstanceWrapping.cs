@@ -9,6 +9,11 @@ namespace Python.EmbeddingTest {
         [OneTimeSetUp]
         public void SetUp() {
             PythonEngine.Initialize();
+            using (Py.GIL()) {
+                var locals = new PyDict();
+                PythonEngine.Exec(InheritanceTestBaseClassWrapper.ClassSourceCode, locals: locals.Handle);
+                CustomBaseTypeAttribute.BaseClass = locals[InheritanceTestBaseClassWrapper.ClassName];
+            }
         }
 
         [OneTimeTearDown]
@@ -96,6 +101,31 @@ namespace Python.EmbeddingTest {
             }
         }
 
+        [Test]
+        public void GetAttrCanCallBase() {
+            var obj = new GetSetAttrInherited();
+            using (Py.GIL()) {
+                var pyObj = obj.ToPython();
+                dynamic getNonexistingAttr = PythonEngine.Eval("lambda o: o.non_existing_attr");
+                string nonexistentAttrValue = getNonexistingAttr(pyObj);
+                Assert.AreEqual("__getattr__:non_existing_attr", nonexistentAttrValue);
+            }
+        }
+
+        [Test]
+        public void SetAttrCanCallBase() {
+            var obj = new GetSetAttrInherited();
+            using (Py.GIL())
+            using (var scope = Py.CreateScope()) {
+                var pyObj = obj.ToPython();
+                dynamic receiver = scope.Eval("dict()");
+                scope.Set(nameof(pyObj), pyObj);
+                scope.Set(nameof(receiver), receiver);
+                scope.Exec($"{nameof(pyObj)}.non_existing_attr = {nameof(receiver)}");
+                Assert.AreEqual("non_existing_attr", receiver["non_existing_attr"]);
+            }
+        }
+
         const string GetAttrFallbackValue = "undefined";
 
         class Base {}
@@ -126,6 +156,25 @@ namespace Python.EmbeddingTest {
             public bool TrySetAttr(string name, PyObject value) {
                 this.Value = value.As<int>();
                 return true;
+            }
+        }
+
+        class GetSetAttrInherited : InheritanceTestBaseClassWrapper, IGetAttr, ISetAttr {
+            public bool TryGetAttr(string name, out PyObject value) {
+                if (name == "NonInherited") {
+                    value = "NonInherited".ToPython();
+                    return true;
+                }
+
+                return GetAttr.TryGetBaseAttr(this.ToPython(), CustomBaseTypeAttribute.BaseClass, name, out value);
+            }
+
+            public bool TrySetAttr(string name, PyObject value) {
+                if (name == "NonInherited") return false;
+
+                var self = this.ToPython();
+                bool result = SetAttr.TrySetBaseAttr(self, name, value);
+                return result;
             }
         }
     }

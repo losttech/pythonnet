@@ -46,6 +46,12 @@ namespace Python.Runtime
         {
             return ((Int_3_Delegate)Marshal.GetDelegateForFunctionPointer(fp, typeof(Int_3_Delegate)))(a1, a2, a3);
         }
+
+        public static IntPtr Call_2(IntPtr fp, IntPtr a1, IntPtr a2)
+        {
+            var d = (Interop.BinaryFunc)Marshal.GetDelegateForFunctionPointer(fp, typeof(Interop.BinaryFunc));
+            return d(a1, a2);
+        }
 #else
         private static AssemblyBuilder aBuilder;
         private static ModuleBuilder mBuilder;
@@ -147,6 +153,11 @@ namespace Python.Runtime
             Impl.Void_Call_1(fp, a1);
         }
 
+        public static IntPtr Call_2(IntPtr fp, IntPtr a1, IntPtr a2)
+        {
+            return Impl.Call_2(fp, a1, a2);
+        }
+
         public static IntPtr Call_3(IntPtr fp, IntPtr a1, IntPtr a2, IntPtr a3)
         {
             return Impl.Call_3(fp, a1, a2, a3);
@@ -168,6 +179,8 @@ namespace Python.Runtime
         void Void_Call_0(IntPtr funcPtr);
 
         void Void_Call_1(IntPtr funcPtr, IntPtr arg1);
+
+        IntPtr Call_2(IntPtr funcPtr, IntPtr a1, IntPtr a2);
 
         int Int_Call_3(IntPtr funcPtr, IntPtr t, IntPtr n, IntPtr v);
 

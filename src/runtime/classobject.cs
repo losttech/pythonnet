@@ -356,7 +356,7 @@ namespace Python.Runtime
         /// Get the first base class in the class hierarchy
         /// of the specified .NET type, that is defined in Python.
         /// </summary>
-        static IntPtr GetPythonBase(IntPtr tp) {
+        internal static IntPtr GetPythonBase(IntPtr tp) {
             Debug.Assert(IsManagedType(tp));
             do {
                 tp = Marshal.ReadIntPtr(tp, TypeOffset.tp_base);
