@@ -132,8 +132,8 @@ namespace Python.Runtime
             // managed type, filling the Python type slots with thunks that
             // point to the managed methods providing the implementation.
 
-
             IntPtr tp = TypeManager.GetTypeHandle(impl, type);
+            Exceptions.ErrorCheck(tp);
             impl.tpHandle = tp;
 
             // Finally, initialize the class __dict__ and return the object.

@@ -159,7 +159,10 @@ namespace Python.Runtime
             // that the type of the new type must PyType_Type at the time we
             // call this, else PyType_Ready will skip some slot initialization.
 
-            Runtime.PyType_Ready(type);
+            if (Runtime.PyType_Ready(type) != 0)
+            {
+                return IntPtr.Zero;
+            }
 
             IntPtr dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             string mn = clrType.Namespace ?? "";
@@ -342,6 +345,10 @@ namespace Python.Runtime
                 // create the new ManagedType and python type
                 ClassBase subClass = ClassManager.GetClass(subType);
                 IntPtr py_type = GetTypeHandle(subClass, subType);
+                if (py_type == IntPtr.Zero)
+                {
+                    return IntPtr.Zero;
+                }
 
                 // by default the class dict will have all the C# methods in it, but as this is a
                 // derived class we want the python overrides in there instead if they exist.
