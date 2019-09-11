@@ -77,8 +77,7 @@ namespace Python.EmbeddingTest
         [Test]
         public void ConvertibleFromPythonBypass() {
             using (Py.GIL()) {
-                bool ok = false;
-                void Accept(ConvertibleFromPython obj) => ok = true;
+                void Accept(ConvertibleFromPython obj) { }
                 dynamic callWithInt = PythonEngine.Eval("lambda f: f('42')");
                 Assert.Throws<PythonException>(() =>
                     callWithInt(new Action<ConvertibleFromPython>(Accept)),
