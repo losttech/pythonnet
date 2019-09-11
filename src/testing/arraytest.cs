@@ -297,7 +297,7 @@ namespace Python.Test
     }
 
 
-    public class ArrayConversionTest
+    public static class ArrayConversionTest
     {
         public static Spam[] EchoRange(Spam[] items)
         {

@@ -5,7 +5,7 @@ namespace Python.Test
     /// <summary>
     /// Supports CLR class unit tests.
     /// </summary>
-    public class ClassTest
+    public static class ClassTest
     {
         public static ArrayList GetArrayList()
         {

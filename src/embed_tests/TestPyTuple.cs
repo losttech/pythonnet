@@ -153,9 +153,7 @@ namespace Python.EmbeddingTest
             Assert.IsInstanceOf(typeof(PyTuple), t);
         }
 
-        /// <remarks>
-        /// TODO: Should this throw ArgumentError instead?
-        /// </remarks>
+        // TODO: Should this throw ArgumentError instead?
         [Test]
         public void TestInvalidAsTuple()
         {

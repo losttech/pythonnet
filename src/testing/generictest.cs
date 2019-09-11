@@ -36,27 +36,27 @@ namespace Python.Test
     }
 
 
-    public class GenericNameTest1
+    public static class GenericNameTest1
     {
         public static int value = 0;
     }
 
-    public class GenericNameTest1<T>
+    public static class GenericNameTest1<T>
     {
         public static int value = 1;
     }
 
-    public class GenericNameTest1<T, U>
+    public static class GenericNameTest1<T, U>
     {
         public static int value = 2;
     }
 
-    public class GenericNameTest2<T>
+    public static class GenericNameTest2<T>
     {
         public static int value = 1;
     }
 
-    public class GenericNameTest2<T, U>
+    public static class GenericNameTest2<T, U>
     {
         public static int value = 2;
     }

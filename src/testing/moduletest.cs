@@ -4,7 +4,7 @@ using System.Threading;
 
 namespace Python.Test
 {
-    public class ModuleTest
+    public static class ModuleTest
     {
         private static Thread _thread;
 

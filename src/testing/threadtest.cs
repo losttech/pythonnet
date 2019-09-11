@@ -6,7 +6,7 @@ namespace Python.Test
     /// <summary>
     /// Supports CLR threading / reentrant unit tests.
     /// </summary>
-    public class ThreadTest
+    public static class ThreadTest
     {
         private static PyObject module;
 

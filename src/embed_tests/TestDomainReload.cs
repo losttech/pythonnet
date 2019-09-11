@@ -14,7 +14,7 @@ using Python.Runtime;
 #if !NETSTANDARD && !NETCOREAPP
 namespace Python.EmbeddingTest
 {
-    class TestDomainReload
+    static class TestDomainReload
     {
         /// <summary>
         /// Test that the python runtime can survive a C# domain reload without crashing.

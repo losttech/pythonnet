@@ -4,9 +4,7 @@ using Python.Runtime;
 
 namespace Python.EmbeddingTest
 {
-    /// <remarks>
-    /// PyFloat implementation isn't complete, thus tests aren't complete.
-    /// </remarks>
+    // PyFloat implementation isn't complete, thus tests aren't complete.
     public class TestPyFloat
     {
         [OneTimeSetUp]

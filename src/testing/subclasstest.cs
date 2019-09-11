@@ -74,7 +74,7 @@ namespace Python.Test
         }
     }
 
-    public class FunctionsTest
+    public static class FunctionsTest
     {
         public static string test_foo(IInterfaceTest x)
         {

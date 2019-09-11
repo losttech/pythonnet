@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Python.EmbeddingTest
 {
-    class TestTypeManager
+    static class TestTypeManager
     {
         [SetUp]
         public static void Init()
