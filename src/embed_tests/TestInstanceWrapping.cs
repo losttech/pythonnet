@@ -123,6 +123,12 @@ namespace Python.EmbeddingTest {
             public void BaseOrDerived(Derived _) => this.Value = Derived;
 
             public bool TryGetAttr(string name, out PyObject value) {
+                using (var self = this.ToPython()) {
+                    if (GetAttr.TryGetBaseAttr(self, name, out value)
+                        || GetAttr.GenericGetAttr(self, name, out value))
+                        return true;
+                }
+
                 value = GetAttrFallbackValue.ToPython();
                 return true;
             }

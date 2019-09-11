@@ -12,8 +12,8 @@ namespace Python.Runtime.Slots
 
     static class SlotOverrides {
         public static IntPtr tp_getattro(IntPtr ob, IntPtr key) {
-            IntPtr genericResult = Runtime.PyObject_GenericGetAttr(ob, key);
-            if (genericResult != IntPtr.Zero || !Runtime.PyString_Check(key)) {
+            if (!Runtime.PyString_Check(key)) {
+                IntPtr genericResult = Runtime.PyObject_GenericGetAttr(ob, key);
                 return genericResult;
             }
 
@@ -43,7 +43,7 @@ namespace Python.Runtime.Slots
             if (name == null) throw new ArgumentNullException(nameof(name));
 
             using (var super = new PyObject(Runtime.PySuper))
-            using (var @class = self.GetAttr("__class__"))
+            using (var @class = self.GetPythonType())
             using (var @base = super.Invoke(@class, self)) {
                 if (!@base.HasAttr(getAttr)) {
                     result = null;
@@ -54,6 +54,26 @@ namespace Python.Runtime.Slots
                     result = @base.InvokeMethod(getAttr, pythonName);
                     return true;
                 }
+            }
+        }
+
+        public static bool GenericGetAttr(PyObject self, string name, out PyObject result) {
+            if (self == null) throw new ArgumentNullException(nameof(self));
+            if (name == null) throw new ArgumentNullException(nameof(name));
+
+            using (var pyName = name.ToPython()) {
+                IntPtr pyResult = Runtime.PyObject_GenericGetAttr(self.Handle, pyName.Handle);
+                if (pyResult == IntPtr.Zero) {
+                    result = null;
+                    if (!PythonException.Matches(Exceptions.AttributeError)) {
+                        throw PythonException.FromPyErr();
+                    }
+
+                    Exceptions.Clear();
+                    return false;
+                }
+                result = new PyObject(Runtime.SelfIncRef(pyResult));
+                return true;
             }
         }
     }
