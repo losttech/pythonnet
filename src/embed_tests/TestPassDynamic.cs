@@ -20,6 +20,7 @@ namespace Python.EmbeddingTest {
         }
 
         [Test]
+        [Ignore("Passing dynamic objects is no implemented. https://github.com/pythonnet/pythonnet/issues/952")]
         public void ExpandoProperties() {
             dynamic expando = new ExpandoObject();
             expando.test = 42;
