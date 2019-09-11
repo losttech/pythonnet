@@ -68,6 +68,16 @@ namespace Python.EmbeddingTest {
                 Assert.IsTrue(properlyInherited);
             }
         }
+
+        [Test]
+        public void CanCallInheritedMethodWithPythonBase() {
+            var instance = new Inherited();
+            using (Py.GIL()) {
+                dynamic callBase = PythonEngine.Eval($"lambda o: o.{nameof(PythonWrapperBase.WrapperBaseMethod)}()");
+                string result = (string)callBase(instance);
+                Assert.AreEqual(result, nameof(PythonWrapperBase.WrapperBaseMethod));
+            }
+        }
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
@@ -83,7 +93,9 @@ namespace Python.EmbeddingTest {
     }
 
     [DefaultBaseType]
-    public class PythonWrapperBase { }
+    public class PythonWrapperBase {
+        public string WrapperBaseMethod() => nameof(WrapperBaseMethod);
+    }
 
     [CustomBaseType]
     public class InheritanceTestBaseClassWrapper : PythonWrapperBase {
