@@ -11,7 +11,7 @@ namespace Python.Runtime
     /// The TypeManager class is responsible for building binary-compatible
     /// Python type objects that are implemented in managed code.
     /// </summary>
-    internal class TypeManager
+    internal static class TypeManager
     {
         private static BindingFlags tbFlags;
         private static Dictionary<Type, IntPtr> cache;

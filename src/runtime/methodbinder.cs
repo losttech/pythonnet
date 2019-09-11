@@ -404,6 +404,7 @@ namespace Python.Runtime
         /// </summary>
         /// <param name="pi">Information about expected parameters</param>
         /// <param name="paramsArray"><c>true</c>, if the last parameter is a params array.</param>
+        /// <param name="argumentConverter">Converter, that will be used to convert marshal arguments to .NET</param>
         /// <param name="args">A pointer to the Python argument tuple</param>
         /// <param name="pyArgCount">Number of arguments, passed by Python</param>
         /// <param name="defaultArgList">A list of default values for omitted parameters</param>

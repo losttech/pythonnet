@@ -18,6 +18,13 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Repo", "Repo", "{B6E8FE48-C
 		global.json = global.json
 	EndProjectSection
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tools", "tools", "{A778EAEA-4A18-4EC1-BBBA-C0992E785F4E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "geninterop", "geninterop", "{18611402-C364-4564-9954-5F02DA8D1497}"
+	ProjectSection(SolutionItems) = preProject
+		tools\geninterop\geninterop.py = tools\geninterop\geninterop.py
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -47,6 +54,9 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{18611402-C364-4564-9954-5F02DA8D1497} = {A778EAEA-4A18-4EC1-BBBA-C0992E785F4E}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {A6347B90-BBE6-4E45-90BF-1BD8B76069E3}

@@ -204,8 +204,9 @@ namespace Python.Runtime
             {
                 assembly = Assembly.Load(name);
             }
-            catch (Exception)
+            catch (Exception e)
             {
+                Trace.WriteLine($"{nameof(AssemblyManager)} failed to load assembly {name}: {e}");
                 //if (!(e is System.IO.FileNotFoundException))
                 //{
                 //    throw;
@@ -228,8 +229,9 @@ namespace Python.Runtime
                 {
                     assembly = Assembly.LoadFrom(path);
                 }
-                catch (Exception)
+                catch (Exception e)
                 {
+                    Trace.WriteLine($"{nameof(AssemblyManager)} failed to load assembly {name}: {e}");
                 }
             }
             return assembly;
@@ -255,8 +257,9 @@ namespace Python.Runtime
                     {
                         assembly = Assembly.LoadFrom(name);
                     }
-                    catch (Exception)
+                    catch (Exception e)
                     {
+                        Trace.WriteLine($"{nameof(AssemblyManager)} failed to load assembly {name}: {e}");
                     }
                 }
             }

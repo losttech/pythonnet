@@ -67,7 +67,7 @@ namespace Python.Runtime
             return res;
         }
 
-        class Linux
+        static class Linux
         {
             [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern IntPtr dlopen(String fileName, int flags);
@@ -82,7 +82,7 @@ namespace Python.Runtime
             internal static extern IntPtr dlerror();
         }
 
-        class Mac
+        static class Mac
         {
             [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
             public static extern IntPtr dlopen(String fileName, int flags);
@@ -150,7 +150,7 @@ namespace Python.Runtime
     /// the responsibility of the caller to have acquired the GIL
     /// before calling any of these methods.
     /// </summary>
-    public class Runtime
+    public static class Runtime
     {
         static Runtime() {
             lock (VerLock) {
@@ -1095,6 +1095,7 @@ namespace Python.Runtime
             return PyInt_FromLong(v);
         }
 
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         private static IntPtr PyInt_FromLong(IntPtr value) => Delegates.PyInt_FromLong(value);
 
         internal static int PyInt_AsLong(IntPtr value) => Delegates.PyInt_AsLong(value);
@@ -1107,34 +1108,34 @@ namespace Python.Runtime
             return PyObject_TYPE(ob) == PyLongType;
         }
 
-        
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static IntPtr PyLong_FromLong(long value) => Delegates.PyLong_FromLong(value);
 
-        
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static IntPtr PyLong_FromUnsignedLong(uint value) => Delegates.PyLong_FromUnsignedLong(value);
 
         
         internal static IntPtr PyLong_FromDouble(double value) => Delegates.PyLong_FromDouble(value);
 
-        
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static IntPtr PyLong_FromLongLong(long value) => Delegates.PyLong_FromLongLong(value);
 
-        
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static IntPtr PyLong_FromUnsignedLongLong(ulong value) => Delegates.PyLong_FromUnsignedLongLong(value);
 
         
         internal static IntPtr PyLong_FromString(string value, IntPtr end, int radix) => Delegates.PyLong_FromString(value, end, radix);
 
-        
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static int PyLong_AsLong(IntPtr value) => Delegates.PyLong_AsLong(value);
 
-        
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static uint PyLong_AsUnsignedLong(IntPtr value) => Delegates.PyLong_AsUnsignedLong(value);
 
-        
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static long PyLong_AsLongLong(IntPtr value) => Delegates.PyLong_AsLongLong(value);
 
-        
+        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static ulong PyLong_AsUnsignedLongLong(IntPtr value) => Delegates.PyLong_AsUnsignedLongLong(value);
 
         internal static bool PyFloat_Check(IntPtr ob)
@@ -2048,92 +2049,92 @@ namespace Python.Runtime
             internal static Py_IncRefDelegate Py_IncRef { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_IncRefDelegate(IntPtr ob);
+            internal delegate void Py_IncRefDelegate(IntPtr ob);
 
             internal static Py_DecRefDelegate Py_DecRef { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_DecRefDelegate(IntPtr ob);
+            internal delegate void Py_DecRefDelegate(IntPtr ob);
 
             internal static Py_InitializeDelegate Py_Initialize { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_InitializeDelegate();
+            internal delegate void Py_InitializeDelegate();
 
             internal static Py_InitializeExDelegate Py_InitializeEx { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_InitializeExDelegate(int initsigs);
+            internal delegate void Py_InitializeExDelegate(int initsigs);
 
             internal static Py_IsInitializedDelegate Py_IsInitialized { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int Py_IsInitializedDelegate();
+            internal delegate int Py_IsInitializedDelegate();
 
             internal static Py_FinalizeDelegate Py_Finalize { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_FinalizeDelegate();
+            internal delegate void Py_FinalizeDelegate();
 
             internal static Py_NewInterpreterDelegate Py_NewInterpreter { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_NewInterpreterDelegate();
+            internal delegate IntPtr Py_NewInterpreterDelegate();
 
             internal static Py_EndInterpreterDelegate Py_EndInterpreter { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_EndInterpreterDelegate(IntPtr threadState);
+            internal delegate void Py_EndInterpreterDelegate(IntPtr threadState);
 
             internal static PyThreadState_NewDelegate PyThreadState_New { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyThreadState_NewDelegate(IntPtr istate);
+            internal delegate IntPtr PyThreadState_NewDelegate(IntPtr istate);
 
             internal static PyThreadState_GetDelegate PyThreadState_Get { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyThreadState_GetDelegate();
+            internal delegate IntPtr PyThreadState_GetDelegate();
 
             internal static PyThread_get_key_valueDelegate PyThread_get_key_value { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyThread_get_key_valueDelegate(IntPtr key);
+            internal delegate IntPtr PyThread_get_key_valueDelegate(IntPtr key);
 
             internal static PyThread_get_thread_identDelegate PyThread_get_thread_ident { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyThread_get_thread_identDelegate();
+            internal delegate int PyThread_get_thread_identDelegate();
 
             internal static PyThread_set_key_valueDelegate PyThread_set_key_value { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyThread_set_key_valueDelegate(IntPtr key, IntPtr value);
+            internal delegate int PyThread_set_key_valueDelegate(IntPtr key, IntPtr value);
 
             internal static PyThreadState_SwapDelegate PyThreadState_Swap { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyThreadState_SwapDelegate(IntPtr key);
+            internal delegate IntPtr PyThreadState_SwapDelegate(IntPtr key);
 
             internal static PyGILState_EnsureDelegate PyGILState_Ensure { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyGILState_EnsureDelegate();
+            internal delegate IntPtr PyGILState_EnsureDelegate();
 
             internal static PyGILState_ReleaseDelegate PyGILState_Release { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyGILState_ReleaseDelegate(IntPtr gs);
+            internal delegate void PyGILState_ReleaseDelegate(IntPtr gs);
 
             internal static PyGILState_GetThisThreadStateDelegate PyGILState_GetThisThreadState { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyGILState_GetThisThreadStateDelegate();
+            internal delegate IntPtr PyGILState_GetThisThreadStateDelegate();
 
             internal static Py_MainDelegate Py_Main { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int Py_MainDelegate(
+            internal delegate int Py_MainDelegate(
             int argc,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StrArrayMarshaler))] string[] argv
         );
@@ -2141,582 +2142,582 @@ namespace Python.Runtime
             internal static PyEval_InitThreadsDelegate PyEval_InitThreads { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyEval_InitThreadsDelegate();
+            internal delegate void PyEval_InitThreadsDelegate();
 
             internal static PyEval_ThreadsInitializedDelegate PyEval_ThreadsInitialized { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyEval_ThreadsInitializedDelegate();
+            internal delegate int PyEval_ThreadsInitializedDelegate();
 
             internal static PyEval_AcquireLockDelegate PyEval_AcquireLock { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyEval_AcquireLockDelegate();
+            internal delegate void PyEval_AcquireLockDelegate();
 
             internal static PyEval_ReleaseLockDelegate PyEval_ReleaseLock { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyEval_ReleaseLockDelegate();
+            internal delegate void PyEval_ReleaseLockDelegate();
 
             internal static PyEval_AcquireThreadDelegate PyEval_AcquireThread { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyEval_AcquireThreadDelegate(IntPtr tstate);
+            internal delegate void PyEval_AcquireThreadDelegate(IntPtr tstate);
 
             internal static PyEval_ReleaseThreadDelegate PyEval_ReleaseThread { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyEval_ReleaseThreadDelegate(IntPtr tstate);
+            internal delegate void PyEval_ReleaseThreadDelegate(IntPtr tstate);
 
             internal static PyEval_SaveThreadDelegate PyEval_SaveThread { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyEval_SaveThreadDelegate();
+            internal delegate IntPtr PyEval_SaveThreadDelegate();
 
             internal static PyEval_RestoreThreadDelegate PyEval_RestoreThread { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyEval_RestoreThreadDelegate(IntPtr tstate);
+            internal delegate void PyEval_RestoreThreadDelegate(IntPtr tstate);
 
             internal static PyEval_GetBuiltinsDelegate PyEval_GetBuiltins { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyEval_GetBuiltinsDelegate();
+            internal delegate IntPtr PyEval_GetBuiltinsDelegate();
 
             internal static PyEval_GetGlobalsDelegate PyEval_GetGlobals { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyEval_GetGlobalsDelegate();
+            internal delegate IntPtr PyEval_GetGlobalsDelegate();
 
             internal static PyEval_GetLocalsDelegate PyEval_GetLocals { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyEval_GetLocalsDelegate();
+            internal delegate IntPtr PyEval_GetLocalsDelegate();
 
             internal static Py_GetProgramNameDelegate Py_GetProgramName { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_GetProgramNameDelegate();
+            internal delegate IntPtr Py_GetProgramNameDelegate();
 
             internal static Py_SetProgramNameDelegate Py_SetProgramName { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_SetProgramNameDelegate(IntPtr name);
+            internal delegate void Py_SetProgramNameDelegate(IntPtr name);
 
             internal static Py_GetPythonHomeDelegate Py_GetPythonHome { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_GetPythonHomeDelegate();
+            internal delegate IntPtr Py_GetPythonHomeDelegate();
 
             internal static Py_SetPythonHomeDelegate Py_SetPythonHome { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_SetPythonHomeDelegate(IntPtr home);
+            internal delegate void Py_SetPythonHomeDelegate(IntPtr home);
 
             internal static Py_GetPathDelegate Py_GetPath { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_GetPathDelegate();
+            internal delegate IntPtr Py_GetPathDelegate();
 
             internal static Py_SetPathDelegate Py_SetPath { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void Py_SetPathDelegate(IntPtr home);
+            internal delegate void Py_SetPathDelegate(IntPtr home);
 
             internal static Py_GetVersionDelegate Py_GetVersion { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_GetVersionDelegate();
+            internal delegate IntPtr Py_GetVersionDelegate();
 
             internal static Py_GetPlatformDelegate Py_GetPlatform { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_GetPlatformDelegate();
+            internal delegate IntPtr Py_GetPlatformDelegate();
 
             internal static Py_GetCopyrightDelegate Py_GetCopyright { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_GetCopyrightDelegate();
+            internal delegate IntPtr Py_GetCopyrightDelegate();
 
             internal static Py_GetCompilerDelegate Py_GetCompiler { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_GetCompilerDelegate();
+            internal delegate IntPtr Py_GetCompilerDelegate();
 
             internal static Py_GetBuildInfoDelegate Py_GetBuildInfo { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_GetBuildInfoDelegate();
+            internal delegate IntPtr Py_GetBuildInfoDelegate();
 
             internal static PyRun_SimpleStringDelegate PyRun_SimpleString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyRun_SimpleStringDelegate(string code);
+            internal delegate int PyRun_SimpleStringDelegate(string code);
 
             internal static PyRun_StringDelegate PyRun_String { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyRun_StringDelegate(string code, IntPtr st, IntPtr globals, IntPtr locals);
+            internal delegate IntPtr PyRun_StringDelegate(string code, IntPtr st, IntPtr globals, IntPtr locals);
 
             internal static PyEval_EvalCodeDelegate PyEval_EvalCode { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyEval_EvalCodeDelegate(IntPtr co, IntPtr globals, IntPtr locals);
+            internal delegate IntPtr PyEval_EvalCodeDelegate(IntPtr co, IntPtr globals, IntPtr locals);
 
             internal static Py_CompileStringDelegate Py_CompileString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr Py_CompileStringDelegate(string code, string file, IntPtr tok);
+            internal delegate IntPtr Py_CompileStringDelegate(string code, string file, IntPtr tok);
 
             internal static PyImport_ExecCodeModuleDelegate PyImport_ExecCodeModule { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyImport_ExecCodeModuleDelegate(string name, IntPtr code);
+            internal delegate IntPtr PyImport_ExecCodeModuleDelegate(string name, IntPtr code);
 
             internal static PyCFunction_NewExDelegate PyCFunction_NewEx { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyCFunction_NewExDelegate(IntPtr ml, IntPtr self, IntPtr mod);
+            internal delegate IntPtr PyCFunction_NewExDelegate(IntPtr ml, IntPtr self, IntPtr mod);
 
             internal static PyCFunction_CallDelegate PyCFunction_Call { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyCFunction_CallDelegate(IntPtr func, IntPtr args, IntPtr kw);
+            internal delegate IntPtr PyCFunction_CallDelegate(IntPtr func, IntPtr args, IntPtr kw);
 
             internal static PyObject_HasAttrStringDelegate PyObject_HasAttrString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_HasAttrStringDelegate(IntPtr pointer, string name);
+            internal delegate int PyObject_HasAttrStringDelegate(IntPtr pointer, string name);
 
             internal static PyObject_GetAttrStringDelegate PyObject_GetAttrString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_GetAttrStringDelegate(IntPtr pointer, string name);
+            internal delegate IntPtr PyObject_GetAttrStringDelegate(IntPtr pointer, string name);
 
             internal static PyObject_SetAttrStringDelegate PyObject_SetAttrString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_SetAttrStringDelegate(IntPtr pointer, string name, IntPtr value);
+            internal delegate int PyObject_SetAttrStringDelegate(IntPtr pointer, string name, IntPtr value);
 
             internal static PyObject_HasAttrDelegate PyObject_HasAttr { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_HasAttrDelegate(IntPtr pointer, IntPtr name);
+            internal delegate int PyObject_HasAttrDelegate(IntPtr pointer, IntPtr name);
 
             internal static PyObject_GetAttrDelegate PyObject_GetAttr { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_GetAttrDelegate(IntPtr pointer, IntPtr name);
+            internal delegate IntPtr PyObject_GetAttrDelegate(IntPtr pointer, IntPtr name);
 
             internal static PyObject_SetAttrDelegate PyObject_SetAttr { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_SetAttrDelegate(IntPtr pointer, IntPtr name, IntPtr value);
+            internal delegate int PyObject_SetAttrDelegate(IntPtr pointer, IntPtr name, IntPtr value);
 
             internal static PyObject_GetItemDelegate PyObject_GetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_GetItemDelegate(IntPtr pointer, IntPtr key);
+            internal delegate IntPtr PyObject_GetItemDelegate(IntPtr pointer, IntPtr key);
 
             internal static PyObject_SetItemDelegate PyObject_SetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_SetItemDelegate(IntPtr pointer, IntPtr key, IntPtr value);
+            internal delegate int PyObject_SetItemDelegate(IntPtr pointer, IntPtr key, IntPtr value);
 
             internal static PyObject_DelItemDelegate PyObject_DelItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_DelItemDelegate(IntPtr pointer, IntPtr key);
+            internal delegate int PyObject_DelItemDelegate(IntPtr pointer, IntPtr key);
 
             internal static PyObject_GetIterDelegate PyObject_GetIter { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_GetIterDelegate(IntPtr op);
+            internal delegate IntPtr PyObject_GetIterDelegate(IntPtr op);
 
             internal static PyObject_CallDelegate PyObject_Call { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_CallDelegate(IntPtr pointer, IntPtr args, IntPtr kw);
+            internal delegate IntPtr PyObject_CallDelegate(IntPtr pointer, IntPtr args, IntPtr kw);
 
             internal static PyObject_CallObjectDelegate PyObject_CallObject { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_CallObjectDelegate(IntPtr pointer, IntPtr args);
+            internal delegate IntPtr PyObject_CallObjectDelegate(IntPtr pointer, IntPtr args);
 
             internal static PyObject_RichCompareBoolDelegate PyObject_RichCompareBool { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_RichCompareBoolDelegate(IntPtr value1, IntPtr value2, int opid);
+            internal delegate int PyObject_RichCompareBoolDelegate(IntPtr value1, IntPtr value2, int opid);
 
             internal static PyObject_IsInstanceDelegate PyObject_IsInstance { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_IsInstanceDelegate(IntPtr ob, IntPtr type);
+            internal delegate int PyObject_IsInstanceDelegate(IntPtr ob, IntPtr type);
 
             internal static PyObject_IsSubclassDelegate PyObject_IsSubclass { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_IsSubclassDelegate(IntPtr ob, IntPtr type);
+            internal delegate int PyObject_IsSubclassDelegate(IntPtr ob, IntPtr type);
 
             internal static PyCallable_CheckDelegate PyCallable_Check { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyCallable_CheckDelegate(IntPtr pointer);
+            internal delegate int PyCallable_CheckDelegate(IntPtr pointer);
 
             internal static PyObject_IsTrueDelegate PyObject_IsTrue { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_IsTrueDelegate(IntPtr pointer);
+            internal delegate int PyObject_IsTrueDelegate(IntPtr pointer);
 
             internal static PyObject_NotDelegate PyObject_Not { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_NotDelegate(IntPtr pointer);
+            internal delegate int PyObject_NotDelegate(IntPtr pointer);
 
             internal static _PyObject_SizeDelegate _PyObject_Size { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyObject_SizeDelegate(IntPtr pointer);
+            internal delegate IntPtr _PyObject_SizeDelegate(IntPtr pointer);
 
             internal static PyObject_HashDelegate PyObject_Hash { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_HashDelegate(IntPtr op);
+            internal delegate IntPtr PyObject_HashDelegate(IntPtr op);
 
             internal static PyObject_ReprDelegate PyObject_Repr { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_ReprDelegate(IntPtr pointer);
+            internal delegate IntPtr PyObject_ReprDelegate(IntPtr pointer);
 
             internal static PyObject_StrDelegate PyObject_Str { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_StrDelegate(IntPtr pointer);
+            internal delegate IntPtr PyObject_StrDelegate(IntPtr pointer);
 
             internal static PyObject_UnicodeDelegate PyObject_Unicode { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_UnicodeDelegate(IntPtr pointer);
+            internal delegate IntPtr PyObject_UnicodeDelegate(IntPtr pointer);
 
             internal static PyObject_DirDelegate PyObject_Dir { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_DirDelegate(IntPtr pointer);
+            internal delegate IntPtr PyObject_DirDelegate(IntPtr pointer);
 
             internal static PyNumber_IntDelegate PyNumber_Int { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_IntDelegate(IntPtr ob);
+            internal delegate IntPtr PyNumber_IntDelegate(IntPtr ob);
 
             internal static PyNumber_LongDelegate PyNumber_Long { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_LongDelegate(IntPtr ob);
+            internal delegate IntPtr PyNumber_LongDelegate(IntPtr ob);
 
             internal static PyNumber_FloatDelegate PyNumber_Float { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_FloatDelegate(IntPtr ob);
+            internal delegate IntPtr PyNumber_FloatDelegate(IntPtr ob);
 
             internal static PyNumber_CheckDelegate PyNumber_Check { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate bool PyNumber_CheckDelegate(IntPtr ob);
+            internal delegate bool PyNumber_CheckDelegate(IntPtr ob);
 
             internal static PyInt_FromLongDelegate PyInt_FromLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyInt_FromLongDelegate(IntPtr value);
+            internal delegate IntPtr PyInt_FromLongDelegate(IntPtr value);
 
             internal static PyInt_AsLongDelegate PyInt_AsLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyInt_AsLongDelegate(IntPtr value);
+            internal delegate int PyInt_AsLongDelegate(IntPtr value);
 
             internal static PyInt_FromStringDelegate PyInt_FromString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyInt_FromStringDelegate(string value, IntPtr end, int radix);
+            internal delegate IntPtr PyInt_FromStringDelegate(string value, IntPtr end, int radix);
 
             internal static PyLong_FromLongDelegate PyLong_FromLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyLong_FromLongDelegate(long value);
+            internal delegate IntPtr PyLong_FromLongDelegate(long value);
 
             internal static PyLong_FromUnsignedLongDelegate PyLong_FromUnsignedLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyLong_FromUnsignedLongDelegate(uint value);
+            internal delegate IntPtr PyLong_FromUnsignedLongDelegate(uint value);
 
             internal static PyLong_FromDoubleDelegate PyLong_FromDouble { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyLong_FromDoubleDelegate(double value);
+            internal delegate IntPtr PyLong_FromDoubleDelegate(double value);
 
             internal static PyLong_FromLongLongDelegate PyLong_FromLongLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyLong_FromLongLongDelegate(long value);
+            internal delegate IntPtr PyLong_FromLongLongDelegate(long value);
 
             internal static PyLong_FromUnsignedLongLongDelegate PyLong_FromUnsignedLongLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyLong_FromUnsignedLongLongDelegate(ulong value);
+            internal delegate IntPtr PyLong_FromUnsignedLongLongDelegate(ulong value);
 
             internal static PyLong_FromStringDelegate PyLong_FromString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyLong_FromStringDelegate(string value, IntPtr end, int radix);
+            internal delegate IntPtr PyLong_FromStringDelegate(string value, IntPtr end, int radix);
 
             internal static PyLong_AsLongDelegate PyLong_AsLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyLong_AsLongDelegate(IntPtr value);
+            internal delegate int PyLong_AsLongDelegate(IntPtr value);
 
             internal static PyLong_AsUnsignedLongDelegate PyLong_AsUnsignedLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate uint PyLong_AsUnsignedLongDelegate(IntPtr value);
+            internal delegate uint PyLong_AsUnsignedLongDelegate(IntPtr value);
 
             internal static PyLong_AsLongLongDelegate PyLong_AsLongLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate long PyLong_AsLongLongDelegate(IntPtr value);
+            internal delegate long PyLong_AsLongLongDelegate(IntPtr value);
 
             internal static PyLong_AsUnsignedLongLongDelegate PyLong_AsUnsignedLongLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate ulong PyLong_AsUnsignedLongLongDelegate(IntPtr value);
+            internal delegate ulong PyLong_AsUnsignedLongLongDelegate(IntPtr value);
 
             internal static PyFloat_FromDoubleDelegate PyFloat_FromDouble { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyFloat_FromDoubleDelegate(double value);
+            internal delegate IntPtr PyFloat_FromDoubleDelegate(double value);
 
             internal static PyFloat_FromStringDelegate PyFloat_FromString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyFloat_FromStringDelegate(IntPtr value, IntPtr junk);
+            internal delegate IntPtr PyFloat_FromStringDelegate(IntPtr value, IntPtr junk);
 
             internal static PyFloat_AsDoubleDelegate PyFloat_AsDouble { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate double PyFloat_AsDoubleDelegate(IntPtr ob);
+            internal delegate double PyFloat_AsDoubleDelegate(IntPtr ob);
 
             internal static PyNumber_AddDelegate PyNumber_Add { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_AddDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_AddDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_SubtractDelegate PyNumber_Subtract { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_SubtractDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_SubtractDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_MultiplyDelegate PyNumber_Multiply { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_MultiplyDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_MultiplyDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_DivideDelegate PyNumber_Divide { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_DivideDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_DivideDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_AndDelegate PyNumber_And { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_AndDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_AndDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_XorDelegate PyNumber_Xor { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_XorDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_XorDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_OrDelegate PyNumber_Or { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_OrDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_OrDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_LshiftDelegate PyNumber_Lshift { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_LshiftDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_LshiftDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_RshiftDelegate PyNumber_Rshift { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_RshiftDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_RshiftDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_PowerDelegate PyNumber_Power { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_PowerDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_PowerDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_RemainderDelegate PyNumber_Remainder { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_RemainderDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_RemainderDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceAddDelegate PyNumber_InPlaceAdd { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceAddDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceAddDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceSubtractDelegate PyNumber_InPlaceSubtract { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceSubtractDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceSubtractDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceMultiplyDelegate PyNumber_InPlaceMultiply { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceMultiplyDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceMultiplyDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceDivideDelegate PyNumber_InPlaceDivide { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceDivideDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceDivideDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceAndDelegate PyNumber_InPlaceAnd { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceAndDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceAndDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceXorDelegate PyNumber_InPlaceXor { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceXorDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceXorDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceOrDelegate PyNumber_InPlaceOr { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceOrDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceOrDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceLshiftDelegate PyNumber_InPlaceLshift { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceLshiftDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceLshiftDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceRshiftDelegate PyNumber_InPlaceRshift { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceRshiftDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceRshiftDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlacePowerDelegate PyNumber_InPlacePower { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlacePowerDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlacePowerDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceRemainderDelegate PyNumber_InPlaceRemainder { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InPlaceRemainderDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceRemainderDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_NegativeDelegate PyNumber_Negative { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_NegativeDelegate(IntPtr o1);
+            internal delegate IntPtr PyNumber_NegativeDelegate(IntPtr o1);
 
             internal static PyNumber_PositiveDelegate PyNumber_Positive { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_PositiveDelegate(IntPtr o1);
+            internal delegate IntPtr PyNumber_PositiveDelegate(IntPtr o1);
 
             internal static PyNumber_InvertDelegate PyNumber_Invert { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyNumber_InvertDelegate(IntPtr o1);
+            internal delegate IntPtr PyNumber_InvertDelegate(IntPtr o1);
 
             internal static PySequence_CheckDelegate PySequence_Check { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate bool PySequence_CheckDelegate(IntPtr pointer);
+            internal delegate bool PySequence_CheckDelegate(IntPtr pointer);
 
             internal static PySequence_GetItemDelegate PySequence_GetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PySequence_GetItemDelegate(IntPtr pointer, IntPtr index);
+            internal delegate IntPtr PySequence_GetItemDelegate(IntPtr pointer, IntPtr index);
 
             internal static PySequence_SetItemDelegate PySequence_SetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PySequence_SetItemDelegate(IntPtr pointer, IntPtr index, IntPtr value);
+            internal delegate int PySequence_SetItemDelegate(IntPtr pointer, IntPtr index, IntPtr value);
 
             internal static PySequence_DelItemDelegate PySequence_DelItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PySequence_DelItemDelegate(IntPtr pointer, IntPtr index);
+            internal delegate int PySequence_DelItemDelegate(IntPtr pointer, IntPtr index);
 
             internal static PySequence_GetSliceDelegate PySequence_GetSlice { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PySequence_GetSliceDelegate(IntPtr pointer, IntPtr i1, IntPtr i2);
+            internal delegate IntPtr PySequence_GetSliceDelegate(IntPtr pointer, IntPtr i1, IntPtr i2);
 
             internal static PySequence_SetSliceDelegate PySequence_SetSlice { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PySequence_SetSliceDelegate(IntPtr pointer, IntPtr i1, IntPtr i2, IntPtr v);
+            internal delegate int PySequence_SetSliceDelegate(IntPtr pointer, IntPtr i1, IntPtr i2, IntPtr v);
 
             internal static PySequence_DelSliceDelegate PySequence_DelSlice { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PySequence_DelSliceDelegate(IntPtr pointer, IntPtr i1, IntPtr i2);
+            internal delegate int PySequence_DelSliceDelegate(IntPtr pointer, IntPtr i1, IntPtr i2);
 
             internal static _PySequence_SizeDelegate _PySequence_Size { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PySequence_SizeDelegate(IntPtr pointer);
+            internal delegate IntPtr _PySequence_SizeDelegate(IntPtr pointer);
 
             internal static PySequence_ContainsDelegate PySequence_Contains { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PySequence_ContainsDelegate(IntPtr pointer, IntPtr item);
+            internal delegate int PySequence_ContainsDelegate(IntPtr pointer, IntPtr item);
 
             internal static PySequence_ConcatDelegate PySequence_Concat { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PySequence_ConcatDelegate(IntPtr pointer, IntPtr other);
+            internal delegate IntPtr PySequence_ConcatDelegate(IntPtr pointer, IntPtr other);
 
             internal static PySequence_RepeatDelegate PySequence_Repeat { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PySequence_RepeatDelegate(IntPtr pointer, IntPtr count);
+            internal delegate IntPtr PySequence_RepeatDelegate(IntPtr pointer, IntPtr count);
 
             internal static PySequence_IndexDelegate PySequence_Index { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PySequence_IndexDelegate(IntPtr pointer, IntPtr item);
+            internal delegate int PySequence_IndexDelegate(IntPtr pointer, IntPtr item);
 
             internal static _PySequence_CountDelegate _PySequence_Count { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PySequence_CountDelegate(IntPtr pointer, IntPtr value);
+            internal delegate IntPtr _PySequence_CountDelegate(IntPtr pointer, IntPtr value);
 
             internal static PySequence_TupleDelegate PySequence_Tuple { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PySequence_TupleDelegate(IntPtr pointer);
+            internal delegate IntPtr PySequence_TupleDelegate(IntPtr pointer);
 
             internal static PySequence_ListDelegate PySequence_List { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PySequence_ListDelegate(IntPtr pointer);
+            internal delegate IntPtr PySequence_ListDelegate(IntPtr pointer);
 
             internal static PyBytes_FromStringDelegate PyBytes_FromString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyBytes_FromStringDelegate(string op);
+            internal delegate IntPtr PyBytes_FromStringDelegate(string op);
 
             internal static _PyBytes_SizeDelegate _PyBytes_Size { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyBytes_SizeDelegate(IntPtr op);
+            internal delegate IntPtr _PyBytes_SizeDelegate(IntPtr op);
 
             internal static _PyString_FromStringAndSizeDelegate _PyString_FromStringAndSize { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyString_FromStringAndSizeDelegate(
+            internal delegate IntPtr _PyString_FromStringAndSizeDelegate(
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8Marshaler))] string value,
             IntPtr size
         );
@@ -2724,22 +2725,22 @@ namespace Python.Runtime
             internal static PyUnicode_FromStringAndSizeDelegate PyUnicode_FromStringAndSize { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyUnicode_FromStringAndSizeDelegate(IntPtr value, IntPtr size);
+            internal delegate IntPtr PyUnicode_FromStringAndSizeDelegate(IntPtr value, IntPtr size);
 
             internal static PyUnicode_FromObjectDelegate PyUnicode_FromObject { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyUnicode_FromObjectDelegate(IntPtr ob);
+            internal delegate IntPtr PyUnicode_FromObjectDelegate(IntPtr ob);
 
             internal static PyUnicode_FromEncodedObjectDelegate PyUnicode_FromEncodedObject { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyUnicode_FromEncodedObjectDelegate(IntPtr ob, IntPtr enc, IntPtr err);
+            internal delegate IntPtr PyUnicode_FromEncodedObjectDelegate(IntPtr ob, IntPtr enc, IntPtr err);
 
             internal static PyUnicode_FromKindAndDataDelegate PyUnicode_FromKindAndData { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyUnicode_FromKindAndDataDelegate(
+            internal delegate IntPtr PyUnicode_FromKindAndDataDelegate(
             int kind,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(UcsMarshaler))] string s,
             IntPtr size
@@ -2748,237 +2749,237 @@ namespace Python.Runtime
             internal static _PyUnicode_GetSizeDelegate _PyUnicode_GetSize { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyUnicode_GetSizeDelegate(IntPtr ob);
+            internal delegate IntPtr _PyUnicode_GetSizeDelegate(IntPtr ob);
 
             internal static PyUnicode_AsUnicodeDelegate PyUnicode_AsUnicode { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyUnicode_AsUnicodeDelegate(IntPtr ob);
+            internal delegate IntPtr PyUnicode_AsUnicodeDelegate(IntPtr ob);
 
             internal static PyUnicode_FromOrdinalDelegate PyUnicode_FromOrdinal { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyUnicode_FromOrdinalDelegate(int c);
+            internal delegate IntPtr PyUnicode_FromOrdinalDelegate(int c);
 
             internal static PyDict_NewDelegate PyDict_New { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyDict_NewDelegate();
+            internal delegate IntPtr PyDict_NewDelegate();
 
             internal static PyDictProxy_NewDelegate PyDictProxy_New { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyDictProxy_NewDelegate(IntPtr dict);
+            internal delegate IntPtr PyDictProxy_NewDelegate(IntPtr dict);
 
             internal static PyDict_GetItemDelegate PyDict_GetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyDict_GetItemDelegate(IntPtr pointer, IntPtr key);
+            internal delegate IntPtr PyDict_GetItemDelegate(IntPtr pointer, IntPtr key);
 
             internal static PyDict_GetItemStringDelegate PyDict_GetItemString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyDict_GetItemStringDelegate(IntPtr pointer, string key);
+            internal delegate IntPtr PyDict_GetItemStringDelegate(IntPtr pointer, string key);
 
             internal static PyDict_SetItemDelegate PyDict_SetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyDict_SetItemDelegate(IntPtr pointer, IntPtr key, IntPtr value);
+            internal delegate int PyDict_SetItemDelegate(IntPtr pointer, IntPtr key, IntPtr value);
 
             internal static PyDict_SetItemStringDelegate PyDict_SetItemString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyDict_SetItemStringDelegate(IntPtr pointer, string key, IntPtr value);
+            internal delegate int PyDict_SetItemStringDelegate(IntPtr pointer, string key, IntPtr value);
 
             internal static PyDict_DelItemDelegate PyDict_DelItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyDict_DelItemDelegate(IntPtr pointer, IntPtr key);
+            internal delegate int PyDict_DelItemDelegate(IntPtr pointer, IntPtr key);
 
             internal static PyDict_DelItemStringDelegate PyDict_DelItemString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyDict_DelItemStringDelegate(IntPtr pointer, string key);
+            internal delegate int PyDict_DelItemStringDelegate(IntPtr pointer, string key);
 
             internal static PyMapping_HasKeyDelegate PyMapping_HasKey { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyMapping_HasKeyDelegate(IntPtr pointer, IntPtr key);
+            internal delegate int PyMapping_HasKeyDelegate(IntPtr pointer, IntPtr key);
 
             internal static PyDict_KeysDelegate PyDict_Keys { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyDict_KeysDelegate(IntPtr pointer);
+            internal delegate IntPtr PyDict_KeysDelegate(IntPtr pointer);
 
             internal static PyDict_ValuesDelegate PyDict_Values { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyDict_ValuesDelegate(IntPtr pointer);
+            internal delegate IntPtr PyDict_ValuesDelegate(IntPtr pointer);
 
             internal static PyDict_ItemsDelegate PyDict_Items { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyDict_ItemsDelegate(IntPtr pointer);
+            internal delegate IntPtr PyDict_ItemsDelegate(IntPtr pointer);
 
             internal static PyDict_CopyDelegate PyDict_Copy { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyDict_CopyDelegate(IntPtr pointer);
+            internal delegate IntPtr PyDict_CopyDelegate(IntPtr pointer);
 
             internal static PyDict_UpdateDelegate PyDict_Update { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyDict_UpdateDelegate(IntPtr pointer, IntPtr other);
+            internal delegate int PyDict_UpdateDelegate(IntPtr pointer, IntPtr other);
 
             internal static PyDict_ClearDelegate PyDict_Clear { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyDict_ClearDelegate(IntPtr pointer);
+            internal delegate void PyDict_ClearDelegate(IntPtr pointer);
 
             internal static _PyDict_SizeDelegate _PyDict_Size { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyDict_SizeDelegate(IntPtr pointer);
+            internal delegate IntPtr _PyDict_SizeDelegate(IntPtr pointer);
 
             internal static PyList_NewDelegate PyList_New { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyList_NewDelegate(IntPtr size);
+            internal delegate IntPtr PyList_NewDelegate(IntPtr size);
 
             internal static PyList_AsTupleDelegate PyList_AsTuple { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyList_AsTupleDelegate(IntPtr pointer);
+            internal delegate IntPtr PyList_AsTupleDelegate(IntPtr pointer);
 
             internal static PyList_GetItemDelegate PyList_GetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyList_GetItemDelegate(IntPtr pointer, IntPtr index);
+            internal delegate IntPtr PyList_GetItemDelegate(IntPtr pointer, IntPtr index);
 
             internal static PyList_SetItemDelegate PyList_SetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyList_SetItemDelegate(IntPtr pointer, IntPtr index, IntPtr value);
+            internal delegate int PyList_SetItemDelegate(IntPtr pointer, IntPtr index, IntPtr value);
 
             internal static PyList_InsertDelegate PyList_Insert { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyList_InsertDelegate(IntPtr pointer, IntPtr index, IntPtr value);
+            internal delegate int PyList_InsertDelegate(IntPtr pointer, IntPtr index, IntPtr value);
 
             internal static PyList_AppendDelegate PyList_Append { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyList_AppendDelegate(IntPtr pointer, IntPtr value);
+            internal delegate int PyList_AppendDelegate(IntPtr pointer, IntPtr value);
 
             internal static PyList_ReverseDelegate PyList_Reverse { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyList_ReverseDelegate(IntPtr pointer);
+            internal delegate int PyList_ReverseDelegate(IntPtr pointer);
 
             internal static PyList_SortDelegate PyList_Sort { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyList_SortDelegate(IntPtr pointer);
+            internal delegate int PyList_SortDelegate(IntPtr pointer);
 
             internal static PyList_GetSliceDelegate PyList_GetSlice { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyList_GetSliceDelegate(IntPtr pointer, IntPtr start, IntPtr end);
+            internal delegate IntPtr PyList_GetSliceDelegate(IntPtr pointer, IntPtr start, IntPtr end);
 
             internal static PyList_SetSliceDelegate PyList_SetSlice { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyList_SetSliceDelegate(IntPtr pointer, IntPtr start, IntPtr end, IntPtr value);
+            internal delegate int PyList_SetSliceDelegate(IntPtr pointer, IntPtr start, IntPtr end, IntPtr value);
 
             internal static _PyList_SizeDelegate _PyList_Size { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyList_SizeDelegate(IntPtr pointer);
+            internal delegate IntPtr _PyList_SizeDelegate(IntPtr pointer);
 
             internal static PyTuple_NewDelegate PyTuple_New { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyTuple_NewDelegate(IntPtr size);
+            internal delegate IntPtr PyTuple_NewDelegate(IntPtr size);
 
             internal static PyTuple_GetItemDelegate PyTuple_GetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyTuple_GetItemDelegate(IntPtr pointer, IntPtr index);
+            internal delegate IntPtr PyTuple_GetItemDelegate(IntPtr pointer, IntPtr index);
 
             internal static PyTuple_SetItemDelegate PyTuple_SetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyTuple_SetItemDelegate(IntPtr pointer, IntPtr index, IntPtr value);
+            internal delegate int PyTuple_SetItemDelegate(IntPtr pointer, IntPtr index, IntPtr value);
 
             internal static PyTuple_GetSliceDelegate PyTuple_GetSlice { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyTuple_GetSliceDelegate(IntPtr pointer, IntPtr start, IntPtr end);
+            internal delegate IntPtr PyTuple_GetSliceDelegate(IntPtr pointer, IntPtr start, IntPtr end);
 
             internal static _PyTuple_SizeDelegate _PyTuple_Size { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyTuple_SizeDelegate(IntPtr pointer);
+            internal delegate IntPtr _PyTuple_SizeDelegate(IntPtr pointer);
 
             internal static PyIter_NextDelegate PyIter_Next { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyIter_NextDelegate(IntPtr pointer);
+            internal delegate IntPtr PyIter_NextDelegate(IntPtr pointer);
 
             internal static PyModule_NewDelegate PyModule_New { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyModule_NewDelegate(string name);
+            internal delegate IntPtr PyModule_NewDelegate(string name);
 
             internal static PyModule_GetNameDelegate PyModule_GetName { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate string PyModule_GetNameDelegate(IntPtr module);
+            internal delegate string PyModule_GetNameDelegate(IntPtr module);
 
             internal static PyModule_GetDictDelegate PyModule_GetDict { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyModule_GetDictDelegate(IntPtr module);
+            internal delegate IntPtr PyModule_GetDictDelegate(IntPtr module);
 
             internal static PyModule_GetFilenameDelegate PyModule_GetFilename { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate string PyModule_GetFilenameDelegate(IntPtr module);
+            internal delegate string PyModule_GetFilenameDelegate(IntPtr module);
 
             internal static PyModule_Create2Delegate PyModule_Create2 { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyModule_Create2Delegate(IntPtr module, int apiver);
+            internal delegate IntPtr PyModule_Create2Delegate(IntPtr module, int apiver);
 
             internal static PyImport_ImportDelegate PyImport_Import { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyImport_ImportDelegate(IntPtr name);
+            internal delegate IntPtr PyImport_ImportDelegate(IntPtr name);
 
             internal static PyImport_ImportModuleDelegate PyImport_ImportModule { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyImport_ImportModuleDelegate(string name);
+            internal delegate IntPtr PyImport_ImportModuleDelegate(string name);
 
             internal static PyImport_ReloadModuleDelegate PyImport_ReloadModule { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyImport_ReloadModuleDelegate(IntPtr module);
+            internal delegate IntPtr PyImport_ReloadModuleDelegate(IntPtr module);
 
             internal static PyImport_AddModuleDelegate PyImport_AddModule { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyImport_AddModuleDelegate(string name);
+            internal delegate IntPtr PyImport_AddModuleDelegate(string name);
 
             internal static PyImport_GetModuleDictDelegate PyImport_GetModuleDict { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyImport_GetModuleDictDelegate();
+            internal delegate IntPtr PyImport_GetModuleDictDelegate();
 
             internal static PySys_SetArgvExDelegate PySys_SetArgvEx { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PySys_SetArgvExDelegate(
+            internal delegate void PySys_SetArgvExDelegate(
             int argc,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StrArrayMarshaler))] string[] argv,
             int updatepath
@@ -2987,162 +2988,162 @@ namespace Python.Runtime
             internal static PySys_GetObjectDelegate PySys_GetObject { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PySys_GetObjectDelegate(string name);
+            internal delegate IntPtr PySys_GetObjectDelegate(string name);
 
             internal static PySys_SetObjectDelegate PySys_SetObject { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PySys_SetObjectDelegate(string name, IntPtr ob);
+            internal delegate int PySys_SetObjectDelegate(string name, IntPtr ob);
 
             internal static PyType_ModifiedDelegate PyType_Modified { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyType_ModifiedDelegate(IntPtr type);
+            internal delegate void PyType_ModifiedDelegate(IntPtr type);
 
             internal static PyType_IsSubtypeDelegate PyType_IsSubtype { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate bool PyType_IsSubtypeDelegate(IntPtr t1, IntPtr t2);
+            internal delegate bool PyType_IsSubtypeDelegate(IntPtr t1, IntPtr t2);
 
             internal static PyType_GenericNewDelegate PyType_GenericNew { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyType_GenericNewDelegate(IntPtr type, IntPtr args, IntPtr kw);
+            internal delegate IntPtr PyType_GenericNewDelegate(IntPtr type, IntPtr args, IntPtr kw);
 
             internal static PyType_GenericAllocDelegate PyType_GenericAlloc { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyType_GenericAllocDelegate(IntPtr type, IntPtr n);
+            internal delegate IntPtr PyType_GenericAllocDelegate(IntPtr type, IntPtr n);
 
             internal static PyType_ReadyDelegate PyType_Ready { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyType_ReadyDelegate(IntPtr type);
+            internal delegate int PyType_ReadyDelegate(IntPtr type);
 
             internal static _PyType_LookupDelegate _PyType_Lookup { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyType_LookupDelegate(IntPtr type, IntPtr name);
+            internal delegate IntPtr _PyType_LookupDelegate(IntPtr type, IntPtr name);
 
             internal static PyObject_GenericGetAttrDelegate PyObject_GenericGetAttr { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyObject_GenericGetAttrDelegate(IntPtr obj, IntPtr name);
+            internal delegate IntPtr PyObject_GenericGetAttrDelegate(IntPtr obj, IntPtr name);
 
             internal static PyObject_GenericSetAttrDelegate PyObject_GenericSetAttr { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyObject_GenericSetAttrDelegate(IntPtr obj, IntPtr name, IntPtr value);
+            internal delegate int PyObject_GenericSetAttrDelegate(IntPtr obj, IntPtr name, IntPtr value);
 
             internal static _PyObject_GetDictPtrDelegate _PyObject_GetDictPtr { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr _PyObject_GetDictPtrDelegate(IntPtr obj);
+            internal delegate IntPtr _PyObject_GetDictPtrDelegate(IntPtr obj);
 
             internal static PyObject_GC_DelDelegate PyObject_GC_Del { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyObject_GC_DelDelegate(IntPtr tp);
+            internal delegate void PyObject_GC_DelDelegate(IntPtr tp);
 
             internal static PyObject_GC_TrackDelegate PyObject_GC_Track { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyObject_GC_TrackDelegate(IntPtr tp);
+            internal delegate void PyObject_GC_TrackDelegate(IntPtr tp);
 
             internal static PyObject_GC_UnTrackDelegate PyObject_GC_UnTrack { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyObject_GC_UnTrackDelegate(IntPtr tp);
+            internal delegate void PyObject_GC_UnTrackDelegate(IntPtr tp);
 
             internal static PyMem_MallocDelegate PyMem_Malloc { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyMem_MallocDelegate(IntPtr size);
+            internal delegate IntPtr PyMem_MallocDelegate(IntPtr size);
 
             internal static PyMem_ReallocDelegate PyMem_Realloc { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyMem_ReallocDelegate(IntPtr ptr, IntPtr size);
+            internal delegate IntPtr PyMem_ReallocDelegate(IntPtr ptr, IntPtr size);
 
             internal static PyMem_FreeDelegate PyMem_Free { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyMem_FreeDelegate(IntPtr ptr);
+            internal delegate void PyMem_FreeDelegate(IntPtr ptr);
 
             internal static PyErr_SetStringDelegate PyErr_SetString { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyErr_SetStringDelegate(IntPtr ob, string message);
+            internal delegate void PyErr_SetStringDelegate(IntPtr ob, string message);
 
             internal static PyErr_SetObjectDelegate PyErr_SetObject { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyErr_SetObjectDelegate(IntPtr ob, IntPtr message);
+            internal delegate void PyErr_SetObjectDelegate(IntPtr ob, IntPtr message);
 
             internal static PyErr_SetFromErrnoDelegate PyErr_SetFromErrno { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyErr_SetFromErrnoDelegate(IntPtr ob);
+            internal delegate IntPtr PyErr_SetFromErrnoDelegate(IntPtr ob);
 
             internal static PyErr_SetNoneDelegate PyErr_SetNone { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyErr_SetNoneDelegate(IntPtr ob);
+            internal delegate void PyErr_SetNoneDelegate(IntPtr ob);
 
             internal static PyErr_ExceptionMatchesDelegate PyErr_ExceptionMatches { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyErr_ExceptionMatchesDelegate(IntPtr exception);
+            internal delegate int PyErr_ExceptionMatchesDelegate(IntPtr exception);
 
             internal static PyErr_GivenExceptionMatchesDelegate PyErr_GivenExceptionMatches { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate int PyErr_GivenExceptionMatchesDelegate(IntPtr ob, IntPtr val);
+            internal delegate int PyErr_GivenExceptionMatchesDelegate(IntPtr ob, IntPtr val);
 
             internal static PyErr_NormalizeExceptionDelegate PyErr_NormalizeException { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyErr_NormalizeExceptionDelegate(IntPtr ob, IntPtr val, IntPtr tb);
+            internal delegate void PyErr_NormalizeExceptionDelegate(IntPtr ob, IntPtr val, IntPtr tb);
 
             internal static PyErr_OccurredDelegate PyErr_Occurred { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyErr_OccurredDelegate();
+            internal delegate IntPtr PyErr_OccurredDelegate();
 
             internal static PyErr_FetchDelegate PyErr_Fetch { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyErr_FetchDelegate(ref IntPtr ob, ref IntPtr val, ref IntPtr tb);
+            internal delegate void PyErr_FetchDelegate(ref IntPtr ob, ref IntPtr val, ref IntPtr tb);
 
             internal static PyErr_RestoreDelegate PyErr_Restore { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyErr_RestoreDelegate(IntPtr ob, IntPtr val, IntPtr tb);
+            internal delegate void PyErr_RestoreDelegate(IntPtr ob, IntPtr val, IntPtr tb);
 
             internal static PyErr_ClearDelegate PyErr_Clear { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyErr_ClearDelegate();
+            internal delegate void PyErr_ClearDelegate();
 
             internal static PyErr_PrintDelegate PyErr_Print { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate void PyErr_PrintDelegate();
+            internal delegate void PyErr_PrintDelegate();
 
             internal static PyMethod_SelfDelegate PyMethod_Self { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyMethod_SelfDelegate(IntPtr ob);
+            internal delegate IntPtr PyMethod_SelfDelegate(IntPtr ob);
 
             internal static PyMethod_FunctionDelegate PyMethod_Function { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyMethod_FunctionDelegate(IntPtr ob);
+            internal delegate IntPtr PyMethod_FunctionDelegate(IntPtr ob);
 
             internal static PyMethod_NewDelegate PyMethod_New { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            public delegate IntPtr PyMethod_NewDelegate(IntPtr func, IntPtr self);
+            internal delegate IntPtr PyMethod_NewDelegate(IntPtr func, IntPtr self);
             // end of PY3
 
             enum Py2 { }
@@ -3150,7 +3151,7 @@ namespace Python.Runtime
     }
 
 #if NETFX
-    class RuntimeInformation{
+    static class RuntimeInformation{
       public static bool IsOSPlatform(OSPlatform platform){return platform == OSPlatform.Windows;}
     }
 

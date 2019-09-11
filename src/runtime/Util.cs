@@ -4,7 +4,7 @@ using System.Runtime.InteropServices;
 
 namespace Python.Runtime
 {
-    internal class Util
+    internal static class Util
     {
         internal static Int64 ReadCLong(IntPtr tp, int offset)
         {

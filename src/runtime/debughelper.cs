@@ -11,7 +11,7 @@ namespace Python.Runtime
     /// The methods are only executed when the DEBUG flag is set. Otherwise
     /// they are automagically hidden by the compiler and silently suppressed.
     /// </summary>
-    internal class DebugUtil
+    internal static class DebugUtil
     {
         [Conditional("DEBUG")]
         public static void Print(string msg, params IntPtr[] args)

@@ -21,7 +21,7 @@ namespace Python.Runtime
     /// build process to generate the thunks as a separate assembly
     /// that could then be referenced by the main Python runtime.
     /// </summary>
-    internal class NativeCall
+    internal static class NativeCall
     {
 #if NETSTANDARD
         [UnmanagedFunctionPointer(CallingConvention.Cdecl)]

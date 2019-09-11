@@ -13,8 +13,7 @@ namespace Python.Runtime.Slots
     static class SlotOverrides {
         public static IntPtr tp_getattro(IntPtr ob, IntPtr key) {
             if (!Runtime.PyString_Check(key)) {
-                IntPtr genericResult = Runtime.PyObject_GenericGetAttr(ob, key);
-                return genericResult;
+                return Runtime.PyObject_GenericGetAttr(ob, key);
             }
 
             Exceptions.Clear();

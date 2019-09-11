@@ -212,20 +212,15 @@ namespace Python.Runtime
         public object Dispatch(ArrayList args)
         {
             IntPtr gs = PythonEngine.AcquireLock();
-            object ob = null;
 
             try
             {
-                ob = TrueDispatch(args);
+                return TrueDispatch(args);
             }
-            catch (Exception e)
+            finally
             {
                 PythonEngine.ReleaseLock(gs);
-                throw e;
             }
-
-            PythonEngine.ReleaseLock(gs);
-            return ob;
         }
 
         public object TrueDispatch(ArrayList args)
@@ -279,5 +274,7 @@ namespace Python.Runtime
         public ConversionException(string msg) : base(msg)
         {
         }
+
+        public ConversionException(string message, Exception innerException):base(message, innerException) { }
     }
 }

@@ -225,7 +225,7 @@ using System.Text;
 namespace Python.Runtime
 {{
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class TypeOffset{1}
+    internal static class TypeOffset{1}
     {{
         // Auto-generated from PyHeapTypeObject in Python.h
 """.format(filename, PY_VER)

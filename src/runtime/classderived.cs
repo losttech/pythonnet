@@ -621,7 +621,7 @@ namespace Python.Runtime
     /// This has to be public as it's called from methods on dynamically built classes
     /// potentially in other assemblies.
     /// </remarks>
-    public class PythonDerivedType
+    public static class PythonDerivedType
     {
         /// <summary>
         /// This is the implementation of the overridden methods in the derived

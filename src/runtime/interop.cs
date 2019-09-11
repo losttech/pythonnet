@@ -69,7 +69,7 @@ namespace Python.Runtime
 
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class ObjectOffset
+    internal static class ObjectOffset
     {
         static ObjectOffset()
         {
@@ -261,7 +261,7 @@ namespace Python.Runtime
     /// Note that the two values reserved for stackless have been put
     /// to good use as PythonNet specific flags (Managed and Subclass)
     /// </summary>
-    internal class TypeFlags
+    internal static class TypeFlags
     {
         public static int HeapType = (1 << 9);
         /// <summary>
