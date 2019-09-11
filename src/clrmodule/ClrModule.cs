@@ -28,7 +28,7 @@ using System.Reflection;
 using System.Runtime.InteropServices;
 using RGiesecke.DllExport;
 
-public class clrModule
+public static class clrModule
 {
     [DllExport("PyInit_clr", CallingConvention.StdCall)]
     public static IntPtr PyInit_clr()
