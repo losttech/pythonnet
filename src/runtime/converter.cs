@@ -145,7 +145,15 @@ namespace Python.Runtime
                 return result;
             }
 
-			if (value is IList && !(value is INotifyPropertyChanged) && value.GetType().IsGenericType)
+            if (Type.GetTypeCode(type) == TypeCode.Object && value.GetType() != typeof(object)) {
+                var encoded = PyObjectConversions.TryEncode(value, type);
+                if (encoded != null) {
+                    Runtime.XIncref(encoded.Handle);
+                    return encoded.Handle;
+                }
+            }
+
+            if (value is IList && !(value is INotifyPropertyChanged) && value.GetType().IsGenericType)
 			{
                 using (var resultlist = new PyList())
                 {
@@ -448,6 +456,12 @@ namespace Python.Runtime
                 {
                     return true;
                 }
+
+                IntPtr pyType = Runtime.PyObject_TYPE(value);
+                if (PyObjectConversions.TryDecode(value, pyType, obType, out result))
+                {
+                    return true;
+                }
             }
 
             if (obType.IsEnum)
@@ -476,17 +490,18 @@ namespace Python.Runtime
             convert = convert.MakeGenericMethod(targetType);
 
             bool TryConvert(IntPtr pyHandle, out object result) {
-                var pyObj = new PyObject(Runtime.SelfIncRef(pyHandle));
-                var @params = new object[] { pyObj, null };
-                bool success = (bool)convert.Invoke(converterAttribute, @params);
-                result = @params[1];
-                return success;
+                using (var pyObj = new PyObject(Runtime.SelfIncRef(pyHandle))) {
+                    var @params = new object[] {pyObj, null};
+                    bool success = (bool)convert.Invoke(converterAttribute, @params);
+                    result = @params[1];
+                    return success;
+                }
             }
 
             return TryConvert;
         }
 
-        delegate bool TryConvertFromPythonDelegate(IntPtr pyObj, out object result);
+        internal delegate bool TryConvertFromPythonDelegate(IntPtr pyObj, out object result);
         static readonly ConcurrentDictionary<Type, TryConvertFromPythonDelegate> TypeConverterCache =
             new ConcurrentDictionary<Type, TryConvertFromPythonDelegate>();
 

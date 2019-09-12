@@ -306,6 +306,8 @@ namespace Python.Runtime
 
                 ExecuteShutdownHandlers();
 
+                PyObjectConversions.Reset();
+
                 initialized = false;
             }
         }
