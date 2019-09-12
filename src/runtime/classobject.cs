@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -300,43 +301,39 @@ namespace Python.Runtime
                 IntPtr methodObjectHandle = Runtime.PyDict_GetItemString(dict, "__call__");
                 if (methodObjectHandle == IntPtr.Zero || methodObjectHandle == Runtime.PyNone)
                 {
-                    Runtime.XDecrefIgnoreNull(methodObjectHandle);
                     Exceptions.SetError(Exceptions.TypeError, "object is not callable");
                     return IntPtr.Zero;
                 }
 
+                if (GetManagedObject(methodObjectHandle) is MethodObject methodObject)
+                {
+                    return methodObject.Invoke(ob, args, kw);
+                }
+
+                methodObjectHandle = IntPtr.Zero;
+
+                foreach (IntPtr pythonBase in GetPythonBases(tp)) {
+                    dict = Marshal.ReadIntPtr(pythonBase, TypeOffset.tp_dict);
+
+                    methodObjectHandle = Runtime.PyDict_GetItemString(dict, "__call__");
+                    if (methodObjectHandle != IntPtr.Zero && methodObjectHandle != Runtime.PyNone) break;
+                }
+
+                if (methodObjectHandle == IntPtr.Zero || methodObjectHandle == Runtime.PyNone) {
+                    Exceptions.SetError(Exceptions.TypeError, "object is not callable");
+                    return IntPtr.Zero;
+                }
+
+                var boundMethod = Runtime.PyMethod_New(methodObjectHandle, ob);
+                if (boundMethod == IntPtr.Zero) { return IntPtr.Zero; }
+
                 try
                 {
-                    if (GetManagedObject(methodObjectHandle) is MethodObject methodObject)
-                    {
-                        return methodObject.Invoke(ob, args, kw);
-                    }
-
-                    IntPtr pythonBase = GetPythonBase(tp);
-                    dict = Marshal.ReadIntPtr(pythonBase, TypeOffset.tp_dict);
-                    Runtime.XDecref(methodObjectHandle);
-                    methodObjectHandle = Runtime.PyDict_GetItemString(dict, "__call__");
-                    if (methodObjectHandle == IntPtr.Zero || methodObjectHandle == Runtime.PyNone)
-                    {
-                        Exceptions.SetError(Exceptions.TypeError, "object is not callable");
-                        return IntPtr.Zero;
-                    }
-
-                    var boundMethod = Runtime.PyMethod_New(methodObjectHandle, ob);
-                    if (boundMethod == IntPtr.Zero) { return IntPtr.Zero; }
-
-                    try
-                    {
-                        return Runtime.PyObject_Call(boundMethod, args, kw);
-                    }
-                    finally
-                    {
-                        Runtime.XDecref(boundMethod);
-                    }
+                    return Runtime.PyObject_Call(boundMethod, args, kw);
                 }
                 finally
                 {
-                    Runtime.XDecrefIgnoreNull(methodObjectHandle);
+                    Runtime.XDecref(boundMethod);
                 }
             }
 
@@ -353,16 +350,31 @@ namespace Python.Runtime
         }
 
         /// <summary>
-        /// Get the first base class in the class hierarchy
-        /// of the specified .NET type, that is defined in Python.
+        /// Enumerate Python base types of the specified .NET type in mro order.
         /// </summary>
-        internal static IntPtr GetPythonBase(IntPtr tp) {
+        internal static IEnumerable<IntPtr> GetPythonBases(IntPtr tp) {
             Debug.Assert(IsManagedType(tp));
             do {
+                IntPtr bases = Marshal.ReadIntPtr(tp, TypeOffset.tp_bases);
+                if (bases != IntPtr.Zero) {
+                    long baseCount = Runtime.PyTuple_Size(bases);
+                    for (long baseIndex = 0; baseIndex < baseCount; baseIndex++) {
+                        IntPtr @base = Runtime.PyTuple_GetItem(bases, baseIndex);
+                        if (IsManagedType(@base)) {
+                            foreach (IntPtr innerBase in GetPythonBases(@base)) {
+                                yield return innerBase;
+                            }
+                        } else {
+                            yield return @base;
+                        }
+                    }
+                    yield break;
+                }
+
                 tp = Marshal.ReadIntPtr(tp, TypeOffset.tp_base);
             } while (IsManagedType(tp));
 
-            return tp;
+            yield return tp;
         }
 
         internal static bool IsManagedType(IntPtr tp)
