@@ -78,18 +78,31 @@ namespace Python.EmbeddingTest {
                 Assert.AreEqual(result, nameof(PythonWrapperBase.WrapperBaseMethod));
             }
         }
+
+        [Test]
+        public void PythonCanCallOverridenMethod() {
+            var instance = new Inherited();
+            using (Py.GIL())
+            using (var scope = Py.CreateScope()){
+                scope.Set(nameof(instance), instance);
+                int actual = scope.Eval<int>($"{nameof(instance)}.callVirt()");
+                Assert.AreEqual(expected: Inherited.OverridenVirtValue, actual);
+            }
+        }
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     class CustomBaseTypeAttribute : BaseTypeAttributeBase {
         internal static PyObject BaseClass;
-        public override IntPtr BaseType(Type type)
-            => type != typeof(InheritanceTestBaseClassWrapper) ? IntPtr.Zero : BaseClass.Handle;
+        public override PyTuple BaseTypes(Type type)
+            => type != typeof(InheritanceTestBaseClassWrapper)
+                ? base.BaseTypes(type)
+                : new PyTuple(new []{ PyType.Get(type.BaseType), BaseClass });
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
     class DefaultBaseTypeAttribute : BaseTypeAttributeBase {
-        public override IntPtr BaseType(Type type) => IntPtr.Zero;
+
     }
 
     [DefaultBaseType]
@@ -102,6 +115,10 @@ namespace Python.EmbeddingTest {
         public const string ClassName = "InheritanceTestBaseClass";
         public const string ClassSourceCode = "class " + ClassName +
 @":
+  def virt(self):
+    return 42
+  def callVirt(self):
+    return self.virt()
   def __getattr__(self, name):
     return '__getattr__:' + name
   def __setattr__(self, name, value):
@@ -110,5 +127,7 @@ namespace Python.EmbeddingTest {
     }
 
     public class Inherited : InheritanceTestBaseClassWrapper {
+        public const int OverridenVirtValue = -42;
+        public int virt() => OverridenVirtValue;
     }
 }

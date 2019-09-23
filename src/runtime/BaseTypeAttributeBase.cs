@@ -9,12 +9,25 @@ namespace Python.Runtime
                     | AttributeTargets.Interface | AttributeTargets.Struct,
         AllowMultiple = false,
         Inherited = true)]
-    public abstract class BaseTypeAttributeBase : Attribute
+    public class BaseTypeAttributeBase : Attribute
     {
         /// <summary>
-        /// Get the handle of a Python type, that should be presented to Python as the base type
+        /// Get a tuple of Python type(s), that should be presented to Python as the base type(s)
         /// for the specified .NET type.
         /// </summary>
-        public abstract IntPtr BaseType(Type type);
+        public virtual PyTuple BaseTypes(Type type) {
+            if (type == null) throw new ArgumentNullException(nameof(type));
+            if (type == typeof(Exception))
+            {
+                return PyTuple.FromSingleElement(Exceptions.Exception);
+            }
+
+            if (type.BaseType != null) {
+                ClassBase bc = ClassManager.GetClass(type.BaseType);
+                return PyTuple.FromSingleElement(bc.pyHandle);
+            }
+
+            return null;
+        }
     }
 }

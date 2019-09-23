@@ -57,8 +57,11 @@ class {BaseClassName}:
         class CustomBaseTypeAttribute : BaseTypeAttributeBase {
             internal static PyObject BaseClass;
 
-            public override IntPtr BaseType(Type type)
-                => type != typeof(CallViaInheritance) ? IntPtr.Zero : BaseClass.Handle;
+            public override PyTuple BaseTypes(Type type) {
+                return type != typeof(CallViaInheritance)
+                    ? base.BaseTypes(type)
+                    : PyTuple.FromSingleElement(BaseClass.Handle);
+            }
         }
     }
 }

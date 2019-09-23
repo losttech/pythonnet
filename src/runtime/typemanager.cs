@@ -136,16 +136,24 @@ namespace Python.Runtime
                 InitializeSlot(type, TypeOffset.tp_getattro, typeof(SlotOverrides).GetMethod(nameof(SlotOverrides.tp_getattro)));
             }
 
-            IntPtr base_ = GetBaseType(clrType, out IntPtr bases);
-            if (base_ != IntPtr.Zero)
+            try
             {
-                Marshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
-                Runtime.XIncref(base_);
+                IntPtr base_ = GetBaseType(clrType, out IntPtr bases);
+                if (base_ != IntPtr.Zero)
+                {
+                    Marshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
+                    Runtime.XIncref(base_);
 
-                if (bases != IntPtr.Zero) {
-                    Marshal.WriteIntPtr(type, TypeOffset.tp_bases, bases);
-                    Runtime.XIncref(bases);
+                    if (bases != IntPtr.Zero) {
+                        Marshal.WriteIntPtr(type, TypeOffset.tp_bases, bases);
+                        Runtime.XIncref(bases);
+                    }
                 }
+            }
+            catch (Exception error)
+            {
+                Exceptions.SetError(error);
+                return IntPtr.Zero;
             }
 
             int flags = TypeFlags.Default;
@@ -246,37 +254,17 @@ namespace Python.Runtime
                 return Exceptions.Exception;
             }
 
-            var bases = new List<IntPtr>();
-
-            // .NET base class must always come first
-            if (clrType.BaseType != null)
-            {
-                ClassBase bc = ClassManager.GetClass(clrType.BaseType);
-                bases.Add(bc.pyHandle);
-            }
-
             var baseOverride = Util.GetLatestAttribute<BaseTypeAttributeBase>(clrType);
-            IntPtr handle = baseOverride?.BaseType(clrType) ?? IntPtr.Zero;
-            if (handle != IntPtr.Zero) {
-                if ((Util.ReadCLong(handle, TypeOffset.tp_flags) & TypeFlags.BaseType) == 0) {
-                    throw new InvalidProgramException("The specified base Python type can not be inherited from");
+            var types = baseOverride?.BaseTypes(clrType);
+            if (types == null || types.Length() == 0) return IntPtr.Zero;
+            for (int index = 0; index < types.Length(); index++) {
+                IntPtr baseType = Runtime.PyTuple_GetItem(types.Handle, index);
+                if (!PyType.IsTypeType(baseType)) {
+                    throw new InvalidOperationException("Entries in base types must be Python types themselves");
                 }
-
-                bases.Add(handle);
             }
-
-            switch (bases.Count) {
-            case 0:
-                return IntPtr.Zero;
-            case 1:
-                return bases[0];
-            default:
-                baseTypes = Runtime.PyTuple_New(bases.Count);
-                for (int baseIndex = 0; baseIndex < bases.Count; baseIndex++) {
-                    Runtime.PyTuple_SetItem(baseTypes, baseIndex, bases[baseIndex]);
-                }
-                return bases[0];
-            }
+            baseTypes = types.Handle;
+            return types[0].Handle;
         }
 
         internal static IntPtr CreateSubType(IntPtr py_name, IntPtr py_base_type, IntPtr py_dict)

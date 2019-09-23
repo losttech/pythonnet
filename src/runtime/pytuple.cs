@@ -104,5 +104,8 @@ namespace Python.Runtime
             Runtime.CheckExceptionOccurred();
             return new PyTuple(op);
         }
+
+        internal static PyTuple FromSingleElement(IntPtr value)
+            => new PyTuple(items: new []{new PyObject(value)});
     }
 }
