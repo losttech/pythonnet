@@ -807,6 +807,8 @@ namespace Python.Runtime
         
         internal static IntPtr PyGILState_GetThisThreadState() => Delegates.PyGILState_GetThisThreadState();
 
+        internal static int PyGILState_Check() => Delegates.PyGILState_Check();
+
         public static int Py_Main(
             int argc,
             [MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(StrArrayMarshaler))] string[] argv
@@ -1817,6 +1819,9 @@ namespace Python.Runtime
                 PyGILState_Ensure = GetDelegateForFunctionPointer<PyGILState_EnsureDelegate>(GetFunctionByName(nameof(PyGILState_Ensure), GetUnmanagedDll(PythonDLL)));
                 PyGILState_Release = GetDelegateForFunctionPointer<PyGILState_ReleaseDelegate>(GetFunctionByName(nameof(PyGILState_Release), GetUnmanagedDll(PythonDLL)));
                 PyGILState_GetThisThreadState = GetDelegateForFunctionPointer<PyGILState_GetThisThreadStateDelegate>(GetFunctionByName(nameof(PyGILState_GetThisThreadState), GetUnmanagedDll(PythonDLL)));
+                if (PythonVersion >= new Version(3, 4)) {
+                    PyGILState_Check = GetDelegateForFunctionPointer<PyGILState_CheckDelegate>(GetFunctionByName(nameof(PyGILState_Check), GetUnmanagedDll(PythonDLL)));
+                }
                 Py_Main = GetDelegateForFunctionPointer<Py_MainDelegate>(GetFunctionByName(nameof(Py_Main), GetUnmanagedDll(PythonDLL)));
                 PyEval_InitThreads = GetDelegateForFunctionPointer<PyEval_InitThreadsDelegate>(GetFunctionByName(nameof(PyEval_InitThreads), GetUnmanagedDll(PythonDLL)));
                 PyEval_ThreadsInitialized = GetDelegateForFunctionPointer<PyEval_ThreadsInitializedDelegate>(GetFunctionByName(nameof(PyEval_ThreadsInitialized), GetUnmanagedDll(PythonDLL)));
@@ -2132,6 +2137,11 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate IntPtr PyGILState_GetThisThreadStateDelegate();
+
+            internal static PyGILState_CheckDelegate PyGILState_Check { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int PyGILState_CheckDelegate();
 
             internal static Py_MainDelegate Py_Main { get; }
 

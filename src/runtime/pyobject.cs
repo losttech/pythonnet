@@ -227,6 +227,8 @@ namespace Python.Runtime
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            DebugUtil.EnsureGIL();
+
             IntPtr op = Runtime.PyObject_GetAttrString(obj, name);
             Exceptions.ErrorCheck(op);
             return new PyObject(op);
@@ -245,6 +247,8 @@ namespace Python.Runtime
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            DebugUtil.EnsureGIL();
+
             IntPtr op = Runtime.PyObject_GetAttrString(obj, name);
             if (op == IntPtr.Zero)
             {
@@ -260,6 +264,8 @@ namespace Python.Runtime
         public PyObject GetAttrOrElse(string name, PyObject _default)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
+
+            DebugUtil.EnsureGIL();
 
             IntPtr op = Runtime.PyObject_GetAttrString(obj, name);
             if (op == IntPtr.Zero)
@@ -288,6 +294,8 @@ namespace Python.Runtime
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            DebugUtil.EnsureGIL();
+
             IntPtr op = Runtime.PyObject_GetAttr(obj, name.obj);
             Exceptions.ErrorCheck(op);
             return new PyObject(op);
@@ -305,6 +313,8 @@ namespace Python.Runtime
         public PyObject GetAttr(PyObject name, PyObject _default)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
+
+            DebugUtil.EnsureGIL();
 
             IntPtr op = Runtime.PyObject_GetAttr(obj, name.obj);
             if (op == IntPtr.Zero)
@@ -328,6 +338,8 @@ namespace Python.Runtime
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
+            DebugUtil.EnsureGIL();
+
             int r = Runtime.PyObject_SetAttrString(obj, name, value.obj);
             if (r < 0)
             {
@@ -349,6 +361,8 @@ namespace Python.Runtime
             if (name == null) throw new ArgumentNullException(nameof(name));
             if (value == null) throw new ArgumentNullException(nameof(value));
 
+            DebugUtil.EnsureGIL();
+
             int r = Runtime.PyObject_SetAttr(obj, name.obj, value.obj);
             if (r < 0)
             {
@@ -367,6 +381,8 @@ namespace Python.Runtime
         public void DelAttr(string name)
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
+
+            DebugUtil.EnsureGIL();
 
             int r = Runtime.PyObject_SetAttrString(obj, name, IntPtr.Zero);
             if (r < 0)
@@ -388,6 +404,8 @@ namespace Python.Runtime
         {
             if (name == null) throw new ArgumentNullException(nameof(name));
 
+            DebugUtil.EnsureGIL();
+
             int r = Runtime.PyObject_SetAttr(obj, name.obj, IntPtr.Zero);
             if (r < 0)
             {
@@ -407,6 +425,8 @@ namespace Python.Runtime
         public virtual PyObject GetItem(PyObject key)
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
+
+            DebugUtil.EnsureGIL();
 
             IntPtr op = Runtime.PyObject_GetItem(obj, key.obj);
             if (op == IntPtr.Zero)
@@ -465,6 +485,8 @@ namespace Python.Runtime
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
             if (value == null) throw new ArgumentNullException(nameof(value));
+
+            DebugUtil.EnsureGIL();
 
             int r = Runtime.PyObject_SetItem(obj, key.obj, value.obj);
             if (r < 0)
@@ -525,6 +547,8 @@ namespace Python.Runtime
         {
             if (key == null) throw new ArgumentNullException(nameof(key));
 
+            DebugUtil.EnsureGIL();
+
             int r = Runtime.PyObject_DelItem(obj, key.obj);
             if (r < 0)
             {
@@ -578,6 +602,8 @@ namespace Python.Runtime
         /// </remarks>
         public virtual long Length()
         {
+            DebugUtil.EnsureGIL();
+
             var s = Runtime.PyObject_Size(obj);
             if (s < 0)
             {
@@ -640,6 +666,7 @@ namespace Python.Runtime
         /// </remarks>
         public PyObject GetIterator()
         {
+            DebugUtil.EnsureGIL();
             IntPtr r = Runtime.PyObject_GetIter(obj);
             Exceptions.ErrorCheck(r);
             return new PyObject(r);
@@ -671,6 +698,8 @@ namespace Python.Runtime
             if (args == null) throw new ArgumentNullException(nameof(args));
             if (args.Contains(null)) throw new ArgumentNullException();
 
+            DebugUtil.EnsureGIL();
+
             var t = new PyTuple(args);
             IntPtr r = Runtime.PyObject_Call(obj, t.obj, IntPtr.Zero);
             t.Dispose();
@@ -690,6 +719,8 @@ namespace Python.Runtime
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
 
+            DebugUtil.EnsureGIL();
+
             IntPtr r = Runtime.PyObject_Call(obj, args.obj, IntPtr.Zero);
             Exceptions.ErrorCheck(r);
             return new PyObject(r);
@@ -707,6 +738,8 @@ namespace Python.Runtime
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
             if (args.Contains(null)) throw new ArgumentNullException();
+
+            DebugUtil.EnsureGIL();
 
             var t = new PyTuple(args);
             IntPtr r = Runtime.PyObject_Call(obj, t.obj, kw?.obj ?? IntPtr.Zero);
@@ -726,6 +759,8 @@ namespace Python.Runtime
         public PyObject Invoke(PyTuple args, PyDict kw)
         {
             if (args == null) throw new ArgumentNullException(nameof(args));
+
+            DebugUtil.EnsureGIL();
 
             IntPtr r = Runtime.PyObject_Call(obj, args.obj, kw?.obj ?? IntPtr.Zero);
             Exceptions.ErrorCheck(r);
@@ -862,6 +897,8 @@ namespace Python.Runtime
         {
             if (typeOrClass == null) throw new ArgumentNullException(nameof(typeOrClass));
 
+            DebugUtil.EnsureGIL();
+
             int r = Runtime.PyObject_IsInstance(obj, typeOrClass.obj);
             if (r < 0)
             {
@@ -883,6 +920,8 @@ namespace Python.Runtime
         {
             if (typeOrClass == null) throw new ArgumentNullException(nameof(typeOrClass));
 
+            DebugUtil.EnsureGIL();
+
             int r = Runtime.PyObject_IsSubclass(obj, typeOrClass.obj);
             if (r < 0)
             {
@@ -902,6 +941,7 @@ namespace Python.Runtime
         /// </remarks>
         public bool IsCallable()
         {
+            DebugUtil.EnsureGIL();
             return Runtime.PyCallable_Check(obj) != 0;
         }
 
@@ -915,6 +955,7 @@ namespace Python.Runtime
         /// </remarks>
         public bool IsIterable()
         {
+            DebugUtil.EnsureGIL();
             return Runtime.PyObject_IsIterable(obj);
         }
 
@@ -928,6 +969,7 @@ namespace Python.Runtime
         /// </remarks>
         public bool IsTrue()
         {
+            DebugUtil.EnsureGIL();
             return Runtime.PyObject_IsTrue(obj) != 0;
         }
 
@@ -941,6 +983,7 @@ namespace Python.Runtime
         /// </remarks>
         public PyList Dir()
         {
+            DebugUtil.EnsureGIL();
             IntPtr r = Runtime.PyObject_Dir(obj);
             Exceptions.ErrorCheck(r);
             return new PyList(r);
@@ -956,6 +999,7 @@ namespace Python.Runtime
         /// </remarks>
         public string Repr()
         {
+            DebugUtil.EnsureGIL();
             IntPtr strval = Runtime.PyObject_Repr(obj);
             string result = Runtime.GetManagedString(strval);
             Runtime.XDecref(strval);
@@ -972,6 +1016,7 @@ namespace Python.Runtime
         /// </remarks>
         public override string ToString()
         {
+            DebugUtil.EnsureGIL();
             IntPtr strval = Runtime.PyObject_Unicode(obj);
             string result = Runtime.GetManagedString(strval);
             Runtime.XDecref(strval);
@@ -996,6 +1041,7 @@ namespace Python.Runtime
             {
                 return true;
             }
+            DebugUtil.EnsureGIL();
             int r = Runtime.PyObject_Compare(obj, ((PyObject)o).obj);
             if (Exceptions.ErrorOccurred())
             {
@@ -1015,6 +1061,7 @@ namespace Python.Runtime
         /// </remarks>
         public override int GetHashCode()
         {
+            DebugUtil.EnsureGIL();
             return ((ulong)Runtime.PyObject_Hash(obj)).GetHashCode();
         }
 
@@ -1036,6 +1083,7 @@ namespace Python.Runtime
 
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
+            DebugUtil.EnsureGIL();
             IntPtr ptr = Converter.ToPython(value, value?.GetType());
             int r = Runtime.PyObject_SetAttrString(obj, binder.Name, ptr);
             if (r < 0)
@@ -1058,6 +1106,7 @@ namespace Python.Runtime
             var namedArgumentCount = callInfo.ArgumentNames.Count;
             var regularArgumentCount = callInfo.ArgumentCount - namedArgumentCount;
 
+            DebugUtil.EnsureGIL();
             var argTuple = Runtime.PyTuple_New(regularArgumentCount);
             for (int i = 0; i < regularArgumentCount; ++i)
             {
@@ -1081,6 +1130,7 @@ namespace Python.Runtime
             {
                 ;
             }
+            DebugUtil.EnsureGIL();
             IntPtr argtuple = Runtime.PyTuple_New(arg_count);
             for (var i = 0; i < arg_count; i++)
             {
@@ -1108,6 +1158,7 @@ namespace Python.Runtime
 
         private static void AddArgument(IntPtr argtuple, int i, object target)
         {
+            DebugUtil.EnsureGIL();
             IntPtr ptr = GetPythonObject(target);
 
             if (Runtime.PyTuple_SetItem(argtuple, i, ptr) < 0)
@@ -1199,6 +1250,7 @@ namespace Python.Runtime
 
         public override bool TryBinaryOperation(BinaryOperationBinder binder, object arg, out object result)
         {
+            DebugUtil.EnsureGIL();
             IntPtr res;
             if (!(arg is PyObject))
             {
@@ -1310,6 +1362,7 @@ namespace Python.Runtime
 
         public override bool TryUnaryOperation(UnaryOperationBinder binder, out object result)
         {
+            DebugUtil.EnsureGIL();
             int r;
             IntPtr res;
             switch (binder.Operation)

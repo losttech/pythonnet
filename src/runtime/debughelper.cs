@@ -137,5 +137,13 @@ namespace Python.Runtime
                 Console.WriteLine();
             }
         }
+
+        [Conditional("DEBUG")]
+        public static void EnsureGIL()
+        {
+            if (Runtime.PythonVersion >= new Version(3,4)) {
+                Debug.Assert(Runtime.PyGILState_Check() == 1, "GIL must be acquired");
+            }
+        }
     }
 }
