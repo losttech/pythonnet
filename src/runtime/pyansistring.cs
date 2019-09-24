@@ -25,14 +25,20 @@ namespace Python.Runtime
         /// An ArgumentException will be thrown if the given object is not
         /// a Python string object.
         /// </remarks>
-        public PyAnsiString(PyObject o)
+        public PyAnsiString(PyObject o): base(FromPyObject(o))
         {
+        }
+
+        static IntPtr FromPyObject(PyObject o)
+        {
+            if (o == null) throw new ArgumentNullException(nameof(o));
+
             if (!IsStringType(o))
             {
                 throw new ArgumentException("object is not a string");
             }
             Runtime.XIncref(o.obj);
-            obj = o.obj;
+            return o.obj;
         }
 
 
@@ -42,10 +48,8 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a Python string from a managed string.
         /// </remarks>
-        public PyAnsiString(string s)
+        public PyAnsiString(string s):base(Exceptions.ErrorOccurredCheck(Runtime.PyString_FromString(s)))
         {
-            obj = Runtime.PyString_FromString(s);
-            Runtime.CheckExceptionOccurred();
         }
 
 
@@ -57,6 +61,8 @@ namespace Python.Runtime
         /// </remarks>
         public static bool IsStringType(PyObject value)
         {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
             return Runtime.PyString_Check(value.obj);
         }
     }

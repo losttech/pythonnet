@@ -31,14 +31,19 @@ namespace Python.Runtime
         /// ArgumentException will be thrown if the given object is not a
         /// Python tuple object.
         /// </remarks>
-        public PyTuple(PyObject o)
+        public PyTuple(PyObject o):base(FromPyObject(o))
         {
-            if (!IsTupleType(o))
-            {
+        }
+
+        static IntPtr FromPyObject(PyObject o)
+        {
+            if (o == null) throw new ArgumentNullException(nameof(o));
+
+            if (!IsTupleType(o)) {
                 throw new ArgumentException("object is not a tuple");
             }
             Runtime.XIncref(o.obj);
-            obj = o.obj;
+            return o.obj;
         }
 
 
@@ -48,10 +53,8 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new empty PyTuple.
         /// </remarks>
-        public PyTuple()
+        public PyTuple():base(Exceptions.ErrorOccurredCheck(Runtime.PyTuple_New(0)))
         {
-            obj = Runtime.PyTuple_New(0);
-            Runtime.CheckExceptionOccurred();
         }
 
 
@@ -64,17 +67,31 @@ namespace Python.Runtime
         /// See caveats about PyTuple_SetItem:
         /// https://www.coursehero.com/file/p4j2ogg/important-exceptions-to-this-rule-PyTupleSetItem-and-PyListSetItem-These/
         /// </remarks>
-        public PyTuple(PyObject[] items)
+        public PyTuple(PyObject[] items):base(FromItems(items))
         {
+        }
+
+        static IntPtr FromItems(PyObject[] items)
+        {
+            if (items == null) throw new ArgumentNullException(nameof(items));
+
             int count = items.Length;
-            obj = Runtime.PyTuple_New(count);
-            for (var i = 0; i < count; i++)
-            {
-                IntPtr ptr = items[i].obj;
-                Runtime.XIncref(ptr);
-                Runtime.PyTuple_SetItem(obj, i, ptr);
-                Runtime.CheckExceptionOccurred();
+            IntPtr obj = Runtime.PyTuple_New(count);
+            try {
+                for (var i = 0; i < count; i++) {
+                    if (items[i] == null) throw new ArgumentNullException();
+
+                    IntPtr ptr = items[i].obj;
+                    Runtime.PyTuple_SetItem(obj, i, ptr);
+                    Runtime.CheckExceptionOccurred();
+                    Runtime.XIncref(ptr);
+                }
+            } catch {
+                Runtime.XDecref(obj);
+                throw;
             }
+
+            return obj;
         }
 
 

@@ -14,16 +14,16 @@ namespace Python.Runtime {
         /// Creates a new instance from an existing object reference.
         /// Ensures the type of the object is Python type.
         /// </summary>
-        public PyType(PyObject o) {
-            if (o == null) {
-                throw new ArgumentNullException(nameof(o));
-            }
+        public PyType(PyObject o) : base(FromPyObject(o)) { }
+
+        static IntPtr FromPyObject(PyObject o) {
+            if (o == null) throw new ArgumentNullException(nameof(o));
 
             if (!IsTypeType(o)) {
                 throw new ArgumentException("object is not a type");
             }
             Runtime.XIncref(o.obj);
-            this.obj = o.obj;
+            return o.obj;
         }
 
         /// <summary>

@@ -31,14 +31,19 @@ namespace Python.Runtime
         /// ArgumentException will be thrown if the given object is not a
         /// Python float object.
         /// </remarks>
-        public PyFloat(PyObject o)
+        public PyFloat(PyObject o):base(FromPyObject(o))
         {
+        }
+
+        static IntPtr FromPyObject(PyObject o)
+        {
+            if (o == null) throw new ArgumentNullException(nameof(o));
             if (!IsFloatType(o))
             {
                 throw new ArgumentException("object is not a float");
             }
             Runtime.XIncref(o.obj);
-            obj = o.obj;
+            return o.obj;
         }
 
 
@@ -48,10 +53,8 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new Python float from a double value.
         /// </remarks>
-        public PyFloat(double value)
+        public PyFloat(double value):base(Exceptions.ErrorOccurredCheck(Runtime.PyFloat_FromDouble(value)))
         {
-            obj = Runtime.PyFloat_FromDouble(value);
-            Runtime.CheckExceptionOccurred();
         }
 
 
@@ -61,12 +64,19 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new Python float from a string value.
         /// </remarks>
-        public PyFloat(string value)
+        public PyFloat(string value):base(FromString(value))
         {
+        }
+
+        static IntPtr FromString(string value)
+        {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
             using (var s = new PyString(value))
             {
-                obj = Runtime.PyFloat_FromString(s.obj, IntPtr.Zero);
+                var obj = Runtime.PyFloat_FromString(s.obj, IntPtr.Zero);
                 Runtime.CheckExceptionOccurred();
+                return obj;
             }
         }
 
@@ -79,6 +89,8 @@ namespace Python.Runtime
         /// </remarks>
         public static bool IsFloatType(PyObject value)
         {
+            if (value == null) throw new ArgumentNullException(nameof(value));
+
             return Runtime.PyFloat_Check(value.obj);
         }
 

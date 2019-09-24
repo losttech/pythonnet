@@ -16,6 +16,7 @@ namespace Python.Runtime
         {
         }
 
+        [Obsolete]
         protected PySequence()
         {
         }
