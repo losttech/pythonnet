@@ -62,10 +62,7 @@ namespace Python.Runtime
         /// Gets the native handle of the underlying Python object. This
         /// value is generally for internal use by the PythonNet runtime.
         /// </remarks>
-        public IntPtr Handle
-        {
-            get { return obj; }
-        }
+        public IntPtr Handle => obj == IntPtr.Zero ? throw new ObjectDisposedException(this.GetType().Name) : obj;
 
 
         /// <summary>
