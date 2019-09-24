@@ -168,23 +168,27 @@ namespace Python.Runtime
         /// Shortcut for (pointer == NULL) -&gt; throw PythonException
         /// </summary>
         /// <param name="pointer">Pointer to a Python object</param>
-        internal static void ErrorCheck(IntPtr pointer)
+        internal static IntPtr ErrorCheck(IntPtr pointer)
         {
             if (pointer == IntPtr.Zero)
             {
                 throw PythonException.FromPyErr();
             }
+
+            return pointer;
         }
 
         /// <summary>
         /// Shortcut for (pointer == NULL or ErrorOccurred()) -&gt; throw PythonException
         /// </summary>
-        internal static void ErrorOccurredCheck(IntPtr pointer)
+        internal static IntPtr ErrorOccurredCheck(IntPtr pointer)
         {
             if (pointer == IntPtr.Zero || ErrorOccurred())
             {
                 throw PythonException.FromPyErr();
             }
+
+            return pointer;
         }
 
         /// <summary>
