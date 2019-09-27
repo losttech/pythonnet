@@ -38,6 +38,42 @@ namespace Python.EmbeddingTest {
         }
 
         [Test]
+        public void OverloadResolution_ParamsOmitted() {
+            var overloaded = new Overloaded();
+            using (Py.GIL()) {
+                var o = overloaded.ToPython();
+
+                dynamic callWithInt = PythonEngine.Eval($"lambda o: o.{nameof(Overloaded.ArgPlusParams)}(42)");
+                callWithInt(o);
+                Assert.AreEqual(42, overloaded.Value);
+            }
+        }
+
+        [Test]
+        public void OverloadResolution_ParamsTypeMatch() {
+            var overloaded = new Overloaded();
+            using (Py.GIL()) {
+                var o = overloaded.ToPython();
+
+                dynamic callWithInts = PythonEngine.Eval($"lambda o: o.{nameof(Overloaded.ArgPlusParams)}(42, 43)");
+                callWithInts(o);
+                Assert.AreEqual(42, overloaded.Value);
+            }
+        }
+
+        [Test]
+        public void OverloadResolution_ParamsTypeMisMatch() {
+            var overloaded = new Overloaded();
+            using (Py.GIL()) {
+                var o = overloaded.ToPython();
+
+                dynamic callWithIntAndStr = PythonEngine.Eval($"lambda o: o.{nameof(Overloaded.ArgPlusParams)}(42, object())");
+                var error = Assert.Throws<PythonException>(() => callWithIntAndStr(o), "Should have thrown PythonException");
+                Assert.AreEqual(expected: Exceptions.TypeError, actual: error.PyType, "Should have thrown TypeError");
+            }
+        }
+
+        [Test]
         public void OverloadResolution_ObjOrClass() {
             var overloaded = new Overloaded();
             using (Py.GIL()) {
@@ -121,6 +157,8 @@ namespace Python.EmbeddingTest {
             public const int Derived = Base + 1;
             public void BaseOrDerived(Base _) => this.Value = Base;
             public void BaseOrDerived(Derived _) => this.Value = Derived;
+
+            public void ArgPlusParams(int arg0, params double[] floats) => this.Value = arg0;
 
             public bool TryGetAttr(string name, out PyObject value) {
                 using (var self = this.ToPython()) {

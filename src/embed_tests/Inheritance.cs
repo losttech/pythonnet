@@ -97,7 +97,7 @@ namespace Python.EmbeddingTest {
             using (var scope = Py.CreateScope()) {
                 scope.Set(nameof(instance), instance);
                 scope.Exec($"super({nameof(instance)}.__class__, {nameof(instance)}).set_x_to_42()");
-                int actual = scope.Eval<int>($"{nameof(instance)}.x");
+                int actual = scope.Eval<int>($"{nameof(instance)}.{nameof(Inherited.XProp)}");
                 Assert.AreEqual(expected: Inherited.X, actual);
             }
         }
@@ -130,7 +130,7 @@ namespace Python.EmbeddingTest {
   def virt(self):
     return 42
   def set_x_to_42(self):
-    self.x = 42
+    self.XProp = 42
   def callVirt(self):
     return self.virt()
   def __getattr__(self, name):
@@ -145,20 +145,20 @@ namespace Python.EmbeddingTest {
         public const int X = 42;
         readonly Dictionary<string, object> extras = new Dictionary<string, object>();
         public int virt() => OverridenVirtValue;
-        public int x {
+        public int XProp {
             get {
                 using (var scope = Py.CreateScope()) {
                     scope.Set("this", this);
                     try {
-                        return scope.Eval<int>("super(this.__class__, this).x");
+                        return scope.Eval<int>($"super(this.__class__, this).{nameof(XProp)}");
                     } catch (PythonException ex) when (ex.PyType == Exceptions.AttributeError) {
-                        if (this.extras.TryGetValue(nameof(x), out object value))
+                        if (this.extras.TryGetValue(nameof(this.XProp), out object value))
                             return (int)value;
                         throw;
                     }
                 }
             }
-            set => this.extras[nameof(x)] = value;
+            set => this.extras[nameof(this.XProp)] = value;
         }
     }
 }

@@ -474,6 +474,15 @@ namespace Python.Runtime
             var match = false;
             paramsArray = false;
 
+            if (parameters.Length > 0
+                && Attribute.IsDefined(parameters[parameters.Length - 1], typeof(ParamArrayAttribute)))
+            {
+                parameters = parameters.Take(parameters.Length - 1).ToArray();
+                // since we have params array, any more parameters is fine
+                argumentCount = Math.Min(argumentCount, parameters.Length);
+                paramsArray = true;
+            }
+
             if (argumentCount == parameters.Length)
             {
                 match = true;
@@ -488,12 +497,6 @@ namespace Python.Runtime
                         defaultArgList.Add(parameters[v].DefaultValue);
                     }
                 }
-            } else if (argumentCount > parameters.Length && parameters.Length > 0 &&
-                       Attribute.IsDefined(parameters[parameters.Length - 1], typeof(ParamArrayAttribute)))
-            {
-                // This is a `foo(params object[] bar)` style method
-                match = true;
-                paramsArray = true;
             }
 
             return match;
@@ -517,17 +520,18 @@ namespace Python.Runtime
 
             if (binding == null)
             {
+                var methods = methodinfo ?? this.methods;
                 var value = new StringBuilder("No method matches given arguments");
-                if (methodinfo != null && methodinfo.Length > 0) {
+                if (methods != null && methods.Length > 0) {
                     value.Append(" for ");
                     if (inst != IntPtr.Zero && inst != Runtime.PyNone) {
                         value.Append(Runtime.PyObject_GetTypeName(inst));
-                        value.Append(methodinfo[0].IsStatic ? "::": ".");
+                        value.Append(methods[0].IsStatic ? "::": ".");
                     } else {
-                        value.Append(methodinfo[0].DeclaringType.Name);
+                        value.Append(methods[0].DeclaringType.Name);
                         value.Append("::");
                     }
-                    value.Append(methodinfo[0].Name);
+                    value.Append(methods[0].Name);
                 }
 
                 long argCount = Runtime.PyTuple_Size(args);
