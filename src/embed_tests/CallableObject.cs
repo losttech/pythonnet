@@ -23,7 +23,7 @@ namespace Python.EmbeddingTest {
 
         [Test]
         public void CallMethodMakesObjectCallable() {
-            var doubler = new Doubler();
+            var doubler = new DerivedDoubler();
             using (Py.GIL()) {
                 dynamic applyObjectTo21 = PythonEngine.Eval("lambda o: o(21)");
                 Assert.AreEqual(doubler.__call__(21), (int)applyObjectTo21(doubler.ToPython()));
@@ -43,13 +43,17 @@ namespace Python.EmbeddingTest {
             public int __call__(int arg) => 2 * arg;
         }
 
+        class DerivedDoubler : Doubler { }
+
         [CustomBaseType]
         class CallViaInheritance {
             public const string BaseClassName = "Forwarder";
             public static readonly string BaseClassSource = $@"
-class {BaseClassName}:
+class MyCallableBase:
   def __call__(self, val):
     return self.Call(val)
+
+class {BaseClassName}(MyCallableBase): pass
 ";
             public int Call(int arg) => 3 * arg;
         }
