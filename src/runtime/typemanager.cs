@@ -93,7 +93,8 @@ namespace Python.Runtime
                         TypeFlags.HeapType | TypeFlags.HaveGC;
             Util.WriteCLong(type, TypeOffset.tp_flags, flags);
 
-            Runtime.PyType_Ready(type);
+            if (Runtime.PyType_Ready(type) != 0)
+                throw new PythonEngineException("Can not create type", PythonException.FromPyErr());
 
             IntPtr dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             IntPtr mod = Runtime.PyString_FromString("CLR");
@@ -121,14 +122,10 @@ namespace Python.Runtime
                 tp_dictoffset = ObjectOffset.DictOffset(Exceptions.Exception);
             }
 
-            IntPtr type = AllocateTypeObject(name);
+            IntPtr type = AllocateTypeObject(name, typeType: Runtime.PyCLRMetaType);
 
             Marshal.WriteIntPtr(type, TypeOffset.ob_type, Runtime.PyCLRMetaType);
             Runtime.XIncref(Runtime.PyCLRMetaType);
-
-            Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_itemsize, IntPtr.Zero);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, (IntPtr)tp_dictoffset);
 
             InitializeSlots(type, impl.GetType());
 
@@ -136,6 +133,7 @@ namespace Python.Runtime
                 InitializeSlot(type, TypeOffset.tp_getattro, typeof(SlotOverrides).GetMethod(nameof(SlotOverrides.tp_getattro)));
             }
 
+            int extraTypeDataOffset = ob_size - MetaType.ExtraTypeDataSize;
             try
             {
                 IntPtr base_ = GetBaseType(clrType, out IntPtr bases);
@@ -148,6 +146,20 @@ namespace Python.Runtime
                         Marshal.WriteIntPtr(type, TypeOffset.tp_bases, bases);
                         Runtime.XIncref(bases);
                     }
+
+                    int baseSize = checked((int)Marshal.ReadIntPtr(base_, TypeOffset.tp_basicsize));
+                    if (!ClassObject.IsManagedType(base_))
+                    {
+                        // custom base type is a Python type, so we must allocate additional space for GC handle
+                        extraTypeDataOffset = baseSize;
+                        ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
+                        ob_size = baseSize + MetaType.ExtraTypeDataSize;
+                    } else
+                    {
+                        extraTypeDataOffset = checked((int)Marshal.ReadIntPtr(base_, TypeOffset.clr_gchandle_offset));
+                        ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
+                        ob_size = baseSize;
+                    }
                 }
             }
             catch (Exception error)
@@ -155,6 +167,13 @@ namespace Python.Runtime
                 Exceptions.SetError(error);
                 return IntPtr.Zero;
             }
+
+            ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
+
+            Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
+            Marshal.WriteIntPtr(type, TypeOffset.tp_itemsize, IntPtr.Zero);
+            Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, (IntPtr)tp_dictoffset);
+            Marshal.WriteIntPtr(type, TypeOffset.clr_gchandle_offset, (IntPtr)extraTypeDataOffset);
 
             int flags = TypeFlags.Default;
             flags |= TypeFlags.Managed;
@@ -387,9 +406,14 @@ namespace Python.Runtime
             Marshal.WriteIntPtr(type, TypeOffset.tp_base, py_type);
             Runtime.XIncref(py_type);
 
-            // Copy gc and other type slots from the base Python metatype.
+            TypeOffset.clr_gchandle_offset = checked((int)Marshal.ReadIntPtr(py_type, TypeOffset.tp_basicsize));
+            if (TypeOffset.clr_gchandle_offset <= 0)
+                throw new PythonEngineException("CLR Metatype initialization failed: unable to read tp_basicsize correctly");
+            ObjectOffset.ClrGcHandleOffsetAssertSanity(TypeOffset.clr_gchandle_offset);
+            int structSize = TypeOffset.clr_gchandle_offset + MetaType.ExtraTypeDataSize;
+            Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, new IntPtr(structSize));
 
-            CopySlot(py_type, type, TypeOffset.tp_basicsize);
+            // Copy gc and other type slots from the base Python metatype.
             CopySlot(py_type, type, TypeOffset.tp_itemsize);
 
             CopySlot(py_type, type, TypeOffset.tp_dictoffset);
@@ -430,7 +454,8 @@ namespace Python.Runtime
 
             Marshal.WriteIntPtr(type, TypeOffset.tp_methods, mdefStart);
 
-            Runtime.PyType_Ready(type);
+            if (Runtime.PyType_Ready(type) != 0)
+                throw new PythonEngineException("Failed to create CLR Metatype", PythonException.FromPyErr());
 
             IntPtr dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             IntPtr mod = Runtime.PyString_FromString("CLR");
@@ -445,8 +470,16 @@ namespace Python.Runtime
         /// Utility method to allocate a type object &amp; do basic initialization.
         /// </summary>
         internal static IntPtr AllocateTypeObject(string name)
+            => AllocateTypeObject(name, Runtime.PyTypeType);
+        /// <summary>
+        /// Utility method to allocate a type object &amp; do basic initialization.
+        /// </summary>
+        internal static IntPtr AllocateTypeObject(string name, IntPtr typeType)
         {
-            IntPtr type = Runtime.PyType_GenericAlloc(Runtime.PyTypeType, 0);
+            if (name == null) throw new ArgumentNullException(nameof(name));
+            if (typeType == IntPtr.Zero) throw new ArgumentNullException(nameof(typeType));
+
+            IntPtr type = Runtime.PyType_GenericAlloc(typeType, 0);
 
             // Cheat a little: we'll set tp_name to the internal char * of
             // the Python version of the type name - otherwise we'd have to

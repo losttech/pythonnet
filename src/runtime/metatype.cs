@@ -22,6 +22,7 @@ namespace Python.Runtime
             return PyCLRMetaType;
         }
 
+        internal static int ExtraTypeDataSize => IntPtr.Size;
 
         /// <summary>
         /// Metatype __new__ implementation. This is called to create a new
@@ -108,6 +109,7 @@ namespace Python.Runtime
             Util.WriteCLong(type, TypeOffset.tp_flags, flags);
 
             TypeManager.CopySlot(base_type, type, TypeOffset.tp_dealloc);
+            TypeManager.CopySlot(base_type, type, TypeOffset.clr_gchandle_offset);
 
             // Hmm - the standard subtype_traverse, clear look at ob_size to
             // do things, so to allow gc to work correctly we need to move

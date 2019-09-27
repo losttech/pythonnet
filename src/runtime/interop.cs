@@ -1,6 +1,6 @@
 using System;
 using System.Collections;
-using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Text;
@@ -88,13 +88,29 @@ namespace Python.Runtime
 
         public static int magic(IntPtr ob)
         {
+            if (ob == IntPtr.Zero) throw new ArgumentNullException(nameof(ob));
+
             if ((Runtime.PyObject_TypeCheck(ob, Exceptions.BaseException) ||
                  (Runtime.PyType_Check(ob) && Runtime.PyType_IsSubtype(ob, Exceptions.BaseException))))
             {
                 return ExceptionOffset.ob_data;
             }
-            return ob_data;
+
+            IntPtr tp = Runtime.PyObject_TYPE(ob);
+            if (Runtime.PyObject_TYPE(tp) == Runtime.PyCLRMetaType) {
+                int offset = (int)Marshal.ReadIntPtr(tp, TypeOffset.clr_gchandle_offset);
+                ClrGcHandleOffsetAssertSanity(offset);
+                return offset;
+            } else {
+                return ob_data;
+            }
         }
+
+        [Conditional("DEBUG")]
+        static void AssertIsClrType(IntPtr tp) => Debug.Assert(Runtime.PyObject_TYPE(tp) == Runtime.PyCLRMetaType);
+        [Conditional("DEBUG")]
+        internal static void ClrGcHandleOffsetAssertSanity(int offset)
+            => Debug.Assert(offset > 0 && offset < 1024*1024, "GC handle offset is insane");
 
         public static int DictOffset(IntPtr ob)
         {
@@ -426,12 +442,8 @@ namespace Python.Runtime
 
             if (dt != null)
             {
-                IntPtr tmp = Marshal.AllocHGlobal(IntPtr.Size);
-                Delegate d = Delegate.CreateDelegate(dt, method);
-                Thunk cb = new Thunk(d);
-                Marshal.StructureToPtr(cb, tmp, false);
-                IntPtr fp = Marshal.ReadIntPtr(tmp, 0);
-                Marshal.FreeHGlobal(tmp);
+                var d = Delegate.CreateDelegate(dt, method);
+                IntPtr fp = Marshal.GetFunctionPointerForDelegate(d);
                 keepAlive.Add(d);
                 return fp;
             }

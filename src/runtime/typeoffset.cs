@@ -31,6 +31,8 @@ namespace Python.Runtime
             return ob_size;
         }
 
+        public static int clr_gchandle_offset = 0;
+
         public static int ob_refcnt = 0;
         public static int ob_type = 0;
         public static int ob_size = 0;
