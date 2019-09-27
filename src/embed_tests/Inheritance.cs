@@ -1,5 +1,5 @@
 using System;
-
+using System.Collections.Generic;
 using NUnit.Framework;
 using Python.Runtime;
 
@@ -89,6 +89,18 @@ namespace Python.EmbeddingTest {
                 Assert.AreEqual(expected: Inherited.OverridenVirtValue, actual);
             }
         }
+
+        [Test]
+        public void PythonCanSetAdHocAttributes() {
+            var instance = new Inherited();
+            using (Py.GIL())
+            using (var scope = Py.CreateScope()) {
+                scope.Set(nameof(instance), instance);
+                scope.Exec($"super({nameof(instance)}.__class__, {nameof(instance)}).set_x_to_42()");
+                int actual = scope.Eval<int>($"{nameof(instance)}.x");
+                Assert.AreEqual(expected: Inherited.X, actual);
+            }
+        }
     }
 
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
@@ -117,6 +129,8 @@ namespace Python.EmbeddingTest {
 @":
   def virt(self):
     return 42
+  def set_x_to_42(self):
+    self.x = 42
   def callVirt(self):
     return self.virt()
   def __getattr__(self, name):
@@ -128,6 +142,23 @@ namespace Python.EmbeddingTest {
 
     public class Inherited : InheritanceTestBaseClassWrapper {
         public const int OverridenVirtValue = -42;
+        public const int X = 42;
+        readonly Dictionary<string, object> extras = new Dictionary<string, object>();
         public int virt() => OverridenVirtValue;
+        public int x {
+            get {
+                using (var scope = Py.CreateScope()) {
+                    scope.Set("this", this);
+                    try {
+                        return scope.Eval<int>("super(this.__class__, this).x");
+                    } catch (PythonException ex) when (ex.PyType == Exceptions.AttributeError) {
+                        if (this.extras.TryGetValue(nameof(x), out object value))
+                            return (int)value;
+                        throw;
+                    }
+                }
+            }
+            set => this.extras[nameof(x)] = value;
+        }
     }
 }
