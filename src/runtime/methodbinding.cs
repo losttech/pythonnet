@@ -63,23 +63,26 @@ namespace Python.Runtime
         PyObject Singature {
             get {
                 var infos = this.info == null ? this.m.info : new[] {this.info};
+                var type = infos.Select(i => i.DeclaringType)
+                    .OrderByDescending(t => t, new TypeSpecificityComparer())
+                    .First();
+                infos = infos.Where(info => info.DeclaringType == type).ToArray();
                 // this is a primitive version
                 // the overload with the maximum number of parameters should be used
-                var primary = infos.First();
+                var primary = infos.OrderByDescending(i => i.GetParameters().Length).First();
                 var primaryParameters = primary.GetParameters();
                 PyObject signatureClass = Runtime.InspectModule.GetAttr("Signature");
                 var primaryReturn = primary.ReturnParameter;
-                if (infos.Any(i => i.GetParameters().Length != primaryParameters.Length
-                                   || i.ReturnParameter?.ParameterType != primaryReturn?.ParameterType)) {
-                    return signatureClass.Invoke();
-                }
 
                 var parameters = new PyList();
                 var parameterClass = primaryParameters.Length > 0 ? Runtime.InspectModule.GetAttr("Parameter") : null;
                 var positionalOrKeyword = primaryParameters.Length > 0 ? parameterClass.GetAttr("POSITIONAL_OR_KEYWORD") : null;
                 for (int i = 0; i < primaryParameters.Length; i++) {
                     var parameter = primaryParameters[i];
-                    var alternatives = infos.Select(info => info.GetParameters()[i]);
+                    var alternatives = infos.Select(info => {
+                        ParameterInfo[] altParamters = info.GetParameters();
+                        return i < altParamters.Length ? altParamters[i] : null;
+                    }).Where(p => p != null);
                     var defaultValue = alternatives
                         .Select(alternative => alternative.DefaultValue != DBNull.Value ? alternative.DefaultValue.ToPython() : null)
                         .FirstOrDefault(v => v != null) ?? parameterClass.GetAttr("empty");
@@ -99,6 +102,15 @@ namespace Python.Runtime
 
                 // TODO: add return annotation
                 return signatureClass.Invoke(parameters);
+            }
+        }
+
+        struct TypeSpecificityComparer : IComparer<Type> {
+            public int Compare(Type a, Type b) {
+                if (a == b) return 0;
+                if (a.IsSubclassOf(b)) return 1;
+                if (b.IsSubclassOf(a)) return -1;
+                throw new NotSupportedException();
             }
         }
 
@@ -130,6 +142,11 @@ namespace Python.Runtime
                 case "__signature__":
                     var sig = self.Singature;
                     return sig.Handle;
+                case "__name__":
+                    var pyName = self.m.GetName();
+                    return pyName == IntPtr.Zero
+                        ? IntPtr.Zero
+                        : Runtime.SelfIncRef(pyName);
                 default:
                     return Runtime.PyObject_GenericGetAttr(ob, key);
             }
