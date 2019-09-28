@@ -21,9 +21,28 @@ namespace Python.Runtime.Slots
             var self = (IGetAttr)((CLRObject)ManagedType.GetManagedObject(ob)).inst;
             string attr = Runtime.GetManagedString(key);
             RuntimeHelpers.EnsureSufficientExecutionStack();
-            return self.TryGetAttr(attr, out var value)
-                ? Runtime.SelfIncRef(value.Handle)
-                : Runtime.PyObject_GenericGetAttr(ob, key);
+            bool gotAttr;
+            PyObject value;
+            try {
+                gotAttr = self.TryGetAttr(attr, out value);
+            } catch (Exception error) {
+                Exceptions.SetError(error);
+                return IntPtr.Zero;
+            }
+            if (gotAttr) {
+                if (value == null || value.Handle == IntPtr.Zero) {
+                    Exceptions.SetError(Exceptions.ValueError,
+                        nameof(IGetAttr) + " implementation returned null value");
+                    return IntPtr.Zero;
+                }
+
+                return Runtime.SelfIncRef(value.Handle);
+            } else {
+                IntPtr result = Runtime.PyObject_GenericGetAttr(ob, key);
+                System.Diagnostics.Debug.Assert(result != IntPtr.Zero
+                                                || Exceptions.ErrorOccurred());
+                return result;
+            }
         }
     }
 
