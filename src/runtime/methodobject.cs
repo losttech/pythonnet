@@ -1,4 +1,6 @@
 using System;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 
 namespace Python.Runtime
@@ -88,6 +90,16 @@ namespace Python.Runtime
             }
             doc = Runtime.PyString_FromString(str);
             return doc;
+        }
+
+        internal IntPtr GetName()
+        {
+            var names = new HashSet<string>(binder.GetMethods().Select(m => m.Name));
+            if (names.Count != 1) {
+                Exceptions.SetError(Exceptions.AttributeError, "a method has no name");
+                return IntPtr.Zero;
+            }
+            return Runtime.PyString_FromString(names.First());
         }
 
 
