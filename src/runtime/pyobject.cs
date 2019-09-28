@@ -1412,5 +1412,7 @@ namespace Python.Runtime
                 yield return pyObj.ToString();
             }
         }
+
+        public PyObject Clone() => new PyObject(Runtime.SelfIncRef(this.Handle));
     }
 }
