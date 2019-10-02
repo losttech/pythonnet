@@ -6,138 +6,23 @@ using System.Security;
 using System.Text;
 using System.Collections.Generic;
 
+using Python.Runtime.Platforms;
+
 namespace Python.Runtime
 {
-
     [SuppressUnmanagedCodeSecurity]
     internal static class NativeMethods
     {
-        private static int RTLD_NOW = 0x2;
-// MONO_LINUX
-        private static int LINUX_RTLD_GLOBAL = 0x100;
-        private static IntPtr LINUX_RTLD_DEFAULT = IntPtr.Zero;
-        private const string LinuxNativeDll = "libdl.so";
-        public static IntPtr LinuxLoadLibrary(string fileName)
-        {
-            fileName = string.IsNullOrEmpty(System.IO.Path.GetExtension(fileName)) ? $"lib{fileName}.so" : fileName;
-            return Linux.dlopen(fileName, RTLD_NOW | LINUX_RTLD_GLOBAL);
-        }
-// MONO_OSX
-        private static int MAC_RTLD_GLOBAL = 0x8;
-        private const string MacNativeDll = "/usr/lib/libSystem.dylib";
-        private static IntPtr MAC_RTLD_DEFAULT = new IntPtr(-2);
-
-        public static IntPtr MacLoadLibrary(string fileName)
-        {
-            fileName = string.IsNullOrEmpty(System.IO.Path.GetExtension(fileName)) ? $"lib{fileName}.dylib" : fileName;
-            return Mac.dlopen(fileName, RTLD_NOW | MAC_RTLD_GLOBAL);
-        }
-
-        static readonly IntPtr? RTLD_DEFAULT =
-            RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? LINUX_RTLD_DEFAULT
-            : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MAC_RTLD_DEFAULT
-            : (IntPtr?)null;
-
-        public static IntPtr UnixGetProcAddress(IntPtr dllHandle, string name)
-        {
-            // look in the exe if dllHandle is NULL
-            if (dllHandle == IntPtr.Zero)
-            {
-                dllHandle = RTLD_DEFAULT.Value;
-            }
-
-            // clear previous errors if any
-            IntPtr res, errPtr;
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux)) {
-                Linux.dlerror();
-                res = Linux.dlsym(dllHandle, name);
-                errPtr = Linux.dlerror();
-            } else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX)) {
-                Mac.dlerror();
-                res = Mac.dlsym(dllHandle, name);
-                errPtr = Mac.dlerror();
-            } else {
-                throw new PlatformNotSupportedException();
-            }
-
-            if (errPtr != IntPtr.Zero)
-            {
-                throw new Exception("dlsym: " + Marshal.PtrToStringAnsi(errPtr));
-            }
-            return res;
-        }
-
-        static class Linux
-        {
-            [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern IntPtr dlopen(String fileName, int flags);
-
-            [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            internal static extern IntPtr dlsym(IntPtr handle, String symbol);
-
-            [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int dlclose(IntPtr handle);
-
-            [DllImport(LinuxNativeDll, CallingConvention = CallingConvention.Cdecl)]
-            internal static extern IntPtr dlerror();
-        }
-
-        static class Mac
-        {
-            [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            public static extern IntPtr dlopen(String fileName, int flags);
-
-            [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
-            internal static extern IntPtr dlsym(IntPtr handle, String symbol);
-
-            [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl)]
-            internal static extern int dlclose(IntPtr handle);
-
-            [DllImport(MacNativeDll, CallingConvention = CallingConvention.Cdecl)]
-            internal static extern IntPtr dlerror();
-        }
-
-        // #else // Windows
-        private const string WinNativeDll = "kernel32.dll";
-
-        [DllImport(WinNativeDll, EntryPoint = "LoadLibrary")]
-        public static extern IntPtr WinLoadLibrary(string dllToLoad);
-
-        [DllImport(WinNativeDll, EntryPoint = "GetProcAddress")]
-        public static extern IntPtr WinGetProcAddress(IntPtr hModule, string procedureName);
-
-        [DllImport(WinNativeDll, EntryPoint = "FreeLibrary")]
-        public static extern bool WinFreeLibrary(IntPtr hModule);
-// #endif
         public static IntPtr LoadLibrary(string dllToLoad) => impl.LoadLibrary(dllToLoad);
-
         public static IntPtr GetProcAddress(IntPtr hModule, string procedureName)
             => impl.GetProcAddress(hModule, procedureName);
-
         public static void FreeLibrary(IntPtr hModule) => impl.FreeLibrary(hModule);
 
-
-        static readonly NativeMethodsImpl impl =
-            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? new NativeMethodsImpl {
-                LoadLibrary = WinLoadLibrary,
-                GetProcAddress = WinGetProcAddress,
-                FreeLibrary = h => WinFreeLibrary(h),
-            } : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? new NativeMethodsImpl {
-                LoadLibrary = LinuxLoadLibrary,
-                GetProcAddress = UnixGetProcAddress,
-                FreeLibrary = h => Linux.dlclose(h),
-            } : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? new NativeMethodsImpl {
-                LoadLibrary = MacLoadLibrary,
-                GetProcAddress = UnixGetProcAddress,
-                FreeLibrary = h => Mac.dlclose(h),
-            } : Throw<NativeMethodsImpl>(new PlatformNotSupportedException());
-
-        struct NativeMethodsImpl
-        {
-            public Func<string, IntPtr> LoadLibrary { get; set; }
-            public Func<IntPtr, string, IntPtr> GetProcAddress { get; set; }
-            public Action<IntPtr> FreeLibrary { get; set; }
-        }
+        static readonly INativeLibraryLoader impl =
+            RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? WindowsLibraryLoader.Instance
+            : RuntimeInformation.IsOSPlatform(OSPlatform.Linux) ? LinuxLibraryLoader.Instance
+            : RuntimeInformation.IsOSPlatform(OSPlatform.OSX) ? MacLibraryLoader.Instance
+            : Throw<INativeLibraryLoader>(new PlatformNotSupportedException());
 
         internal static T Throw<T>(Exception exception)
         {
