@@ -3048,10 +3048,11 @@ namespace Python.Runtime
     }
 
 #if NETFX
-    static class RuntimeInformation{
-      public static bool IsOSPlatform(OSPlatform platform){return platform == OSPlatform.Windows;}
+    public static class RuntimeInformation {
+      public static OSPlatform OSPlatform { get; set; } = Environment.OSVersion.Platform == PlatformID.Unix ? OSPlatform.Linux : OSPlatform.Windows;
+      public static bool IsOSPlatform(OSPlatform platform){return platform == OSPlatform;}
     }
 
-    enum OSPlatform{ Windows, Linux, OSX }
+    public enum OSPlatform{ Windows, Linux, OSX }
 #endif
 }
