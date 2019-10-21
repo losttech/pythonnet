@@ -887,7 +887,22 @@ namespace Python.Runtime
             result = null;
 
             bool IsSeqObj = Runtime.PySequence_Check(value);
-            var len = IsSeqObj ? Runtime.PySequence_Size(value) : -1;
+            int len = -1;
+            if (IsSeqObj)
+            {
+                long longLen = Runtime.PySequence_Size(value);
+                if (longLen > int.MaxValue)
+                {
+                    if (setError)
+                    {
+                        Exceptions.SetError(Exceptions.NotImplementedError, ".NET does not support lists with over 2^31 elements");
+                    }
+
+                    return false;
+                }
+
+                len = longLen < 0 ? -1 : checked((int)longLen);
+            }
 
             IntPtr IterObject = Runtime.PyObject_GetIter(value);
 
@@ -903,7 +918,7 @@ namespace Python.Runtime
 
             var listType = typeof(List<>);
             var constructedListType = listType.MakeGenericType(elementType);
-            IList list = IsSeqObj ? (IList) Activator.CreateInstance(constructedListType, new Object[] {(int) len}) : 
+            IList list = len > 0 ? (IList) Activator.CreateInstance(constructedListType, new Object[] {len}) : 
                                         (IList) Activator.CreateInstance(constructedListType);
             IntPtr item;
 
