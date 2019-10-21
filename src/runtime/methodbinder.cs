@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -548,6 +550,42 @@ namespace Python.Runtime
             return Invoke(inst, args, kw, info, null);
         }
 
+        static string GetNoMethodMatchesArgumentsMessage(IntPtr args, IEnumerable<MethodInfo> methods)
+        {
+            var value = new StringBuilder("No method matches given arguments");
+            var method = methods?.FirstOrDefault();
+            if (method != null)
+            {
+                value.Append($" for {method.Name}");
+            }
+
+            long argCount = Runtime.PyTuple_Size(args);
+            value.Append(": (");
+            for(long argIndex = 0; argIndex < argCount; argIndex++) {
+                var arg = Runtime.PyTuple_GetItem(args, argIndex);
+                if (arg != IntPtr.Zero) {
+                    var type = Runtime.PyObject_Type(arg);
+                    if (type != IntPtr.Zero) {
+                        try {
+                            var description = Runtime.PyObject_Unicode(type);
+                            if (description != IntPtr.Zero) {
+                                value.Append(Runtime.GetManagedString(description));
+                                Runtime.XDecref(description);
+                            }
+                        } finally {
+                            Runtime.XDecref(type);
+                        }
+                    }
+                }
+
+                if (argIndex + 1 < argCount)
+                    value.Append(", ");
+            }
+
+            value.Append(')');
+            return value.ToString();
+        }
+
         internal virtual IntPtr Invoke(IntPtr inst, IntPtr args, IntPtr kw, MethodBase info, MethodInfo[] methodinfo)
         {
             Binding binding = Bind(inst, args, kw, info, methodinfo);
@@ -556,36 +594,8 @@ namespace Python.Runtime
 
             if (binding == null)
             {
-                var value = new StringBuilder("No method matches given arguments");
-                if (methodinfo != null && methodinfo.Length > 0)
-                {
-                    value.Append($" for {methodinfo[0].Name}");
-                }
-
-                long argCount = Runtime.PyTuple_Size(args);
-                value.Append(": (");
-                for(long argIndex = 0; argIndex < argCount; argIndex++) {
-                    var arg = Runtime.PyTuple_GetItem(args, argIndex);
-                    if (arg != IntPtr.Zero) {
-                        var type = Runtime.PyObject_Type(arg);
-                        if (type != IntPtr.Zero) {
-                            try {
-                                var description = Runtime.PyObject_Unicode(type);
-                                if (description != IntPtr.Zero) {
-                                    value.Append(Runtime.GetManagedString(description));
-                                    Runtime.XDecref(description);
-                                }
-                            } finally {
-                                Runtime.XDecref(type);
-                            }
-                        }
-                    }
-
-                    if (argIndex + 1 < argCount)
-                        value.Append(", ");
-                }
-                value.Append(')');
-                Exceptions.SetError(Exceptions.TypeError, value.ToString());
+                string message = GetNoMethodMatchesArgumentsMessage(args, methodinfo);
+                Exceptions.SetError(Exceptions.TypeError, message);
                 return IntPtr.Zero;
             }
 
@@ -627,6 +637,7 @@ namespace Python.Runtime
 
             if (binding.outs == 1 && mi.ReturnType == typeof(void))
             {
+#warning CODE IS MISSING! Need test case(s)
             }
 
             if (binding.outs > 0)
