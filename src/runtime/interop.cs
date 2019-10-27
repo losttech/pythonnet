@@ -97,7 +97,7 @@ namespace Python.Runtime
 #if DEBUG
             Debug.Assert(ManagedType.IsManagedType(type));
             var meta = Runtime.PyObject_TYPE(type);
-            if (meta.DangerousGetAddress() != Runtime.PyCLRMetaType)
+            if (Runtime.PyCLRMetaType != IntPtr.Zero && meta.DangerousGetAddress() != Runtime.PyCLRMetaType)
                 Debug.Assert(new PyObject(meta).ToString() == "<class 'CLR.CLR Metatype'>");
 #endif
             int offset = (int)Marshal.ReadIntPtr(type.DangerousGetAddress(), TypeOffset.clr_gchandle_offset);

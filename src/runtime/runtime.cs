@@ -1049,6 +1049,46 @@ namespace Python.Runtime
         
         internal static IntPtr PyObject_Dir(IntPtr pointer) => Delegates.PyObject_Dir(pointer);
 
+        //====================================================================
+        // Python buffer API
+        //====================================================================
+
+
+        internal static bool PyObject_CheckBuffer(BorrowedReference obj)
+        {
+            var type = PyObject_TYPE(obj);
+            var bufferProcs = Marshal.ReadIntPtr(type.DangerousGetAddress(), TypeOffset.tp_as_buffer);
+            if (bufferProcs == IntPtr.Zero) return false;
+            var getBuffer = Marshal.ReadIntPtr(bufferProcs, 0);
+            return getBuffer != IntPtr.Zero;
+        }
+
+        
+        internal static int PyObject_GetBuffer(BorrowedReference exporter, out Py_buffer view, PyBUF flags) => Delegates.PyObject_GetBuffer(exporter, out view, flags);
+
+        
+        internal static void PyBuffer_Release(ref Py_buffer view) => Delegates.PyBuffer_Release(ref view);
+
+        
+        internal static IntPtr PyBuffer_SizeFromFormat([MarshalAs(UnmanagedType.LPStr)] string format) => Delegates.PyBuffer_SizeFromFormat(format);
+
+        
+        internal static int PyBuffer_IsContiguous(ref Py_buffer view, BufferOrderStyle order) => Delegates.PyBuffer_IsContiguous(ref view, order);
+
+        
+        internal static IntPtr PyBuffer_GetPointer(ref Py_buffer view, IntPtr[] indices) => Delegates.PyBuffer_GetPointer(ref view, indices);
+
+        
+        internal static int PyBuffer_FromContiguous(ref Py_buffer view, IntPtr buf, IntPtr len, BufferOrderStyle fort) => Delegates.PyBuffer_FromContiguous(ref view, buf, len, fort);
+
+        
+        internal static int PyBuffer_ToContiguous(IntPtr buf, ref Py_buffer src, IntPtr len, BufferOrderStyle order) => Delegates.PyBuffer_ToContiguous(buf, ref src, len, order);
+
+        
+        internal static void PyBuffer_FillContiguousStrides(int ndims, IntPtr[] shape, IntPtr[] strides, int itemsize, BufferOrderStyle order) => Delegates.PyBuffer_FillContiguousStrides(ndims, shape, strides, itemsize, order);
+
+        
+        internal static int PyBuffer_FillInfo(ref Py_buffer view, BorrowedReference exporter, IntPtr buf, IntPtr len, bool @readonly, PyBUF flags) => Delegates.PyBuffer_FillInfo(ref view, exporter, buf, len, @readonly, flags);
 
         //====================================================================
         // Python number API
@@ -2073,6 +2113,16 @@ namespace Python.Runtime
                 PyMethod_New = GetDelegateForFunctionPointer<PyMethod_NewDelegate>(GetFunctionByName(nameof(PyMethod_New), GetUnmanagedDll(PythonDLL)));
                 Py_AddPendingCall = GetDelegateForFunctionPointer<Py_AddPendingCallDelegate>(GetFunctionByName(nameof(Py_AddPendingCall), GetUnmanagedDll(PythonDLL)));
                 Py_MakePendingCalls = GetDelegateForFunctionPointer<Py_MakePendingCallsDelegate>(GetFunctionByName(nameof(Py_MakePendingCalls), GetUnmanagedDll(PythonDLL)));
+                PyObject_GetBuffer = GetDelegateForFunctionPointer<PyObject_GetBufferDelegate>(GetFunctionByName(nameof(PyObject_GetBuffer), GetUnmanagedDll(PythonDLL)));
+                PyBuffer_Release = GetDelegateForFunctionPointer<PyBuffer_ReleaseDelegate>(GetFunctionByName(nameof(PyBuffer_Release), GetUnmanagedDll(PythonDLL)));
+                if (Runtime.PythonVersion >= new Version(3,9))
+                    PyBuffer_SizeFromFormat = GetDelegateForFunctionPointer<PyBuffer_SizeFromFormatDelegate>(GetFunctionByName(nameof(PyBuffer_SizeFromFormat), GetUnmanagedDll(PythonDLL)));
+                PyBuffer_IsContiguous = GetDelegateForFunctionPointer<PyBuffer_IsContiguousDelegate>(GetFunctionByName(nameof(PyBuffer_IsContiguous), GetUnmanagedDll(PythonDLL)));
+                PyBuffer_GetPointer = GetDelegateForFunctionPointer<PyBuffer_GetPointerDelegate>(GetFunctionByName(nameof(PyBuffer_GetPointer), GetUnmanagedDll(PythonDLL)));
+                PyBuffer_FromContiguous = GetDelegateForFunctionPointer<PyBuffer_FromContiguousDelegate>(GetFunctionByName(nameof(PyBuffer_FromContiguous), GetUnmanagedDll(PythonDLL)));
+                PyBuffer_ToContiguous = GetDelegateForFunctionPointer<PyBuffer_ToContiguousDelegate>(GetFunctionByName(nameof(PyBuffer_ToContiguous), GetUnmanagedDll(PythonDLL)));
+                PyBuffer_FillContiguousStrides = GetDelegateForFunctionPointer<PyBuffer_FillContiguousStridesDelegate>(GetFunctionByName(nameof(PyBuffer_FillContiguousStrides), GetUnmanagedDll(PythonDLL)));
+                PyBuffer_FillInfo = GetDelegateForFunctionPointer<PyBuffer_FillInfoDelegate>(GetFunctionByName(nameof(PyBuffer_FillInfo), GetUnmanagedDll(PythonDLL)));
             }
 
             static T GetDelegateForFunctionPointer<T>(IntPtr functionPointer) {
@@ -3250,6 +3300,51 @@ namespace Python.Runtime
             // end of PY3
 
             enum Py2 { }
+
+            internal static PyObject_GetBufferDelegate PyObject_GetBuffer { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int PyObject_GetBufferDelegate(BorrowedReference exporter, out Py_buffer view, PyBUF flags);
+
+            internal static PyBuffer_ReleaseDelegate PyBuffer_Release { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate void PyBuffer_ReleaseDelegate(ref Py_buffer view);
+
+            internal static PyBuffer_SizeFromFormatDelegate PyBuffer_SizeFromFormat { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
+            internal delegate IntPtr PyBuffer_SizeFromFormatDelegate([MarshalAs(UnmanagedType.LPStr)] string format);
+
+            internal static PyBuffer_IsContiguousDelegate PyBuffer_IsContiguous { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int PyBuffer_IsContiguousDelegate(ref Py_buffer view, BufferOrderStyle order);
+
+            internal static PyBuffer_GetPointerDelegate PyBuffer_GetPointer { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate IntPtr PyBuffer_GetPointerDelegate(ref Py_buffer view, IntPtr[] indices);
+
+            internal static PyBuffer_FromContiguousDelegate PyBuffer_FromContiguous { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int PyBuffer_FromContiguousDelegate(ref Py_buffer view, IntPtr buf, IntPtr len, BufferOrderStyle fort);
+
+            internal static PyBuffer_ToContiguousDelegate PyBuffer_ToContiguous { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int PyBuffer_ToContiguousDelegate(IntPtr buf, ref Py_buffer src, IntPtr len, BufferOrderStyle order);
+
+            internal static PyBuffer_FillContiguousStridesDelegate PyBuffer_FillContiguousStrides { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            public delegate void PyBuffer_FillContiguousStridesDelegate(int ndims, IntPtr[] shape, IntPtr[] strides, int itemsize, BufferOrderStyle order);
+
+            internal static PyBuffer_FillInfoDelegate PyBuffer_FillInfo { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int PyBuffer_FillInfoDelegate(ref Py_buffer view, BorrowedReference exporter, IntPtr buf, IntPtr len, bool @readonly, PyBUF flags);
         }
     }
 
