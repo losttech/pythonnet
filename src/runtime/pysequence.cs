@@ -12,7 +12,7 @@ namespace Python.Runtime
     /// </summary>
     public class PySequence : PyObject, IEnumerable
     {
-        protected PySequence(IntPtr ptr) : base(ptr)
+        public PySequence(IntPtr ptr) : base(ptr)
         {
         }
 
