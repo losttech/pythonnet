@@ -2,6 +2,8 @@ using System;
 
 namespace Python.Runtime
 {
+    using System.Text;
+
     /// <summary>
     /// Provides a managed interface to exceptions thrown by the Python
     /// runtime.
@@ -46,12 +48,7 @@ namespace Python.Runtime
             }
             if (_pyTB != IntPtr.Zero)
             {
-                PyObject tb_module = PythonEngine.ImportModule("traceback");
-                Runtime.XIncref(_pyTB);
-                using (var pyTB = new PyObject(_pyTB))
-                {
-                    this._traceback = tb_module.InvokeMethod("format_tb", pyTB).ToString();
-                }
+                this._traceback = TracebackHandleToString(_pyTB);
             }
             PythonEngine.ReleaseLock(gs);
         }
@@ -116,16 +113,26 @@ namespace Python.Runtime
             }
             if (pyTracebackHandle != IntPtr.Zero)
             {
-                PyObject tb_module = PythonEngine.ImportModule("traceback");
-                Runtime.XIncref(pyTracebackHandle);
-                using (var pyTB = new PyObject(pyTracebackHandle))
-                {
-                    traceback = tb_module.InvokeMethod("format_tb", pyTB).ToString();
-                }
+                traceback = TracebackHandleToString(pyTracebackHandle);
             }
 
             return new PythonException(pyTypeHandle, pyValueHandle, pyTracebackHandle,
                 msg, pythonTypeName, traceback, inner);
+        }
+
+        static string TracebackHandleToString(IntPtr tracebackHandle) {
+            if (tracebackHandle == IntPtr.Zero) {
+                throw new ArgumentNullException(nameof(tracebackHandle));
+            }
+
+            PyObject tracebackModule = PythonEngine.ImportModule("traceback");
+            PyObject traceback = new PyObject(tracebackHandle);
+            PyList stackLines = new PyList(tracebackModule.InvokeMethod("format_tb", traceback));
+            var result = new StringBuilder();
+            foreach (object stackLine in stackLines) {
+                result.Append(stackLine);
+            }
+            return result.ToString();
         }
 
         // Ensure that encapsulated Python objects are decref'ed appropriately
