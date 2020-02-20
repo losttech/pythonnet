@@ -165,7 +165,7 @@ namespace Python.Runtime
             int result = Runtime.PyDict_Update(obj, other.obj);
             if (result < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 

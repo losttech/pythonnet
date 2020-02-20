@@ -524,7 +524,7 @@ namespace Python.Runtime
             PyObject result = RunString(code, globals, locals, RunFlagType.File);
             if (result.obj != Runtime.PyNone)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
             result.Dispose();
         }

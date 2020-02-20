@@ -84,7 +84,7 @@ namespace Python.Runtime.Slots
                 if (pyResult == IntPtr.Zero) {
                     result = null;
                     if (!PythonException.Matches(Exceptions.AttributeError)) {
-                        throw PythonException.FromPyErr();
+                        throw PythonException.ThrowLastAsClrException();
                     }
 
                     Exceptions.Clear();

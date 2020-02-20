@@ -272,7 +272,7 @@ namespace Python.Runtime
             {
                 if (!Exceptions.ExceptionMatches(Exceptions.AttributeError))
                 {
-                    throw PythonException.FromPyErr();
+                    throw PythonException.ThrowLastAsClrException();
                 }
 
                 Runtime.PyErr_Clear();
@@ -343,7 +343,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttrString(obj, name, value.obj);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -366,7 +366,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttr(obj, name.obj, value.obj);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -387,7 +387,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttrString(obj, name, IntPtr.Zero);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -409,7 +409,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttr(obj, name.obj, IntPtr.Zero);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -431,7 +431,7 @@ namespace Python.Runtime
             IntPtr op = Runtime.PyObject_GetItem(obj, key.obj);
             if (op == IntPtr.Zero)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
             return new PyObject(op);
         }
@@ -491,7 +491,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetItem(obj, key.obj, value.obj);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -552,7 +552,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_DelItem(obj, key.obj);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -1045,7 +1045,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_Compare(obj, ((PyObject)o).obj);
             if (Exceptions.ErrorOccurred())
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
             return r == 0;
         }
@@ -1088,7 +1088,7 @@ namespace Python.Runtime
             int r = Runtime.PyObject_SetAttrString(obj, binder.Name, ptr);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
             Runtime.XDecref(ptr);
             return true;
@@ -1163,7 +1163,7 @@ namespace Python.Runtime
 
             if (Runtime.PyTuple_SetItem(argtuple, i, ptr) < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 

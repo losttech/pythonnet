@@ -72,7 +72,7 @@ namespace Python.Runtime
                 int r = Runtime.PyList_SetItem(obj, i, ptr);
                 if (r < 0)
                 {
-                    throw PythonException.FromPyErr();
+                    throw PythonException.ThrowLastAsClrException();
                 }
             }
         }
@@ -117,7 +117,7 @@ namespace Python.Runtime
             int r = Runtime.PyList_Append(obj, item.obj);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -132,7 +132,7 @@ namespace Python.Runtime
             int r = Runtime.PyList_Insert(obj, index, item.obj);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -148,7 +148,7 @@ namespace Python.Runtime
             int r = Runtime.PyList_Reverse(obj);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
 
@@ -164,7 +164,7 @@ namespace Python.Runtime
             int r = Runtime.PyList_Sort(obj);
             if (r < 0)
             {
-                throw PythonException.FromPyErr();
+                throw PythonException.ThrowLastAsClrException();
             }
         }
     }

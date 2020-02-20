@@ -2,6 +2,7 @@ using System;
 
 namespace Python.Runtime
 {
+    using System.Runtime.ExceptionServices;
     using System.Text;
 
     /// <summary>
@@ -22,7 +23,7 @@ namespace Python.Runtime
         public PythonException()
         {
             IntPtr gs = PythonEngine.AcquireLock();
-            Runtime.PyErr_Fetch(ref _pyType, ref _pyValue, ref _pyTB);
+            Runtime.PyErr_Fetch(out _pyType, out _pyValue, out _pyTB);
             Runtime.XIncref(_pyType);
             Runtime.XIncref(_pyValue);
             Runtime.XIncref(_pyTB);
@@ -66,24 +67,49 @@ namespace Python.Runtime
             _traceback = traceback ?? _traceback;
         }
 
-        internal static PythonException FromPyErr() {
+        internal static Exception FromPyErr() {
             IntPtr gs = PythonEngine.AcquireLock();
-            IntPtr pyTypeHandle = IntPtr.Zero, pyValueHandle = IntPtr.Zero, pyTracebackHandle = IntPtr.Zero;
-            Runtime.PyErr_Fetch(ref pyTypeHandle, ref pyValueHandle, ref pyTracebackHandle);
-            Runtime.XIncref(pyTypeHandle);
-            Runtime.XIncref(pyValueHandle);
-            Runtime.XIncref(pyTracebackHandle);
+            Runtime.PyErr_Fetch(out var pyTypeHandle, out var pyValueHandle, out var pyTracebackHandle);
             var result = FromPyErr(pyTypeHandle, pyValueHandle, pyTracebackHandle);
             PythonEngine.ReleaseLock(gs);
             return result;
         }
 
         /// <summary>
+        /// Rethrows the last Python exception as corresponding CLR exception.
+        /// It is recommended to call this as <code>throw ThrowLastAsClrException()</code>
+        /// to assist control flow checks.
+        /// </summary>
+        internal static Exception ThrowLastAsClrException() {
+            IntPtr gs = PythonEngine.AcquireLock();
+            try {
+                Runtime.PyErr_Fetch(out var pyTypeHandle, out var pyValueHandle, out var pyTracebackHandle);
+                var clrObject = ManagedType.GetManagedObject(pyValueHandle) as CLRObject;
+                if (clrObject?.inst is Exception e) {
+#if NETSTANDARD
+                    ExceptionDispatchInfo.Capture(e).Throw();
+#endif
+                    throw e;
+                }
+                var result = FromPyErr(pyTypeHandle, pyValueHandle, pyTracebackHandle);
+                throw result;
+            } finally {
+                PythonEngine.ReleaseLock(gs);
+            }
+        }
+
+        /// <summary>
         /// Requires lock to be acquired eslewhere
         /// </summary>
-        static PythonException FromPyErr(IntPtr pyTypeHandle, IntPtr pyValueHandle, IntPtr pyTracebackHandle) {
+        static Exception FromPyErr(IntPtr pyTypeHandle, IntPtr pyValueHandle, IntPtr pyTracebackHandle) {
             Exception inner = null;
             string pythonTypeName = null, msg = "", traceback = null;
+
+            var clrObject = ManagedType.GetManagedObject(pyValueHandle) as CLRObject;
+            if (clrObject?.inst is Exception e) {
+                return e;
+            }
+
             if (pyTypeHandle != IntPtr.Zero && pyValueHandle != IntPtr.Zero)
             {
                 string type;
@@ -126,7 +152,7 @@ namespace Python.Runtime
             }
 
             PyObject tracebackModule = PythonEngine.ImportModule("traceback");
-            PyObject traceback = new PyObject(tracebackHandle);
+            using var traceback = new PyObject(Runtime.SelfIncRef(tracebackHandle));
             PyList stackLines = new PyList(tracebackModule.InvokeMethod("format_tb", traceback));
             var result = new StringBuilder();
             foreach (object stackLine in stackLines) {
