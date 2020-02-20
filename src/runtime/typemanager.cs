@@ -273,9 +273,10 @@ namespace Python.Runtime
                 return Exceptions.Exception;
             }
 
-            var baseOverride = Util.GetLatestAttribute<BaseTypeAttributeBase>(clrType);
-            var types = baseOverride?.BaseTypes(clrType);
-            if (types == null || types.Length() == 0) return IntPtr.Zero;
+            var baseOverride = Util.GetLatestAttribute<BaseTypeAttributeBase>(clrType)
+                ?? BaseTypeAttributeBase.Default;
+            var types = baseOverride.BaseTypes(clrType);
+            if (types.Length() == 0) return IntPtr.Zero;
             for (int index = 0; index < types.Length(); index++) {
                 IntPtr baseType = Runtime.PyTuple_GetItem(types.Handle, index);
                 if (!PyType.IsTypeType(baseType)) {

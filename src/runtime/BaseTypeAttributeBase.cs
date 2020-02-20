@@ -27,7 +27,9 @@ namespace Python.Runtime
                 return PyTuple.FromSingleElement(bc.pyHandle);
             }
 
-            return null;
+            return new PyTuple();
         }
+
+        internal static BaseTypeAttributeBase Default { get; } = new BaseTypeAttributeBase();
     }
 }

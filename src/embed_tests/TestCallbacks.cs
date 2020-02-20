@@ -79,6 +79,18 @@ namespace Python.EmbeddingTest {
             }
         }
 
+        [Test]
+        public void TestExceptionInCallback() {
+            var dotnetFunction = new Action<int>(_ => throw new ArgumentOutOfRangeException());
+            using (Py.GIL()) {
+                dynamic callWith42 = PythonEngine.Eval("lambda f: f(42)");
+                var error = Assert.Throws<PythonException>(() => callWith42(dotnetFunction.ToPython()));
+                Assert.AreEqual(
+                    ClassManager.GetClass(typeof(ArgumentOutOfRangeException)).pyHandle,
+                    error.PyType);
+            }
+        }
+
         class FunctionContainer {
             public void Instance(int arg) { }
             public static void Static(int arg) { }
