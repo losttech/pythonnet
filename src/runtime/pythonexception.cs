@@ -112,6 +112,11 @@ namespace Python.Runtime
 
             if (pyTypeHandle != IntPtr.Zero && pyValueHandle != IntPtr.Zero)
             {
+                if (PyObjectConversions.TryDecode(pyValueHandle, pyTypeHandle, typeof(Exception),
+                    out object decoded) && decoded is Exception decodedException) {
+                    return decodedException;
+                }
+
                 string type;
                 string message;
                 Runtime.XIncref(pyTypeHandle);
