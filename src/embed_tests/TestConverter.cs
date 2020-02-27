@@ -44,5 +44,13 @@ namespace Python.EmbeddingTest
             Assert.IsTrue(converted);
             Assert.IsTrue(((double) convertedValue).Equals(testValue));
         }
+
+        [Test]
+        public void ConvertSequenceWithNoSize()
+        {
+            var itertools = Py.Import("itertools");
+            var generator = itertools.InvokeMethod("repeat", 1.ToPython());
+            Converter.ToManaged(generator.Handle, typeof(object), out var result, setError: false);
+        }
     }
 }
