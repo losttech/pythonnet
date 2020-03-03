@@ -27,8 +27,9 @@ namespace Python.Runtime
         /// Trace stack for PyObject's construction
         /// </summary>
         public StackTrace Traceback { get; private set; }
-#endif  
+#endif
 
+        readonly long run = Runtime.GetRun();
         protected internal IntPtr obj = IntPtr.Zero;
         private bool disposed = false;
         private bool _finalized = false;
@@ -181,8 +182,9 @@ namespace Python.Runtime
         {
             if (!disposed)
             {
-                if (Runtime.Py_IsInitialized() > 0 && !Runtime.IsFinalizing)
+                if (Runtime.Py_IsInitialized() > 0 && !Runtime.IsFinalizing && this.run == Runtime.GetRun())
                 {
+                    Debug.Assert(this.run == Runtime.GetRun(), "Attempt to dispose PyObject from wrong run");
                     IntPtr gs = PythonEngine.AcquireLock();
                     Runtime.XDecref(obj);
                     obj = IntPtr.Zero;
