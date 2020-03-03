@@ -4,7 +4,9 @@ using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
 using System.Text;
+using System.Threading;
 using System.Collections.Generic;
+using Python.Runtime.Platform;
 
 using Python.Runtime.Platforms;
 
@@ -44,14 +46,14 @@ namespace Python.Runtime
         }
 
         // C# compiler copies constants to the assemblies that references this library.
-        // We needs to replace all public constants to static readonly fields to allow 
+        // We needs to replace all public constants to static readonly fields to allow
         // binary substitution of different Python.Runtime.dll builds in a target application.
 
         public static int UCS { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 2 : 4;
         public static string PyUnicodeEntryPoint { get; } = UCS == 2 ? "PyUnicodeUCS2_" : "PyUnicodeUCS4_";
 
         // C# compiler copies constants to the assemblies that references this library.
-        // We needs to replace all public constants to static readonly fields to allow 
+        // We needs to replace all public constants to static readonly fields to allow
         // binary substitution of different Python.Runtime.dll builds in a target application.
 
         public static string pyversion => _pyversion;
@@ -133,17 +135,6 @@ namespace Python.Runtime
         [Obsolete("Use IsWindowsPlatform")]
         internal static readonly bool IsWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
 
-        /// <summary>
-        /// Operating system type as reported by Python.
-        /// </summary>
-        public enum OperatingSystemType
-        {
-            Windows,
-            Darwin,
-            Linux,
-            Other
-        }
-
         static readonly Dictionary<string, OperatingSystemType> OperatingSystemTypeMapping = new Dictionary<string, OperatingSystemType>()
         {
             { "Windows", OperatingSystemType.Windows },
@@ -161,12 +152,6 @@ namespace Python.Runtime
         /// </summary>
         public static string OperatingSystemName { get; private set; }
 
-        public enum MachineType
-        {
-            i386,
-            x86_64,
-            Other
-        };
 
         /// <summary>
         /// Map lower-case version of the python machine name to the processor
@@ -183,6 +168,9 @@ namespace Python.Runtime
             ["amd64"] = MachineType.x86_64,
             ["x64"] = MachineType.x86_64,
             ["em64t"] = MachineType.x86_64,
+            ["armv7l"] = MachineType.armv7l,
+            ["armv8"] = MachineType.armv8,
+            ["aarch64"] = MachineType.aarch64,
         };
 
         /// <summary>
@@ -195,10 +183,14 @@ namespace Python.Runtime
         /// </summary>
         public static string MachineName { get; private set; }
 
+        public static int MainManagedThreadId { get; private set; }
+
         /// <summary>
         /// Encoding to use to convert Unicode to/from Managed to Native
         /// </summary>
         internal static readonly Encoding PyEncoding = UCS == 2 ? Encoding.Unicode : Encoding.UTF32;
+
+        private static PyReferenceCollection _pyRefs = new PyReferenceCollection();
 
         /// <summary>
         /// Initialize the runtime...
@@ -208,6 +200,7 @@ namespace Python.Runtime
             if (Py_IsInitialized() == 0)
             {
                 Py_InitializeEx(initSigs ? 1 : 0);
+                MainManagedThreadId = Thread.CurrentThread.ManagedThreadId;
             }
 
             if (PyEval_ThreadsInitialized() == 0)
@@ -217,78 +210,98 @@ namespace Python.Runtime
 
             IsFinalizing = false;
 
-            CLRModule.Reset();
             GenericUtil.Reset();
             PyScopeManager.Reset();
             ClassManager.Reset();
             ClassDerivedObject.Reset();
             TypeManager.Reset();
 
-            IntPtr op = PyImport_ImportModule("builtins");
-            IntPtr dict = PyObject_GetAttrString(op, "__dict__");
-            
-            PyNotImplemented = PyObject_GetAttrString(op, "NotImplemented");
-            PyBaseObjectType = PyObject_GetAttrString(op, "object");
+            IntPtr op;
+            {
+                var builtins = GetBuiltins();
+                SetPyMember(ref PyNotImplemented, PyObject_GetAttrString(builtins, "NotImplemented"),
+                    () => PyNotImplemented = IntPtr.Zero);
 
-            PyModuleType = PyObject_Type(op);
-            PyNone = PyObject_GetAttrString(op, "None");
-            PyTrue = PyObject_GetAttrString(op, "True");
-            PyFalse = PyObject_GetAttrString(op, "False");
-            PySuper = PyObject_GetAttrString(op, "super");
-            PyTuple = PyObject_GetAttrString(op, "tuple");
+                SetPyMember(ref PyBaseObjectType, PyObject_GetAttrString(builtins, "object"),
+                    () => PyBaseObjectType = IntPtr.Zero);
 
-            PyBoolType = PyObject_Type(PyTrue);
-            PyNoneType = PyObject_Type(PyNone);
-            PyTypeType = PyObject_Type(PyNoneType);
+                SetPyMember(ref PyNone, PyObject_GetAttrString(builtins, "None"),
+                    () => PyNone = IntPtr.Zero);
+                SetPyMember(ref PyTrue, PyObject_GetAttrString(builtins, "True"),
+                    () => PyTrue = IntPtr.Zero);
+                SetPyMember(ref PyFalse, PyObject_GetAttrString(builtins, "False"),
+                    () => PyFalse = IntPtr.Zero);
 
-            op = PyObject_GetAttrString(dict, "keys");
-            PyMethodType = PyObject_Type(op);
-            XDecref(op);
+                SetPyMember(ref PyBoolType, PyObject_Type(PyTrue),
+                    () => PyBoolType = IntPtr.Zero);
+                SetPyMember(ref PyNoneType, PyObject_Type(PyNone),
+                    () => PyNoneType = IntPtr.Zero);
+                SetPyMember(ref PyTypeType, PyObject_Type(PyNoneType),
+                    () => PyTypeType = IntPtr.Zero);
 
-            // For some arcane reason, builtins.__dict__.__setitem__ is *not*
-            // a wrapper_descriptor, even though dict.__setitem__ is.
-            //
-            // object.__init__ seems safe, though.
-            op = PyObject_GetAttrString(PyBaseObjectType, "__init__");
-            PyWrapperDescriptorType = PyObject_Type(op);
-            XDecref(op);
+                op = PyObject_GetAttrString(builtins, "len");
+                SetPyMember(ref PyMethodType, PyObject_Type(op),
+                    () => PyMethodType = IntPtr.Zero);
+                XDecref(op);
 
-            XDecref(dict);
+                // For some arcane reason, builtins.__dict__.__setitem__ is *not*
+                // a wrapper_descriptor, even though dict.__setitem__ is.
+                //
+                // object.__init__ seems safe, though.
+                op = PyObject_GetAttrString(PyBaseObjectType, "__init__");
+                SetPyMember(ref PyWrapperDescriptorType, PyObject_Type(op),
+                    () => PyWrapperDescriptorType = IntPtr.Zero);
+                XDecref(op);
+
+                SetPyMember(ref PySuper_Type, PyObject_GetAttrString(builtins, "super"),
+                    () => PySuper_Type = IntPtr.Zero);
+
+                XDecref(builtins);
+            }
 
             op = PyString_FromString("string");
-            PyStringType = PyObject_Type(op);
+            SetPyMember(ref PyStringType, PyObject_Type(op),
+                () => PyStringType = IntPtr.Zero);
             XDecref(op);
 
             op = PyUnicode_FromString("unicode");
-            PyUnicodeType = PyObject_Type(op);
+            SetPyMember(ref PyUnicodeType, PyObject_Type(op),
+                () => PyUnicodeType = IntPtr.Zero);
             XDecref(op);
 
             op = PyBytes_FromString("bytes");
-            PyBytesType = PyObject_Type(op);
+            SetPyMember(ref PyBytesType, PyObject_Type(op),
+                () => PyBytesType = IntPtr.Zero);
             XDecref(op);
 
             op = PyTuple_New(0);
-            PyTupleType = PyObject_Type(op);
+            SetPyMember(ref PyTupleType, PyObject_Type(op),
+                () => PyTupleType = IntPtr.Zero);
             XDecref(op);
 
             op = PyList_New(0);
-            PyListType = PyObject_Type(op);
+            SetPyMember(ref PyListType, PyObject_Type(op),
+                () => PyListType = IntPtr.Zero);
             XDecref(op);
 
             op = PyDict_New();
-            PyDictType = PyObject_Type(op);
+            SetPyMember(ref PyDictType, PyObject_Type(op),
+                () => PyDictType = IntPtr.Zero);
             XDecref(op);
 
             op = PyInt_FromInt32(0);
-            PyIntType = PyObject_Type(op);
+            SetPyMember(ref PyIntType, PyObject_Type(op),
+                () => PyIntType = IntPtr.Zero);
             XDecref(op);
 
             op = PyLong_FromLong(0);
-            PyLongType = PyObject_Type(op);
+            SetPyMember(ref PyLongType, PyObject_Type(op),
+                () => PyLongType = IntPtr.Zero);
             XDecref(op);
 
             op = PyFloat_FromDouble(0);
-            PyFloatType = PyObject_Type(op);
+            SetPyMember(ref PyFloatType, PyObject_Type(op),
+                () => PyFloatType = IntPtr.Zero);
             XDecref(op);
 
             PyClassType = IntPtr.Zero;
@@ -296,23 +309,25 @@ namespace Python.Runtime
 
             Error = new IntPtr(-1);
 
-            IntPtr dllLocal = IntPtr.Zero;
-
-            if (PythonDLL != "__Internal")
-            {
-                dllLocal = NativeMethods.LoadLibrary(PythonDLL);
-            }
-            _PyObject_NextNotImplemented = NativeMethods.GetProcAddress(dllLocal, "_PyObject_NextNotImplemented");
-
-            if (IsWindowsPlatform && dllLocal != IntPtr.Zero)
-            {
-                NativeMethods.FreeLibrary(dllLocal);
-            }
-
             // Initialize data about the platform we're running on. We need
             // this for the type manager and potentially other details. Must
             // happen after caching the python types, above.
             InitializePlatformData();
+
+            IntPtr dllLocal = IntPtr.Zero;
+            var loader = LibraryLoader.Get(OperatingSystem);
+
+            if (PythonDLL != "__Internal")
+            {
+                dllLocal = loader.Load(PythonDLL);
+            }
+            _PyObject_NextNotImplemented = loader.GetFunction(dllLocal, "_PyObject_NextNotImplemented");
+            PyModuleType = loader.GetFunction(dllLocal, "PyModule_Type");
+
+            if (dllLocal != IntPtr.Zero)
+            {
+                loader.Free(dllLocal);
+            }
 
             // Initialize modules that depend on the runtime class.
             AssemblyManager.Initialize();
@@ -382,6 +397,10 @@ namespace Python.Runtime
             AssemblyManager.Shutdown();
             Exceptions.Shutdown();
             ImportHook.Shutdown();
+            Finalizer.Shutdown();
+            // TOOD: PyCLRMetaType's release operation still in #958
+            PyCLRMetaType = IntPtr.Zero;
+            ResetPyMembers();
             Py_Finalize();
         }
 
@@ -395,6 +414,19 @@ namespace Python.Runtime
             return 0;
         }
 
+        private static void SetPyMember(ref IntPtr obj, IntPtr value, Action onRelease)
+        {
+            // XXX: For current usages, value should not be null.
+            PythonException.ThrowIfIsNull(value);
+            obj = value;
+            _pyRefs.Add(value, onRelease);
+        }
+
+        private static void ResetPyMembers()
+        {
+            _pyRefs.Release();
+        }
+
         internal static IntPtr Py_single_input = (IntPtr)256;
         internal static IntPtr Py_file_input = (IntPtr)257;
         internal static IntPtr Py_eval_input = (IntPtr)258;
@@ -403,6 +435,7 @@ namespace Python.Runtime
         internal static IntPtr PyModuleType;
         internal static IntPtr PyClassType;
         internal static IntPtr PyInstanceType;
+        internal static IntPtr PySuper_Type;
         internal static IntPtr PyCLRMetaType;
         internal static IntPtr PyMethodType;
         internal static IntPtr PyWrapperDescriptorType;
@@ -419,6 +452,8 @@ namespace Python.Runtime
         internal static IntPtr PyNoneType;
         internal static IntPtr PyTypeType;
 
+        internal static IntPtr Py_NoSiteFlag;
+
         internal static IntPtr PyBytesType;
         internal static IntPtr _PyObject_NextNotImplemented;
 
@@ -434,8 +469,6 @@ namespace Python.Runtime
         internal static IntPtr PyFalse;
         internal static IntPtr PyNone;
         internal static IntPtr Error;
-        internal static IntPtr PySuper;
-        internal static IntPtr PyTuple;
 
         private static readonly Lazy<PyObject> inspect =
             new Lazy<PyObject>(() => PythonEngine.ImportModule("inspect"), isThreadSafe: false);
@@ -572,9 +605,10 @@ namespace Python.Runtime
         }
 
         /// <summary>
-        /// Increase Python's ref counter for the given object, and return the object back.
+        /// Increase Python's ref counter for the given object, and get the object back.
         /// </summary>
-        internal static IntPtr SelfIncRef(IntPtr op) {
+        internal static IntPtr SelfIncRef(IntPtr op)
+        {
             XIncref(op);
             return op;
         }
@@ -771,13 +805,34 @@ namespace Python.Runtime
         internal static int PyRun_SimpleString(string code) => Delegates.PyRun_SimpleString(code);
 
         
-        internal static IntPtr PyRun_String(string code, IntPtr st, IntPtr globals, IntPtr locals) => Delegates.PyRun_String(code, st, globals, locals);
+        internal static NewReference PyRun_String(string code, IntPtr st, IntPtr globals, IntPtr locals) => Delegates.PyRun_String(code, st, globals, locals);
 
         
         internal static IntPtr PyEval_EvalCode(IntPtr co, IntPtr globals, IntPtr locals) => Delegates.PyEval_EvalCode(co, globals, locals);
 
-        
-        internal static IntPtr Py_CompileString(string code, string file, IntPtr tok) => Delegates.Py_CompileString(code, file, tok);
+        /// <summary>
+        /// Return value: New reference.
+        /// This is a simplified interface to Py_CompileStringFlags() below, leaving flags set to NULL.
+        /// </summary>
+        internal static IntPtr Py_CompileString(string str, string file, int start)
+        {
+            return Py_CompileStringFlags(str, file, start, IntPtr.Zero);
+        }
+
+        /// <summary>
+        /// Return value: New reference.
+        /// This is a simplified interface to Py_CompileStringExFlags() below, with optimize set to -1.
+        /// </summary>
+        internal static IntPtr Py_CompileStringFlags(string str, string file, int start, IntPtr flags)
+        {
+            return Py_CompileStringExFlags(str, file, start, flags, -1);
+        }
+
+        /// <summary>
+        /// Return value: New reference.
+        /// Like Py_CompileStringObject(), but filename is a byte string decoded from the filesystem encoding(os.fsdecode()).
+        /// </summary>
+        internal static IntPtr Py_CompileStringExFlags(string str, string file, int start, IntPtr flags, int optimize) => Delegates.Py_CompileStringExFlags(str, file, start, flags, optimize);
 
         
         internal static IntPtr PyImport_ExecCodeModule(string name, IntPtr code) => Delegates.PyImport_ExecCodeModule(name, code);
@@ -924,7 +979,7 @@ namespace Python.Runtime
 
         internal static long PyObject_Size(IntPtr pointer)
         {
-            return (long) _PyObject_Size(pointer);
+            return (long)_PyObject_Size(pointer);
         }
 
         
@@ -1000,8 +1055,16 @@ namespace Python.Runtime
         [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static IntPtr PyLong_FromLong(long value) => Delegates.PyLong_FromLong(value);
 
-        [Obsolete("Should not be used due to the size of long not being guaranteed")]
-        internal static IntPtr PyLong_FromUnsignedLong(uint value) => Delegates.PyLong_FromUnsignedLong(value);
+        internal static IntPtr PyLong_FromUnsignedLong32(uint value) => Delegates.PyLong_FromUnsignedLong32(value);
+        internal static IntPtr PyLong_FromUnsignedLong64(ulong value) => Delegates.PyLong_FromUnsignedLong64(value);
+
+        internal static IntPtr PyLong_FromUnsignedLong(object value)
+        {
+            if (Is32Bit || IsWindows)
+                return PyLong_FromUnsignedLong32(Convert.ToUInt32(value));
+            else
+                return PyLong_FromUnsignedLong64(Convert.ToUInt64(value));
+        }
 
         
         internal static IntPtr PyLong_FromDouble(double value) => Delegates.PyLong_FromDouble(value);
@@ -1015,11 +1078,18 @@ namespace Python.Runtime
         
         internal static IntPtr PyLong_FromString(string value, IntPtr end, int radix) => Delegates.PyLong_FromString(value, end, radix);
 
-        [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static int PyLong_AsLong(IntPtr value) => Delegates.PyLong_AsLong(value);
 
-        [Obsolete("Should not be used due to the size of long not being guaranteed")]
-        internal static uint PyLong_AsUnsignedLong(IntPtr value) => Delegates.PyLong_AsUnsignedLong(value);
+        internal static uint PyLong_AsUnsignedLong32(IntPtr value) => Delegates.PyLong_AsUnsignedLong32(value);
+        internal static ulong PyLong_AsUnsignedLong64(IntPtr value) => Delegates.PyLong_AsUnsignedLong64(value);
+
+        internal static object PyLong_AsUnsignedLong(IntPtr value)
+        {
+            if (Is32Bit || IsWindows)
+                return PyLong_AsUnsignedLong32(value);
+            else
+                return PyLong_AsUnsignedLong64(value);
+        }
 
         [Obsolete("Should not be used due to the size of long not being guaranteed")]
         internal static long PyLong_AsLongLong(IntPtr value) => Delegates.PyLong_AsLongLong(value);
@@ -1051,7 +1121,7 @@ namespace Python.Runtime
         internal static IntPtr PyNumber_Multiply(IntPtr o1, IntPtr o2) => Delegates.PyNumber_Multiply(o1, o2);
 
         
-        internal static IntPtr PyNumber_Divide(IntPtr o1, IntPtr o2) => Delegates.PyNumber_Divide(o1, o2);
+        internal static IntPtr PyNumber_TrueDivide(IntPtr o1, IntPtr o2) => Delegates.PyNumber_TrueDivide(o1, o2);
 
         
         internal static IntPtr PyNumber_And(IntPtr o1, IntPtr o2) => Delegates.PyNumber_And(o1, o2);
@@ -1084,7 +1154,7 @@ namespace Python.Runtime
         internal static IntPtr PyNumber_InPlaceMultiply(IntPtr o1, IntPtr o2) => Delegates.PyNumber_InPlaceMultiply(o1, o2);
 
         
-        internal static IntPtr PyNumber_InPlaceDivide(IntPtr o1, IntPtr o2) => Delegates.PyNumber_InPlaceDivide(o1, o2);
+        internal static IntPtr PyNumber_InPlaceTrueDivide(IntPtr o1, IntPtr o2) => Delegates.PyNumber_InPlaceTrueDivide(o1, o2);
 
         
         internal static IntPtr PyNumber_InPlaceAnd(IntPtr o1, IntPtr o2) => Delegates.PyNumber_InPlaceAnd(o1, o2);
@@ -1174,7 +1244,7 @@ namespace Python.Runtime
 
         internal static long PySequence_Size(IntPtr pointer)
         {
-            return (long) _PySequence_Size(pointer);
+            return (long)_PySequence_Size(pointer);
         }
 
         
@@ -1199,7 +1269,7 @@ namespace Python.Runtime
 
         internal static long PySequence_Count(IntPtr pointer, IntPtr value)
         {
-            return (long) _PySequence_Count(pointer, value);
+            return (long)_PySequence_Count(pointer, value);
         }
 
         
@@ -1236,7 +1306,7 @@ namespace Python.Runtime
 
         internal static long PyBytes_Size(IntPtr op)
         {
-            return (long) _PyBytes_Size(op);
+            return (long)_PyBytes_Size(op);
         }
 
         private static IntPtr _PyBytes_Size(IntPtr op) => Delegates._PyBytes_Size(op);
@@ -1262,6 +1332,8 @@ namespace Python.Runtime
         }
 
         private static IntPtr PyUnicode_FromStringAndSize(IntPtr value, IntPtr size) => Delegates.PyUnicode_FromStringAndSize(value, size);
+
+        internal static IntPtr PyUnicode_AsUTF8(IntPtr unicode) => Delegates.PyUnicode_AsUTF8(unicode);
 
         internal static bool PyUnicode_Check(IntPtr ob)
         {
@@ -1305,6 +1377,8 @@ namespace Python.Runtime
             return PyUnicode_FromUnicode(s, s.Length);
         }
 
+        internal static string GetManagedString(in BorrowedReference borrowedReference)
+            => GetManagedString(borrowedReference.DangerousGetAddress());
         /// <summary>
         /// Function to access the internal PyUnicode/PyString object and
         /// convert it to a managed string with the correct encoding.
@@ -1380,7 +1454,7 @@ namespace Python.Runtime
         internal static IntPtr PyDict_Values(IntPtr pointer) => Delegates.PyDict_Values(pointer);
 
         
-        internal static IntPtr PyDict_Items(IntPtr pointer) => Delegates.PyDict_Items(pointer);
+        internal static NewReference PyDict_Items(IntPtr pointer) => Delegates.PyDict_Items(pointer);
 
         
         internal static IntPtr PyDict_Copy(IntPtr pointer) => Delegates.PyDict_Copy(pointer);
@@ -1393,7 +1467,7 @@ namespace Python.Runtime
 
         internal static long PyDict_Size(IntPtr pointer)
         {
-            return (long) _PyDict_Size(pointer);
+            return (long)_PyDict_Size(pointer);
         }
 
         
@@ -1420,13 +1494,13 @@ namespace Python.Runtime
         
         internal static IntPtr PyList_AsTuple(IntPtr pointer) => Delegates.PyList_AsTuple(pointer);
 
-        internal static IntPtr PyList_GetItem(IntPtr pointer, long index)
+        internal static BorrowedReference PyList_GetItem(IntPtr pointer, long index)
         {
             return PyList_GetItem(pointer, new IntPtr(index));
         }
 
         
-        private static IntPtr PyList_GetItem(IntPtr pointer, IntPtr index) => Delegates.PyList_GetItem(pointer, index);
+        private static BorrowedReference PyList_GetItem(IntPtr pointer, IntPtr index) => Delegates.PyList_GetItem(pointer, index);
 
         internal static int PyList_SetItem(IntPtr pointer, long index, IntPtr value)
         {
@@ -1471,7 +1545,7 @@ namespace Python.Runtime
 
         internal static long PyList_Size(IntPtr pointer)
         {
-            return (long) _PyList_Size(pointer);
+            return (long)_PyList_Size(pointer);
         }
 
         
@@ -1520,7 +1594,7 @@ namespace Python.Runtime
 
         internal static long PyTuple_Size(IntPtr pointer)
         {
-            return (long) _PyTuple_Size(pointer);
+            return (long)_PyTuple_Size(pointer);
         }
 
         
@@ -1683,6 +1757,33 @@ namespace Python.Runtime
 
         internal static IntPtr PyMethod_New(IntPtr func, IntPtr self) => Delegates.PyMethod_New(func, self);
 
+        internal static int Py_AddPendingCall(IntPtr func, IntPtr arg) => Delegates.Py_AddPendingCall(func, arg);
+
+        internal static int Py_MakePendingCalls() => Delegates.Py_MakePendingCalls();
+
+        internal static void SetNoSiteFlag() {
+            var loader = LibraryLoader.Get(OperatingSystem);
+
+            IntPtr dllLocal = IntPtr.Zero;
+            if (PythonDLL != "__Internal") {
+                dllLocal = loader.Load(PythonDLL);
+            }
+
+            try {
+                Py_NoSiteFlag = loader.GetFunction(dllLocal, "Py_NoSiteFlag");
+                Marshal.WriteInt32(Py_NoSiteFlag, 1);
+            } finally {
+                if (dllLocal != IntPtr.Zero) {
+                    loader.Free(dllLocal);
+                }
+            }
+        }
+
+        /// <summary>
+        /// Return value: New reference.
+        /// </summary>
+        internal static IntPtr GetBuiltins() => PyImport_ImportModule("builtins");
+
         public static class Delegates
         {
             static Delegates()
@@ -1734,6 +1835,7 @@ namespace Python.Runtime
                 PyRun_String = GetDelegateForFunctionPointer<PyRun_StringDelegate>(GetFunctionByName(nameof(PyRun_String), GetUnmanagedDll(PythonDLL)));
                 PyEval_EvalCode = GetDelegateForFunctionPointer<PyEval_EvalCodeDelegate>(GetFunctionByName(nameof(PyEval_EvalCode), GetUnmanagedDll(PythonDLL)));
                 Py_CompileString = GetDelegateForFunctionPointer<Py_CompileStringDelegate>(GetFunctionByName(nameof(Py_CompileString), GetUnmanagedDll(PythonDLL)));
+                Py_CompileStringExFlags = GetDelegateForFunctionPointer<Py_CompileStringExFlagsDelegate>(GetFunctionByName(nameof(Py_CompileStringExFlags), GetUnmanagedDll(PythonDLL)));
                 PyImport_ExecCodeModule = GetDelegateForFunctionPointer<PyImport_ExecCodeModuleDelegate>(GetFunctionByName(nameof(PyImport_ExecCodeModule), GetUnmanagedDll(PythonDLL)));
                 PyCFunction_NewEx = GetDelegateForFunctionPointer<PyCFunction_NewExDelegate>(GetFunctionByName(nameof(PyCFunction_NewEx), GetUnmanagedDll(PythonDLL)));
                 PyCFunction_Call = GetDelegateForFunctionPointer<PyCFunction_CallDelegate>(GetFunctionByName(nameof(PyCFunction_Call), GetUnmanagedDll(PythonDLL)));
@@ -1769,12 +1871,16 @@ namespace Python.Runtime
                 PyInt_AsLong = GetDelegateForFunctionPointer<PyInt_AsLongDelegate>(GetFunctionByName("PyLong_AsLong", GetUnmanagedDll(PythonDLL)));
                 PyInt_FromString = GetDelegateForFunctionPointer<PyInt_FromStringDelegate>(GetFunctionByName("PyLong_FromString", GetUnmanagedDll(PythonDLL)));
                 PyLong_FromLong = GetDelegateForFunctionPointer<PyLong_FromLongDelegate>(GetFunctionByName(nameof(PyLong_FromLong), GetUnmanagedDll(PythonDLL)));
+                PyLong_FromUnsignedLong32 = GetDelegateForFunctionPointer<PyLong_FromUnsignedLong32Delegate>(GetFunctionByName("PyLong_FromUnsignedLong", GetUnmanagedDll(PythonDLL)));
+                PyLong_FromUnsignedLong64 = GetDelegateForFunctionPointer<PyLong_FromUnsignedLong64Delegate>(GetFunctionByName("PyLong_FromUnsignedLong", GetUnmanagedDll(PythonDLL)));
                 PyLong_FromUnsignedLong = GetDelegateForFunctionPointer<PyLong_FromUnsignedLongDelegate>(GetFunctionByName(nameof(PyLong_FromUnsignedLong), GetUnmanagedDll(PythonDLL)));
                 PyLong_FromDouble = GetDelegateForFunctionPointer<PyLong_FromDoubleDelegate>(GetFunctionByName(nameof(PyLong_FromDouble), GetUnmanagedDll(PythonDLL)));
                 PyLong_FromLongLong = GetDelegateForFunctionPointer<PyLong_FromLongLongDelegate>(GetFunctionByName(nameof(PyLong_FromLongLong), GetUnmanagedDll(PythonDLL)));
                 PyLong_FromUnsignedLongLong = GetDelegateForFunctionPointer<PyLong_FromUnsignedLongLongDelegate>(GetFunctionByName(nameof(PyLong_FromUnsignedLongLong), GetUnmanagedDll(PythonDLL)));
                 PyLong_FromString = GetDelegateForFunctionPointer<PyLong_FromStringDelegate>(GetFunctionByName(nameof(PyLong_FromString), GetUnmanagedDll(PythonDLL)));
                 PyLong_AsLong = GetDelegateForFunctionPointer<PyLong_AsLongDelegate>(GetFunctionByName(nameof(PyLong_AsLong), GetUnmanagedDll(PythonDLL)));
+                PyLong_AsUnsignedLong32 = GetDelegateForFunctionPointer<PyLong_AsUnsignedLong32Delegate>(GetFunctionByName("PyLong_AsUnsignedLong", GetUnmanagedDll(PythonDLL)));
+                PyLong_AsUnsignedLong64 = GetDelegateForFunctionPointer<PyLong_AsUnsignedLong64Delegate>(GetFunctionByName("PyLong_AsUnsignedLong", GetUnmanagedDll(PythonDLL)));
                 PyLong_AsUnsignedLong = GetDelegateForFunctionPointer<PyLong_AsUnsignedLongDelegate>(GetFunctionByName(nameof(PyLong_AsUnsignedLong), GetUnmanagedDll(PythonDLL)));
                 PyLong_AsLongLong = GetDelegateForFunctionPointer<PyLong_AsLongLongDelegate>(GetFunctionByName(nameof(PyLong_AsLongLong), GetUnmanagedDll(PythonDLL)));
                 PyLong_AsUnsignedLongLong = GetDelegateForFunctionPointer<PyLong_AsUnsignedLongLongDelegate>(GetFunctionByName(nameof(PyLong_AsUnsignedLongLong), GetUnmanagedDll(PythonDLL)));
@@ -1784,7 +1890,7 @@ namespace Python.Runtime
                 PyNumber_Add = GetDelegateForFunctionPointer<PyNumber_AddDelegate>(GetFunctionByName(nameof(PyNumber_Add), GetUnmanagedDll(PythonDLL)));
                 PyNumber_Subtract = GetDelegateForFunctionPointer<PyNumber_SubtractDelegate>(GetFunctionByName(nameof(PyNumber_Subtract), GetUnmanagedDll(PythonDLL)));
                 PyNumber_Multiply = GetDelegateForFunctionPointer<PyNumber_MultiplyDelegate>(GetFunctionByName(nameof(PyNumber_Multiply), GetUnmanagedDll(PythonDLL)));
-                PyNumber_Divide = GetDelegateForFunctionPointer<PyNumber_DivideDelegate>(GetFunctionByName("PyNumber_TrueDivide", GetUnmanagedDll(PythonDLL)));
+                PyNumber_TrueDivide = GetDelegateForFunctionPointer<PyNumber_TrueDivideDelegate>(GetFunctionByName(nameof(PyNumber_TrueDivide), GetUnmanagedDll(PythonDLL)));
                 PyNumber_And = GetDelegateForFunctionPointer<PyNumber_AndDelegate>(GetFunctionByName(nameof(PyNumber_And), GetUnmanagedDll(PythonDLL)));
                 PyNumber_Xor = GetDelegateForFunctionPointer<PyNumber_XorDelegate>(GetFunctionByName(nameof(PyNumber_Xor), GetUnmanagedDll(PythonDLL)));
                 PyNumber_Or = GetDelegateForFunctionPointer<PyNumber_OrDelegate>(GetFunctionByName(nameof(PyNumber_Or), GetUnmanagedDll(PythonDLL)));
@@ -1795,7 +1901,7 @@ namespace Python.Runtime
                 PyNumber_InPlaceAdd = GetDelegateForFunctionPointer<PyNumber_InPlaceAddDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceAdd), GetUnmanagedDll(PythonDLL)));
                 PyNumber_InPlaceSubtract = GetDelegateForFunctionPointer<PyNumber_InPlaceSubtractDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceSubtract), GetUnmanagedDll(PythonDLL)));
                 PyNumber_InPlaceMultiply = GetDelegateForFunctionPointer<PyNumber_InPlaceMultiplyDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceMultiply), GetUnmanagedDll(PythonDLL)));
-                PyNumber_InPlaceDivide = GetDelegateForFunctionPointer<PyNumber_InPlaceDivideDelegate>(GetFunctionByName("PyNumber_InPlaceTrueDivide", GetUnmanagedDll(PythonDLL)));
+                PyNumber_InPlaceTrueDivide = GetDelegateForFunctionPointer<PyNumber_InPlaceTrueDivideDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceTrueDivide), GetUnmanagedDll(PythonDLL)));
                 PyNumber_InPlaceAnd = GetDelegateForFunctionPointer<PyNumber_InPlaceAndDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceAnd), GetUnmanagedDll(PythonDLL)));
                 PyNumber_InPlaceXor = GetDelegateForFunctionPointer<PyNumber_InPlaceXorDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceXor), GetUnmanagedDll(PythonDLL)));
                 PyNumber_InPlaceOr = GetDelegateForFunctionPointer<PyNumber_InPlaceOrDelegate>(GetFunctionByName(nameof(PyNumber_InPlaceOr), GetUnmanagedDll(PythonDLL)));
@@ -1825,6 +1931,7 @@ namespace Python.Runtime
                 _PyBytes_Size = GetDelegateForFunctionPointer<_PyBytes_SizeDelegate>(GetFunctionByName("PyBytes_Size", GetUnmanagedDll(PythonDLL)));
                 _PyString_FromStringAndSize = GetDelegateForFunctionPointer<_PyString_FromStringAndSizeDelegate>(GetFunctionByName("PyUnicode_FromStringAndSize", GetUnmanagedDll(PythonDLL)));
                 PyUnicode_FromStringAndSize = GetDelegateForFunctionPointer<PyUnicode_FromStringAndSizeDelegate>(GetFunctionByName(nameof(PyUnicode_FromStringAndSize), GetUnmanagedDll(PythonDLL)));
+                PyUnicode_AsUTF8 = GetDelegateForFunctionPointer<PyUnicode_AsUTF8Delegate>(GetFunctionByName(nameof(PyUnicode_AsUTF8), GetUnmanagedDll(PythonDLL)));
                 PyUnicode_FromObject = GetDelegateForFunctionPointer<PyUnicode_FromObjectDelegate>(GetFunctionByName(nameof(PyUnicode_FromObject), GetUnmanagedDll(PythonDLL)));
                 PyUnicode_FromEncodedObject = GetDelegateForFunctionPointer<PyUnicode_FromEncodedObjectDelegate>(GetFunctionByName(nameof(PyUnicode_FromEncodedObject), GetUnmanagedDll(PythonDLL)));
                 PyUnicode_FromKindAndData = GetDelegateForFunctionPointer<PyUnicode_FromKindAndDataDelegate>(GetFunctionByName(nameof(PyUnicode_FromKindAndData), GetUnmanagedDll(PythonDLL)));
@@ -1907,6 +2014,8 @@ namespace Python.Runtime
                 PyMethod_Self = GetDelegateForFunctionPointer<PyMethod_SelfDelegate>(GetFunctionByName(nameof(PyMethod_Self), GetUnmanagedDll(PythonDLL)));
                 PyMethod_Function = GetDelegateForFunctionPointer<PyMethod_FunctionDelegate>(GetFunctionByName(nameof(PyMethod_Function), GetUnmanagedDll(PythonDLL)));
                 PyMethod_New = GetDelegateForFunctionPointer<PyMethod_NewDelegate>(GetFunctionByName(nameof(PyMethod_New), GetUnmanagedDll(PythonDLL)));
+                Py_AddPendingCall = GetDelegateForFunctionPointer<Py_AddPendingCallDelegate>(GetFunctionByName(nameof(Py_AddPendingCall), GetUnmanagedDll(PythonDLL)));
+                Py_MakePendingCalls = GetDelegateForFunctionPointer<Py_MakePendingCallsDelegate>(GetFunctionByName(nameof(Py_MakePendingCalls), GetUnmanagedDll(PythonDLL)));
             }
 
             static T GetDelegateForFunctionPointer<T>(IntPtr functionPointer) {
@@ -2154,7 +2263,7 @@ namespace Python.Runtime
             internal static PyRun_StringDelegate PyRun_String { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyRun_StringDelegate(string code, IntPtr st, IntPtr globals, IntPtr locals);
+            internal delegate NewReference PyRun_StringDelegate(string code, IntPtr st, IntPtr globals, IntPtr locals);
 
             internal static PyEval_EvalCodeDelegate PyEval_EvalCode { get; }
 
@@ -2165,6 +2274,11 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate IntPtr Py_CompileStringDelegate(string code, string file, IntPtr tok);
+
+            internal static Py_CompileStringExFlagsDelegate Py_CompileStringExFlags { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate IntPtr Py_CompileStringExFlagsDelegate(string str, string file, int start, IntPtr flags, int optimize);
 
             internal static PyImport_ExecCodeModuleDelegate PyImport_ExecCodeModule { get; }
 
@@ -2341,6 +2455,16 @@ namespace Python.Runtime
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate IntPtr PyLong_FromLongDelegate(long value);
 
+            internal static PyLong_FromUnsignedLong32Delegate PyLong_FromUnsignedLong32 { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate IntPtr PyLong_FromUnsignedLong32Delegate(uint value);
+
+            internal static PyLong_FromUnsignedLong64Delegate PyLong_FromUnsignedLong64 { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate IntPtr PyLong_FromUnsignedLong64Delegate(ulong value);
+
             internal static PyLong_FromUnsignedLongDelegate PyLong_FromUnsignedLong { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
@@ -2370,6 +2494,16 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate int PyLong_AsLongDelegate(IntPtr value);
+
+            internal static PyLong_AsUnsignedLong32Delegate PyLong_AsUnsignedLong32 { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate uint PyLong_AsUnsignedLong32Delegate(IntPtr value);
+
+            internal static PyLong_AsUnsignedLong64Delegate PyLong_AsUnsignedLong64 { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate ulong PyLong_AsUnsignedLong64Delegate(IntPtr value);
 
             internal static PyLong_AsUnsignedLongDelegate PyLong_AsUnsignedLong { get; }
 
@@ -2416,10 +2550,10 @@ namespace Python.Runtime
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate IntPtr PyNumber_MultiplyDelegate(IntPtr o1, IntPtr o2);
 
-            internal static PyNumber_DivideDelegate PyNumber_Divide { get; }
+            internal static PyNumber_TrueDivideDelegate PyNumber_TrueDivide { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyNumber_DivideDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_TrueDivideDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_AndDelegate PyNumber_And { get; }
 
@@ -2471,10 +2605,10 @@ namespace Python.Runtime
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate IntPtr PyNumber_InPlaceMultiplyDelegate(IntPtr o1, IntPtr o2);
 
-            internal static PyNumber_InPlaceDivideDelegate PyNumber_InPlaceDivide { get; }
+            internal static PyNumber_InPlaceTrueDivideDelegate PyNumber_InPlaceTrueDivide { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyNumber_InPlaceDivideDelegate(IntPtr o1, IntPtr o2);
+            internal delegate IntPtr PyNumber_InPlaceTrueDivideDelegate(IntPtr o1, IntPtr o2);
 
             internal static PyNumber_InPlaceAndDelegate PyNumber_InPlaceAnd { get; }
 
@@ -2624,6 +2758,11 @@ namespace Python.Runtime
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate IntPtr PyUnicode_FromStringAndSizeDelegate(IntPtr value, IntPtr size);
 
+            internal static PyUnicode_AsUTF8Delegate PyUnicode_AsUTF8 { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate IntPtr PyUnicode_AsUTF8Delegate(IntPtr unicode);
+
             internal static PyUnicode_FromObjectDelegate PyUnicode_FromObject { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
@@ -2716,7 +2855,7 @@ namespace Python.Runtime
             internal static PyDict_ItemsDelegate PyDict_Items { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyDict_ItemsDelegate(IntPtr pointer);
+            internal delegate NewReference PyDict_ItemsDelegate(IntPtr pointer);
 
             internal static PyDict_CopyDelegate PyDict_Copy { get; }
 
@@ -2751,7 +2890,7 @@ namespace Python.Runtime
             internal static PyList_GetItemDelegate PyList_GetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyList_GetItemDelegate(IntPtr pointer, IntPtr index);
+            internal delegate BorrowedReference PyList_GetItemDelegate(IntPtr pointer, IntPtr index);
 
             internal static PyList_SetItemDelegate PyList_SetItem { get; }
 
@@ -3041,12 +3180,46 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate IntPtr PyMethod_NewDelegate(IntPtr func, IntPtr self);
+
+            internal static Py_AddPendingCallDelegate Py_AddPendingCall { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int Py_AddPendingCallDelegate(IntPtr func, IntPtr arg);
+
+            internal static Py_MakePendingCallsDelegate Py_MakePendingCalls { get; }
+
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int Py_MakePendingCallsDelegate();
             // end of PY3
 
             enum Py2 { }
         }
     }
 
+
+    class PyReferenceCollection
+    {
+        private List<KeyValuePair<IntPtr, Action>> _actions = new List<KeyValuePair<IntPtr, Action>>();
+
+        /// <summary>
+        /// Record obj's address to release the obj in the future,
+        /// obj must alive before calling Release.
+        /// </summary>
+        public void Add(IntPtr ob, Action onRelease)
+        {
+            _actions.Add(new KeyValuePair<IntPtr, Action>(ob, onRelease));
+        }
+
+        public void Release()
+        {
+            foreach (var item in _actions)
+            {
+                Runtime.XDecref(item.Key);
+                item.Value?.Invoke();
+            }
+            _actions.Clear();
+        }
+    }
 #if NETFX
     public static class RuntimeInformation {
       public static OSPlatform OSPlatform { get; set; } = Environment.OSVersion.Platform == PlatformID.Unix ? OSPlatform.Linux : OSPlatform.Windows;

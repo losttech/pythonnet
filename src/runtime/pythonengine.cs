@@ -126,6 +126,16 @@ namespace Python.Runtime
             get { return Marshal.PtrToStringAnsi(Runtime.Py_GetCompiler()); }
         }
 
+        /// <summary>
+        /// Set the NoSiteFlag to disable loading the site module.
+        /// Must be called before Initialize.
+        /// https://docs.python.org/3/c-api/init.html#c.Py_NoSiteFlag
+        /// </summary>
+        public static void SetNoSiteFlag()
+        {
+            Runtime.SetNoSiteFlag();
+        }
+
         public static int RunSimpleString(string code)
         {
             return Runtime.PyRun_SimpleString(code);
@@ -483,7 +493,7 @@ namespace Python.Runtime
         /// </remarks>
         public static PyObject ModuleFromString(string name, string code)
         {
-            IntPtr c = Runtime.Py_CompileString(code, "none", (IntPtr)257);
+            IntPtr c = Runtime.Py_CompileString(code, "none", (int)RunFlagType.File);
             Runtime.CheckExceptionOccurred();
             IntPtr m = Runtime.PyImport_ExecCodeModule(name, c);
             Runtime.CheckExceptionOccurred();
@@ -492,7 +502,7 @@ namespace Python.Runtime
 
         public static PyObject Compile(string code, string filename = "", RunFlagType mode = RunFlagType.File)
         {
-            var flag = (IntPtr)mode;
+            var flag = (int)mode;
             IntPtr ptr = Runtime.Py_CompileString(code, filename, flag);
             Runtime.CheckExceptionOccurred();
             return new PyObject(ptr);
@@ -521,12 +531,13 @@ namespace Python.Runtime
         /// </remarks>
         public static void Exec(string code, IntPtr? globals = null, IntPtr? locals = null)
         {
-            PyObject result = RunString(code, globals, locals, RunFlagType.File);
-            if (result.obj != Runtime.PyNone)
+            using (PyObject result = RunString(code, globals, locals, RunFlagType.File))
             {
-                throw PythonException.ThrowLastAsClrException();
+                if (result.obj != Runtime.PyNone)
+                {
+                    throw PythonException.ThrowLastAsClrException();
+                }
             }
-            result.Dispose();
         }
 
 
@@ -572,13 +583,20 @@ namespace Python.Runtime
 
             try
             {
-                IntPtr result = Runtime.PyRun_String(
+                NewReference result = Runtime.PyRun_String(
                     code, (IntPtr)flag, globals.Value, locals.Value
                 );
 
-                Runtime.CheckExceptionOccurred();
+                try
+                {
+                    Runtime.CheckExceptionOccurred();
 
-                return new PyObject(result);
+                    return result.MoveToPyObject();
+                }
+                finally
+                {
+                    result.Dispose();
+                }
             }
             finally
             {
@@ -590,7 +608,7 @@ namespace Python.Runtime
         }
     }
 
-    public enum RunFlagType
+    public enum RunFlagType : int
     {
         Single = 256,
         File = 257, /* Py_file_input */
@@ -623,7 +641,8 @@ namespace Python.Runtime
         
         public class GILState : IDisposable
         {
-            private IntPtr state;
+            private readonly IntPtr state;
+            private bool isDisposed;
 
             internal GILState()
             {
@@ -632,8 +651,11 @@ namespace Python.Runtime
 
             public void Dispose()
             {
+                if (this.isDisposed) return;
+
                 PythonEngine.ReleaseLock(state);
                 GC.SuppressFinalize(this);
+                this.isDisposed = true;
             }
 
             ~GILState()
@@ -734,11 +756,14 @@ namespace Python.Runtime
             catch (PythonException e)
             {
                 ex = e;
-                type = ex.PyType;
-                val = ex.PyValue;
-                traceBack = ex.PyTB;
+                type = ex.PyType.Coalesce(type);
+                val = ex.PyValue.Coalesce(val);
+                traceBack = ex.PyTB.Coalesce(traceBack);
             }
 
+            Runtime.XIncref(type);
+            Runtime.XIncref(val);
+            Runtime.XIncref(traceBack);
             var exitResult = obj.InvokeMethod("__exit__", new PyObject(type), new PyObject(val), new PyObject(traceBack));
 
             if (ex != null && !exitResult.IsTrue()) throw ex;

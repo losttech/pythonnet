@@ -309,7 +309,7 @@ namespace Python.Runtime
                     return callBinder.Invoke(ob, args, kw);
                 }
 
-                using var super = new PyObject(Runtime.SelfIncRef(Runtime.PySuper));
+                using var super = new PyObject(Runtime.SelfIncRef(Runtime.PySuper_Type));
                 using var self = new PyObject(Runtime.SelfIncRef(ob));
                 using var none = new PyObject(Runtime.SelfIncRef(Runtime.PyNone));
                 foreach (IntPtr managedTypeDerivingFromPython in GetTypesWithPythonBasesInHierarchy(tp)) {

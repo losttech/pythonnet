@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.IO;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -105,13 +106,9 @@ namespace Python.Runtime
             // Look for a type in the current namespace. Note that this
             // includes types, delegates, enums, interfaces and structs.
             // Only public namespace members are exposed to Python.
-            type = AssemblyManager.LookupType(qname);
+            type = AssemblyManager.LookupTypes(qname).FirstOrDefault(t => t.IsPublic);
             if (type != null)
             {
-                if (!type.IsPublic)
-                {
-                    return null;
-                }
                 c = ClassManager.GetClass(type);
                 StoreAttribute(name, c);
                 return c;
@@ -131,13 +128,9 @@ namespace Python.Runtime
                     return m;
                 }
 
-                type = AssemblyManager.LookupType(qname);
+                type = AssemblyManager.LookupTypes(qname).FirstOrDefault(t => t.IsPublic);
                 if (type != null)
                 {
-                    if (!type.IsPublic)
-                    {
-                        return null;
-                    }
                     c = ClassManager.GetClass(type);
                     StoreAttribute(name, c);
                     return c;
@@ -280,7 +273,18 @@ namespace Python.Runtime
                 return self.dict;
             }
 
-            ManagedType attr = self.GetAttribute(name, true);
+            ManagedType attr = null;
+
+            try
+            {
+                attr = self.GetAttribute(name, true);
+            }
+            catch (Exception e)
+            {
+                Exceptions.SetError(e);
+                return IntPtr.Zero;
+            }
+            
 
             if (attr == null)
             {
@@ -315,6 +319,11 @@ namespace Python.Runtime
         // XXX Test performance of new features //
         internal static bool _SuppressDocs = false;
         internal static bool _SuppressOverloads = false;
+
+        static CLRModule()
+        {
+            Reset();
+        }
 
         public CLRModule() : base("clr")
         {
@@ -412,14 +421,6 @@ namespace Python.Runtime
             if (assembly == null)
             {
                 assembly = AssemblyManager.LoadAssemblyFullPath(name);
-            }
-            if (System.IO.File.Exists(name))
-            {
-                var zone = System.Security.Policy.Zone.CreateFromUrl(name);
-                if (zone.SecurityZone != System.Security.SecurityZone.MyComputer)
-                {
-                     throw new Exception($"File is blocked (NTFS Security)");
-                }
             }
             if (assembly == null)
             {

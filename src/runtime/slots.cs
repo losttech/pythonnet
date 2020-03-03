@@ -60,7 +60,7 @@ namespace Python.Runtime.Slots
             if (self == null) throw new ArgumentNullException(nameof(self));
             if (name == null) throw new ArgumentNullException(nameof(name));
 
-            using (var super = new PyObject(Runtime.PySuper))
+            using (var super = new PyObject(Runtime.SelfIncRef(Runtime.PySuper_Type)))
             using (var @class = self.GetPythonType())
             using (var @base = super.Invoke(@class, self)) {
                 if (!@base.HasAttr(getAttr)) {

@@ -1,12 +1,18 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Dynamic;
 using System.Linq;
 using System.Linq.Expressions;
 
 namespace Python.Runtime
 {
+    public interface IPyDisposable : IDisposable
+    {
+        IntPtr[] GetTrackedHandles();
+    }
+
     /// <summary>
     /// Represents a generic Python object. The methods of this class are
     /// generally equivalent to the Python "abstract object API". See
@@ -14,10 +20,18 @@ namespace Python.Runtime
     /// PY3: https://docs.python.org/3/c-api/object.html
     /// for details.
     /// </summary>
-    public class PyObject : DynamicObject, IEnumerable, IDisposable
+    public class PyObject : DynamicObject, IEnumerable, IPyDisposable
     {
+#if TRACE_ALLOC
+        /// <summary>
+        /// Trace stack for PyObject's construction
+        /// </summary>
+        public StackTrace Traceback { get; private set; }
+#endif  
+
         protected internal IntPtr obj = IntPtr.Zero;
         private bool disposed = false;
+        private bool _finalized = false;
 
         /// <summary>
         /// PyObject Constructor
@@ -33,6 +47,9 @@ namespace Python.Runtime
             if (ptr == IntPtr.Zero) throw new ArgumentNullException(nameof(ptr));
 
             obj = ptr;
+#if TRACE_ALLOC
+            Traceback = new StackTrace(1);
+#endif
         }
 
         // Protected default constructor to allow subclasses to manage
@@ -40,18 +57,26 @@ namespace Python.Runtime
         [Obsolete("Please, always use PyObject(IntPtr)")]
         protected PyObject()
         {
+#if TRACE_ALLOC
+            Traceback = new StackTrace(1);
+#endif
         }
 
         // Ensure that encapsulated Python object is decref'ed appropriately
         // when the managed wrapper is garbage-collected.
-
         ~PyObject()
         {
-            // We needs to disable Finalizers until it's valid implementation.
-            // Current implementation can produce low probability floating bugs.
-            return;
-
-            Dispose();
+            if (obj == IntPtr.Zero)
+            {
+                return;
+            }
+            if (_finalized || disposed)
+            {
+                return;
+            }
+            // Prevent a infinity loop by calling GC.WaitForPendingFinalizers
+            _finalized = true;
+            Finalizer.Instance.AddFinalizedObject(this);
         }
 
 
@@ -101,7 +126,7 @@ namespace Python.Runtime
             }
             return result;
         }
-        
+
         /// <summary>
         /// As Method
         /// </summary>
@@ -154,6 +179,11 @@ namespace Python.Runtime
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public IntPtr[] GetTrackedHandles()
+        {
+            return new IntPtr[] { obj };
         }
 
         internal IntPtr GetPythonTypeHandle() => Runtime.PyObject_Type(obj);
@@ -691,7 +721,7 @@ namespace Python.Runtime
         /// </summary>
         /// <remarks>
         /// Invoke the callable object with the given arguments, passed as a
-        /// PyObject[]. A PythonException is raised if the invokation fails.
+        /// PyObject[]. A PythonException is raised if the invocation fails.
         /// </remarks>
         public PyObject Invoke(params PyObject[] args)
         {
@@ -713,7 +743,7 @@ namespace Python.Runtime
         /// </summary>
         /// <remarks>
         /// Invoke the callable object with the given arguments, passed as a
-        /// Python tuple. A PythonException is raised if the invokation fails.
+        /// Python tuple. A PythonException is raised if the invocation fails.
         /// </remarks>
         public PyObject Invoke(PyTuple args)
         {
@@ -732,7 +762,7 @@ namespace Python.Runtime
         /// </summary>
         /// <remarks>
         /// Invoke the callable object with the given positional and keyword
-        /// arguments. A PythonException is raised if the invokation fails.
+        /// arguments. A PythonException is raised if the invocation fails.
         /// </remarks>
         public PyObject Invoke(PyObject[] args, PyDict kw)
         {
@@ -754,7 +784,7 @@ namespace Python.Runtime
         /// </summary>
         /// <remarks>
         /// Invoke the callable object with the given positional and keyword
-        /// arguments. A PythonException is raised if the invokation fails.
+        /// arguments. A PythonException is raised if the invocation fails.
         /// </remarks>
         public PyObject Invoke(PyTuple args, PyDict kw)
         {
@@ -773,7 +803,7 @@ namespace Python.Runtime
         /// </summary>
         /// <remarks>
         /// Invoke the named method of the object with the given arguments.
-        /// A PythonException is raised if the invokation is unsuccessful.
+        /// A PythonException is raised if the invocation is unsuccessful.
         /// </remarks>
         public PyObject InvokeMethod(string name, params PyObject[] args)
         {
@@ -793,7 +823,7 @@ namespace Python.Runtime
         /// </summary>
         /// <remarks>
         /// Invoke the named method of the object with the given arguments.
-        /// A PythonException is raised if the invokation is unsuccessful.
+        /// A PythonException is raised if the invocation is unsuccessful.
         /// </remarks>
         public PyObject InvokeMethod(string name, PyTuple args)
         {
@@ -851,7 +881,7 @@ namespace Python.Runtime
         /// <remarks>
         /// Invoke the named method of the object with the given arguments
         /// and keyword arguments. Keyword args are passed as a PyDict object.
-        /// A PythonException is raised if the invokation is unsuccessful.
+        /// A PythonException is raised if the invocation is unsuccessful.
         /// </remarks>
         public PyObject InvokeMethod(string name, PyObject[] args, PyDict kw)
         {
@@ -872,7 +902,7 @@ namespace Python.Runtime
         /// <remarks>
         /// Invoke the named method of the object with the given arguments
         /// and keyword arguments. Keyword args are passed as a PyDict object.
-        /// A PythonException is raised if the invokation is unsuccessful.
+        /// A PythonException is raised if the invocation is unsuccessful.
         /// </remarks>
         public PyObject InvokeMethod(string name, PyTuple args, PyDict kw)
         {
@@ -1278,10 +1308,10 @@ namespace Python.Runtime
                     res = Runtime.PyNumber_InPlaceMultiply(this.obj, ((PyObject)arg).obj);
                     break;
                 case ExpressionType.Divide:
-                    res = Runtime.PyNumber_Divide(this.obj, ((PyObject)arg).obj);
+                    res = Runtime.PyNumber_TrueDivide(this.obj, ((PyObject)arg).obj);
                     break;
                 case ExpressionType.DivideAssign:
-                    res = Runtime.PyNumber_InPlaceDivide(this.obj, ((PyObject)arg).obj);
+                    res = Runtime.PyNumber_InPlaceTrueDivide(this.obj, ((PyObject)arg).obj);
                     break;
                 case ExpressionType.And:
                     res = Runtime.PyNumber_And(this.obj, ((PyObject)arg).obj);

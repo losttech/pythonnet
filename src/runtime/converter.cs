@@ -148,13 +148,14 @@ namespace Python.Runtime
             if (Type.GetTypeCode(type) == TypeCode.Object && value.GetType() != typeof(object)) {
                 var encoded = PyObjectConversions.TryEncode(value, type);
                 if (encoded != null) {
-                    Runtime.XIncref(encoded.Handle);
-                    return encoded.Handle;
+                    result = encoded.Handle;
+                    Runtime.XIncref(result);
+                    return result;
                 }
             }
 
             if (value is IList && !(value is INotifyPropertyChanged) && value.GetType().IsGenericType)
-			{
+            {
                 using (var resultlist = new PyList())
                 {
                     foreach (object o in (IEnumerable)value)
@@ -390,6 +391,13 @@ namespace Python.Runtime
                     return ToPrimitive(value, doubleType, out result, setError);
                 }
 
+                // give custom codecs a chance to take over conversion of sequences
+                IntPtr pyType = Runtime.PyObject_TYPE(value);
+                if (PyObjectConversions.TryDecode(value, pyType, obType, out result))
+                {
+                    return true;
+                }
+
                 if (Runtime.PySequence_Check(value))
                 {
                     return ToArray(value, typeof(object[]), out result, setError);
@@ -451,7 +459,6 @@ namespace Python.Runtime
             if (typeCode == TypeCode.Object)
             {
                 var converter = TypeConverterCache.GetOrAdd(obType, GetConverter);
-
                 if (converter != null && converter(value, out result))
                 {
                     return true;
@@ -727,7 +734,20 @@ namespace Python.Runtime
                         }
                         goto type_error;
                     }
-                    uint ui = (uint)Runtime.PyLong_AsUnsignedLong(op);
+                    
+                    uint ui;
+                    try 
+                    {
+                        ui = Convert.ToUInt32(Runtime.PyLong_AsUnsignedLong(op));
+                    } catch (OverflowException)
+                    {
+                        // Probably wasn't an overflow in python but was in C# (e.g. if cpython
+                        // longs are 64 bit then 0xFFFFFFFF + 1 will not overflow in 
+                        // PyLong_AsUnsignedLong)
+                        Runtime.XDecref(op);
+                        goto overflow;
+                    }
+                    
 
                     if (Exceptions.ErrorOccurred())
                     {
@@ -836,17 +856,20 @@ namespace Python.Runtime
 
         /// <summary>
         /// Convert a Python value to a correctly typed managed array instance.
-        /// The Python value must support the Python sequence protocol and the
+        /// The Python value must support the Python iterator protocol or and the
         /// items in the sequence must be convertible to the target array type.
         /// </summary>
         private static bool ToArray(IntPtr value, Type obType, out object result, bool setError)
         {
             Type elementType = obType.GetElementType();
-            var size = Runtime.PySequence_Size(value);
             result = null;
 
-            if (size < 0)
-            {
+            bool IsSeqObj = Runtime.PySequence_Check(value);
+            var len = IsSeqObj ? Runtime.PySequence_Size(value) : -1;
+
+            IntPtr IterObject = Runtime.PyObject_GetIter(value);
+
+            if(IterObject==IntPtr.Zero) {
                 if (setError)
                 {
                     SetConversionError(value, obType);
@@ -854,21 +877,17 @@ namespace Python.Runtime
                 return false;
             }
 
-            Array items = Array.CreateInstance(elementType, size);
+            Array items;
 
-            // XXX - is there a better way to unwrap this if it is a real array?
-            for (var i = 0; i < size; i++)
+            var listType = typeof(List<>);
+            var constructedListType = listType.MakeGenericType(elementType);
+            IList list = IsSeqObj ? (IList) Activator.CreateInstance(constructedListType, new Object[] {(int) len}) : 
+                                        (IList) Activator.CreateInstance(constructedListType);
+            IntPtr item;
+
+            while ((item = Runtime.PyIter_Next(IterObject)) != IntPtr.Zero)
             {
                 object obj = null;
-                IntPtr item = Runtime.PySequence_GetItem(value, i);
-                if (item == IntPtr.Zero)
-                {
-                    if (setError)
-                    {
-                        SetConversionError(value, obType);
-                        return false;
-                    }
-                }
 
                 if (!Converter.ToManaged(item, elementType, out obj, true))
                 {
@@ -876,10 +895,14 @@ namespace Python.Runtime
                     return false;
                 }
 
-                items.SetValue(obj, i);
+                list.Add(obj);
                 Runtime.XDecref(item);
             }
+            Runtime.XDecref(IterObject);
 
+            items = Array.CreateInstance(elementType, list.Count);
+            list.CopyTo(items, 0);
+            
             result = items;
             return true;
         }

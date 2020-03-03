@@ -1,4 +1,5 @@
-namespace Python.Runtime {
+namespace Python.Runtime
+{
     using System;
     using System.Collections.Concurrent;
     using System.Collections.Generic;
@@ -8,7 +9,9 @@ namespace Python.Runtime {
     /// <summary>
     /// Defines <see cref="PyObject"/> conversion to CLR types (unmarshalling)
     /// </summary>
-    public interface IPyObjectDecoder {
+    [Obsolete(Util.UnstableApiMessage)]
+    public interface IPyObjectDecoder
+    {
         /// <summary>
         /// Checks if this decoder can decode from <paramref name="objectType"/> to <paramref name="targetType"/>
         /// </summary>
@@ -26,7 +29,9 @@ namespace Python.Runtime {
     /// <summary>
     /// Defines conversion from CLR objects into Python objects (e.g. <see cref="PyObject"/>) (marshalling)
     /// </summary>
-    public interface IPyObjectEncoder {
+    [Obsolete(Util.UnstableApiMessage)]
+    public interface IPyObjectEncoder
+    {
         /// <summary>
         /// Checks if encoder can encode CLR objects of specified type
         /// </summary>
@@ -41,7 +46,9 @@ namespace Python.Runtime {
     /// This class allows to register additional marshalling codecs.
     /// <para>Python.NET will pick suitable encoder/decoder registered first</para>
     /// </summary>
-    public static class PyObjectConversions {
+    [Obsolete(Util.UnstableApiMessage)]
+    public static class PyObjectConversions
+    {
         static readonly List<IPyObjectDecoder> decoders = new List<IPyObjectDecoder>();
         static readonly List<IPyObjectEncoder> encoders = new List<IPyObjectEncoder>();
 
@@ -49,10 +56,12 @@ namespace Python.Runtime {
         /// Registers specified encoder (marshaller)
         /// <para>Python.NET will pick suitable encoder/decoder registered first</para>
         /// </summary>
-        public static void RegisterEncoder(IPyObjectEncoder encoder) {
+        public static void RegisterEncoder(IPyObjectEncoder encoder)
+        {
             if (encoder == null) throw new ArgumentNullException(nameof(encoder));
 
-            lock (encoders) {
+            lock (encoders)
+            {
                 encoders.Add(encoder);
             }
         }
@@ -61,20 +70,24 @@ namespace Python.Runtime {
         /// Registers specified decoder (unmarshaller)
         /// <para>Python.NET will pick suitable encoder/decoder registered first</para>
         /// </summary>
-        public static void RegisterDecoder(IPyObjectDecoder decoder) {
+        public static void RegisterDecoder(IPyObjectDecoder decoder)
+        {
             if (decoder == null) throw new ArgumentNullException(nameof(decoder));
 
-            lock (decoders) {
+            lock (decoders)
+            {
                 decoders.Add(decoder);
             }
         }
 
         #region Encoding
-        internal static PyObject TryEncode(object obj, Type type) {
+        internal static PyObject TryEncode(object obj, Type type)
+        {
             if (obj == null) throw new ArgumentNullException(nameof(obj));
             if (type == null) throw new ArgumentNullException(nameof(type));
 
-            foreach (var encoder in clrToPython.GetOrAdd(type, GetEncoders)) {
+            foreach (var encoder in clrToPython.GetOrAdd(type, GetEncoders))
+            {
                 var result = encoder.TryEncode(obj);
                 if (result != null) return result;
             }
@@ -84,8 +97,10 @@ namespace Python.Runtime {
 
         static readonly ConcurrentDictionary<Type, IPyObjectEncoder[]>
             clrToPython = new ConcurrentDictionary<Type, IPyObjectEncoder[]>();
-        static IPyObjectEncoder[] GetEncoders(Type type) {
-            lock (encoders) {
+        static IPyObjectEncoder[] GetEncoders(Type type)
+        {
+            lock (encoders)
+            {
                 return encoders.Where(encoder => encoder.CanEncode(type)).ToArray();
             }
         }
@@ -94,7 +109,8 @@ namespace Python.Runtime {
         #region Decoding
         static readonly ConcurrentDictionary<TypePair, Converter.TryConvertFromPythonDelegate>
             pythonToClr = new ConcurrentDictionary<TypePair, Converter.TryConvertFromPythonDelegate>();
-        internal static bool TryDecode(IntPtr pyHandle, IntPtr pyType, Type targetType, out object result) {
+        internal static bool TryDecode(IntPtr pyHandle, IntPtr pyType, Type targetType, out object result)
+        {
             if (pyHandle == IntPtr.Zero) throw new ArgumentNullException(nameof(pyHandle));
             if (pyType == IntPtr.Zero) throw new ArgumentNullException(nameof(pyType));
             if (targetType == null) throw new ArgumentNullException(nameof(targetType));
@@ -105,10 +121,13 @@ namespace Python.Runtime {
             return decoder.Invoke(pyHandle, out result);
         }
 
-        static Converter.TryConvertFromPythonDelegate GetDecoder(IntPtr sourceType, Type targetType) {
+        static Converter.TryConvertFromPythonDelegate GetDecoder(IntPtr sourceType, Type targetType)
+        {
             IPyObjectDecoder decoder;
-            using (var pyType = new PyObject(sourceType)) {
-                lock (decoders) {
+            using (var pyType = new PyObject(Runtime.SelfIncRef(sourceType)))
+            {
+                lock (decoders)
+                {
                     decoder = decoders.Find(d => d.CanDecode(pyType, targetType));
                     if (decoder == null) return null;
                 }
@@ -116,13 +135,18 @@ namespace Python.Runtime {
 
             var decode = genericDecode.MakeGenericMethod(targetType);
 
-            bool TryDecode(IntPtr pyHandle, out object result) {
-                using (var pyObj = new PyObject(Runtime.SelfIncRef(pyHandle))) {
-                    var @params = new object[] { pyObj, null };
-                    bool success = (bool)decode.Invoke(decoder, @params);
-                    result = @params[1];
-                    return success;
+            bool TryDecode(IntPtr pyHandle, out object result)
+            {
+                var pyObj = new PyObject(Runtime.SelfIncRef(pyHandle));
+                var @params = new object[] { pyObj, null };
+                bool success = (bool)decode.Invoke(decoder, @params);
+                if (!success)
+                {
+                    pyObj.Dispose();
                 }
+
+                result = @params[1];
+                return success;
             }
 
             return TryDecode;
@@ -132,21 +156,25 @@ namespace Python.Runtime {
 
         #endregion
 
-        internal static void Reset() {
+        internal static void Reset()
+        {
             lock (encoders)
-            lock (decoders) {
-                clrToPython.Clear();
-                pythonToClr.Clear();
-                encoders.Clear();
-                decoders.Clear();
-            }
+                lock (decoders)
+                {
+                    clrToPython.Clear();
+                    pythonToClr.Clear();
+                    encoders.Clear();
+                    decoders.Clear();
+                }
         }
 
-        struct TypePair : IEquatable<TypePair> {
+        struct TypePair : IEquatable<TypePair>
+        {
             internal readonly IntPtr PyType;
             internal readonly Type ClrType;
 
-            public TypePair(IntPtr pyType, Type clrType) {
+            public TypePair(IntPtr pyType, Type clrType)
+            {
                 this.PyType = pyType;
                 this.ClrType = clrType;
             }

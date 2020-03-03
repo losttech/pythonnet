@@ -1,15 +1,15 @@
 using System;
+using System.Runtime.CompilerServices;
+using System.Runtime.ExceptionServices;
+using System.Text;
 
 namespace Python.Runtime
 {
-    using System.Runtime.ExceptionServices;
-    using System.Text;
-
     /// <summary>
     /// Provides a managed interface to exceptions thrown by the Python
     /// runtime.
     /// </summary>
-    public class PythonException : System.Exception
+    public class PythonException : System.Exception, IPyDisposable
     {
         private IntPtr _pyType = IntPtr.Zero;
         private IntPtr _pyValue = IntPtr.Zero;
@@ -18,15 +18,13 @@ namespace Python.Runtime
         private string _message = "";
         private string _pythonTypeName = "";
         private bool disposed = false;
+        private bool _finalized = false;
 
         [Obsolete("Please, use FromPyErr instead")]
         public PythonException()
         {
             IntPtr gs = PythonEngine.AcquireLock();
             Runtime.PyErr_Fetch(out _pyType, out _pyValue, out _pyTB);
-            Runtime.XIncref(_pyType);
-            Runtime.XIncref(_pyValue);
-            Runtime.XIncref(_pyTB);
             if (_pyType != IntPtr.Zero && _pyValue != IntPtr.Zero)
             {
                 string type;
@@ -171,11 +169,12 @@ namespace Python.Runtime
 
         ~PythonException()
         {
-            // We needs to disable Finalizers until it's valid implementation.
-            // Current implementation can produce low probability floating bugs.
-            return;
-
-            Dispose();
+            if (_finalized || disposed)
+            {
+                return;
+            }
+            _finalized = true;
+            Finalizer.Instance.AddFinalizedObject(this);
         }
 
         /// <summary>
@@ -270,18 +269,34 @@ namespace Python.Runtime
                 if (Runtime.Py_IsInitialized() > 0 && !Runtime.IsFinalizing)
                 {
                     IntPtr gs = PythonEngine.AcquireLock();
-                    Runtime.XDecref(_pyType);
-                    Runtime.XDecref(_pyValue);
+                    if (_pyType != IntPtr.Zero)
+                    {
+                        Runtime.XDecref(_pyType);
+                        _pyType= IntPtr.Zero;
+                    }
+
+                    if (_pyValue != IntPtr.Zero)
+                    {
+                        Runtime.XDecref(_pyValue);
+                        _pyValue = IntPtr.Zero;
+                    }
+
                     // XXX Do we ever get TraceBack? //
                     if (_pyTB != IntPtr.Zero)
                     {
                         Runtime.XDecref(_pyTB);
+                        _pyTB = IntPtr.Zero;
                     }
                     PythonEngine.ReleaseLock(gs);
                 }
                 GC.SuppressFinalize(this);
                 disposed = true;
             }
+        }
+
+        public IntPtr[] GetTrackedHandles()
+        {
+            return new IntPtr[] { _pyType, _pyValue, _pyTB };
         }
 
         /// <summary>
@@ -294,6 +309,22 @@ namespace Python.Runtime
         public static bool Matches(IntPtr ob)
         {
             return Runtime.PyErr_ExceptionMatches(ob) != 0;
+        }
+
+        public static void ThrowIfIsNull(IntPtr ob)
+        {
+            if (ob == IntPtr.Zero)
+            {
+                throw PythonException.ThrowLastAsClrException();
+            }
+        }
+
+        public static void ThrowIfIsNotZero(int value)
+        {
+            if (value != 0)
+            {
+                throw PythonException.ThrowLastAsClrException();
+            }
         }
     }
 }

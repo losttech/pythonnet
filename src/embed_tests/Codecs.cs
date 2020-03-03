@@ -39,7 +39,7 @@ namespace Python.EmbeddingTest {
 
         [Test]
         public void ConversionsObject() {
-            ConversionsGeneric<ValueTuple<int, string, object>, ValueTuple>();
+            ConversionsObject<ValueTuple<int, string, object>, ValueTuple>();
         }
         static void ConversionsObject<T, TTuple>() {
             TupleCodec<TTuple>.Register();

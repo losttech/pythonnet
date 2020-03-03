@@ -134,9 +134,20 @@ namespace Python.Runtime
         /// </remarks>
         public PyObject Items()
         {
-            IntPtr items = Runtime.PyDict_Items(obj);
-            Exceptions.ErrorCheck(items);
-            return new PyObject(items);
+            var items = Runtime.PyDict_Items(this.obj);
+            try
+            {
+                if (items.IsNull())
+                {
+                    throw PythonException.ThrowLastAsClrException();
+                }
+
+                return items.MoveToPyObject();
+            }
+            finally
+            {
+                items.Dispose();
+            }
         }
 
 

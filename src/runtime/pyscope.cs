@@ -22,7 +22,7 @@ namespace Python.Runtime
     }
 
     [PyGIL]
-    public class PyScope : DynamicObject, IDisposable
+    public class PyScope : DynamicObject, IPyDisposable
     {
         public readonly string Name;
 
@@ -37,6 +37,7 @@ namespace Python.Runtime
         internal readonly IntPtr variables;
 
         private bool _isDisposed;
+        private bool _finalized = false;
 
         /// <summary>
         /// The Manager this scope associated with.
@@ -277,11 +278,19 @@ namespace Python.Runtime
             Check();
             IntPtr _locals = locals == null ? variables : locals.obj;
             var flag = (IntPtr)Runtime.Py_eval_input;
-            IntPtr ptr = Runtime.PyRun_String(
+
+            NewReference reference = Runtime.PyRun_String(
                 code, flag, variables, _locals
             );
-            Runtime.CheckExceptionOccurred();
-            return new PyObject(ptr);
+            try
+            {
+                Runtime.CheckExceptionOccurred();
+                return reference.MoveToPyObject();
+            }
+            finally
+            {
+                reference.Dispose();
+            }
         }
 
         /// <summary>
@@ -315,15 +324,22 @@ namespace Python.Runtime
         private void Exec(string code, IntPtr _globals, IntPtr _locals)
         {
             var flag = (IntPtr)Runtime.Py_file_input;
-            IntPtr ptr = Runtime.PyRun_String(
+            NewReference reference = Runtime.PyRun_String(
                 code, flag, _globals, _locals
             );
-            Runtime.CheckExceptionOccurred();
-            if (ptr != Runtime.PyNone)
+
+            try
             {
-                throw PythonException.ThrowLastAsClrException();
+                Runtime.CheckExceptionOccurred();
+                if (!reference.IsNone())
+                {
+                    throw PythonException.ThrowLastAsClrException();
+                }
             }
-            Runtime.XDecref(ptr);
+            finally
+            {
+                reference.Dispose();
+            }
         }
 
         /// <summary>
@@ -525,13 +541,19 @@ namespace Python.Runtime
             this.OnDispose?.Invoke(this);
         }
 
+        public IntPtr[] GetTrackedHandles()
+        {
+            return new IntPtr[] { obj };
+        }
+
         ~PyScope()
         {
-            // We needs to disable Finalizers until it's valid implementation.
-            // Current implementation can produce low probability floating bugs.
-            return;
-
-            Dispose();
+            if (_finalized || _isDisposed)
+            {
+                return;
+            }
+            _finalized = true;
+            Finalizer.Instance.AddFinalizedObject(this);
         }
     }
 
