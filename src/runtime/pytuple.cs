@@ -122,7 +122,10 @@ namespace Python.Runtime
             return new PyTuple(op);
         }
 
-        internal static PyTuple FromSingleElement(IntPtr value)
-            => new PyTuple(items: new []{new PyObject(value)});
+        /// <summary>
+        /// Create a <see cref="PyTuple"/> with single element
+        /// </summary>
+        public static PyTuple FromSingleElement(PyObject value)
+            => new PyTuple(items: new []{value});
     }
 }

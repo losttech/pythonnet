@@ -98,7 +98,8 @@ namespace Python.Runtime
             }
 
             IntPtr tp = Runtime.PyObject_TYPE(ob);
-            if (Runtime.PyObject_TYPE(tp) == Runtime.PyCLRMetaType) {
+            IntPtr metatype = Runtime.PyObject_TYPE(tp);
+            if (metatype == Runtime.PyCLRMetaType) {
                 int offset = (int)Marshal.ReadIntPtr(tp, TypeOffset.clr_gchandle_offset);
                 ClrGcHandleOffsetAssertSanity(offset);
                 return offset;

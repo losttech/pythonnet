@@ -64,7 +64,7 @@ class {BaseClassName}(MyCallableBase): pass
             public override PyTuple BaseTypes(Type type) {
                 return type != typeof(CallViaInheritance)
                     ? base.BaseTypes(type)
-                    : PyTuple.FromSingleElement(BaseClass.Handle);
+                    : PyTuple.FromSingleElement(BaseClass);
             }
         }
     }

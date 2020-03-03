@@ -19,12 +19,12 @@ namespace Python.Runtime
             if (type == null) throw new ArgumentNullException(nameof(type));
             if (type == typeof(Exception))
             {
-                return PyTuple.FromSingleElement(Exceptions.Exception);
+                return PyTuple.FromSingleElement(new PyObject(new BorrowedReference(Exceptions.Exception)));
             }
 
             if (type.BaseType != null) {
                 ClassBase bc = ClassManager.GetClass(type.BaseType);
-                return PyTuple.FromSingleElement(bc.pyHandle);
+                return PyTuple.FromSingleElement(new PyObject(new BorrowedReference(bc.pyHandle)));
             }
 
             return new PyTuple();
