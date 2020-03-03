@@ -340,7 +340,7 @@ namespace Python.Runtime
             string rtdir = RuntimeEnvironment.GetRuntimeDirectory();
             IntPtr path = PySys_GetObject("path");
             IntPtr item = PyString_FromString(rtdir);
-            PyList_Append(path, item);
+            PyList_Append(new BorrowedReference(path), item);
             XDecref(item);
             AssemblyManager.UpdatePath();
         }
@@ -1510,22 +1510,22 @@ namespace Python.Runtime
         
         private static int PyList_SetItem(IntPtr pointer, IntPtr index, IntPtr value) => Delegates.PyList_SetItem(pointer, index, value);
 
-        internal static int PyList_Insert(IntPtr pointer, long index, IntPtr value)
+        internal static int PyList_Insert(BorrowedReference pointer, long index, IntPtr value)
         {
             return PyList_Insert(pointer, new IntPtr(index), value);
         }
 
         
-        private static int PyList_Insert(IntPtr pointer, IntPtr index, IntPtr value) => Delegates.PyList_Insert(pointer, index, value);
+        private static int PyList_Insert(BorrowedReference pointer, IntPtr index, IntPtr value) => Delegates.PyList_Insert(pointer, index, value);
 
         
-        internal static int PyList_Append(IntPtr pointer, IntPtr value) => Delegates.PyList_Append(pointer, value);
+        internal static int PyList_Append(BorrowedReference pointer, IntPtr value) => Delegates.PyList_Append(pointer, value);
 
         
-        internal static int PyList_Reverse(IntPtr pointer) => Delegates.PyList_Reverse(pointer);
+        internal static int PyList_Reverse(BorrowedReference pointer) => Delegates.PyList_Reverse(pointer);
 
         
-        internal static int PyList_Sort(IntPtr pointer) => Delegates.PyList_Sort(pointer);
+        internal static int PyList_Sort(BorrowedReference pointer) => Delegates.PyList_Sort(pointer);
 
         internal static IntPtr PyList_GetSlice(IntPtr pointer, long start, long end)
         {
@@ -2900,22 +2900,22 @@ namespace Python.Runtime
             internal static PyList_InsertDelegate PyList_Insert { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate int PyList_InsertDelegate(IntPtr pointer, IntPtr index, IntPtr value);
+            internal delegate int PyList_InsertDelegate(BorrowedReference pointer, IntPtr index, IntPtr value);
 
             internal static PyList_AppendDelegate PyList_Append { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate int PyList_AppendDelegate(IntPtr pointer, IntPtr value);
+            internal delegate int PyList_AppendDelegate(BorrowedReference pointer, IntPtr value);
 
             internal static PyList_ReverseDelegate PyList_Reverse { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate int PyList_ReverseDelegate(IntPtr pointer);
+            internal delegate int PyList_ReverseDelegate(BorrowedReference pointer);
 
             internal static PyList_SortDelegate PyList_Sort { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate int PyList_SortDelegate(IntPtr pointer);
+            internal delegate int PyList_SortDelegate(BorrowedReference pointer);
 
             internal static PyList_GetSliceDelegate PyList_GetSlice { get; }
 

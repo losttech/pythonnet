@@ -114,7 +114,7 @@ namespace Python.Runtime
         /// </remarks>
         public void Append(PyObject item)
         {
-            int r = Runtime.PyList_Append(obj, item.obj);
+            int r = Runtime.PyList_Append(this.Reference, item.obj);
             if (r < 0)
             {
                 throw PythonException.ThrowLastAsClrException();
@@ -129,7 +129,7 @@ namespace Python.Runtime
         /// </remarks>
         public void Insert(int index, PyObject item)
         {
-            int r = Runtime.PyList_Insert(obj, index, item.obj);
+            int r = Runtime.PyList_Insert(this.Reference, index, item.obj);
             if (r < 0)
             {
                 throw PythonException.ThrowLastAsClrException();
@@ -145,7 +145,7 @@ namespace Python.Runtime
         /// </remarks>
         public void Reverse()
         {
-            int r = Runtime.PyList_Reverse(obj);
+            int r = Runtime.PyList_Reverse(this.Reference);
             if (r < 0)
             {
                 throw PythonException.ThrowLastAsClrException();
@@ -161,7 +161,7 @@ namespace Python.Runtime
         /// </remarks>
         public void Sort()
         {
-            int r = Runtime.PyList_Sort(obj);
+            int r = Runtime.PyList_Sort(this.Reference);
             if (r < 0)
             {
                 throw PythonException.ThrowLastAsClrException();
