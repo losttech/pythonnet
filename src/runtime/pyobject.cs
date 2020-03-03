@@ -29,6 +29,7 @@ namespace Python.Runtime
         public StackTrace Traceback { get; private set; }
 #endif  
 
+        readonly long run = Runtime.GetRun();
         protected internal IntPtr obj = IntPtr.Zero;
         private bool disposed = false;
         private bool _finalized = false;
@@ -169,6 +170,8 @@ namespace Python.Runtime
             {
                 if (Runtime.Py_IsInitialized() > 0 && !Runtime.IsFinalizing)
                 {
+                    if (this.run != Runtime.GetRun())
+                        throw new InvalidOperationException("Attempt to dispose PyObject from wrong run");
                     IntPtr gs = PythonEngine.AcquireLock();
                     Runtime.XDecref(obj);
                     obj = IntPtr.Zero;

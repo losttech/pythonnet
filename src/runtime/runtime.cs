@@ -171,6 +171,17 @@ namespace Python.Runtime
 
         private static PyReferenceCollection _pyRefs = new PyReferenceCollection();
 
+        static long run = 0;
+
+        internal static long GetRun()
+        {
+            long runNumber = Interlocked.Read(ref run);
+            System.Diagnostics.Debug.Assert(runNumber > 0,
+                "This must only be called after Runtime is initialized at least once");
+            return runNumber;
+        }
+
+
         /// <summary>
         /// Initialize the runtime...
         /// </summary>
@@ -309,6 +320,8 @@ namespace Python.Runtime
 #endif
 
             Error = new IntPtr(-1);
+
+            Interlocked.Increment(ref run);
 
             // Initialize data about the platform we're running on. We need
             // this for the type manager and potentially other details. Must
