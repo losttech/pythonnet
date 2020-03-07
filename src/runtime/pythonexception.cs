@@ -73,6 +73,19 @@ namespace Python.Runtime
             return result;
         }
 
+        internal static Exception FromPyErrOrNull()
+        {
+            IntPtr gs = PythonEngine.AcquireLock();
+            Runtime.PyErr_Fetch(out var pyTypeHandle, out var pyValueHandle, out var pyTracebackHandle);
+            if (pyValueHandle == IntPtr.Zero && pyTypeHandle == IntPtr.Zero && pyTracebackHandle == IntPtr.Zero)
+            {
+                return null;
+            }
+            var result = FromPyErr(pyTypeHandle, pyValueHandle, pyTracebackHandle);
+            PythonEngine.ReleaseLock(gs);
+            return result;
+        }
+
         /// <summary>
         /// Rethrows the last Python exception as corresponding CLR exception.
         /// It is recommended to call this as <code>throw ThrowLastAsClrException()</code>

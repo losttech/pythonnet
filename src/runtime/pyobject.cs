@@ -140,7 +140,8 @@ namespace Python.Runtime
             object result;
             if (!Converter.ToManaged(obj, t, out result, false))
             {
-                throw new InvalidCastException("cannot convert object to target type");
+                throw new InvalidCastException("cannot convert object to target type",
+                    innerException: PythonException.FromPyErrOrNull());
             }
             return result;
         }
@@ -161,7 +162,8 @@ namespace Python.Runtime
             object result;
             if (!Converter.ToManaged(obj, typeof(T), out result, false))
             {
-                throw new InvalidCastException("cannot convert object to target type");
+                throw new InvalidCastException("cannot convert object to target type",
+                    innerException: PythonException.FromPyErrOrNull());
             }
             return (T)result;
         }
