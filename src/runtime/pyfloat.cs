@@ -53,7 +53,7 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new Python float from a double value.
         /// </remarks>
-        public PyFloat(double value):base(Exceptions.ErrorOccurredCheck(Runtime.PyFloat_FromDouble(value)))
+        public PyFloat(double value):base(PythonException.ThrowIfIsNull(Runtime.PyFloat_FromDouble(value)))
         {
         }
 

@@ -48,7 +48,7 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a Python string from a managed string.
         /// </remarks>
-        public PyAnsiString(string s):base(Exceptions.ErrorOccurredCheck(Runtime.PyString_FromString(s)))
+        public PyAnsiString(string s):base(PythonException.ThrowIfIsNull(Runtime.PyString_FromString(s)))
         {
         }
 

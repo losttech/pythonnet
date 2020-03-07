@@ -53,7 +53,7 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new empty PyTuple.
         /// </remarks>
-        public PyTuple():base(Exceptions.ErrorOccurredCheck(Runtime.PyTuple_New(0)))
+        public PyTuple():base(PythonException.ThrowIfIsNull(Runtime.PyTuple_New(0)))
         {
         }
 

@@ -54,7 +54,7 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new Python int from an int32 value.
         /// </remarks>
-        public PyInt(int value):base(Exceptions.ErrorOccurredCheck(Runtime.PyInt_FromInt32(value)))
+        public PyInt(int value):base(PythonException.ThrowIfIsNull(Runtime.PyInt_FromInt32(value)))
         {
         }
 
@@ -66,7 +66,7 @@ namespace Python.Runtime
         /// Creates a new Python int from a uint32 value.
         /// </remarks>
         [CLSCompliant(false)]
-        public PyInt(uint value) : base(Exceptions.ErrorOccurredCheck(Runtime.PyInt_FromInt64(value)))
+        public PyInt(uint value) : base(PythonException.ThrowIfIsNull(Runtime.PyInt_FromInt64(value)))
         {
         }
 
@@ -77,7 +77,7 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new Python int from an int64 value.
         /// </remarks>
-        public PyInt(long value) : base(Exceptions.ErrorOccurredCheck(Runtime.PyInt_FromInt64(value)))
+        public PyInt(long value) : base(PythonException.ThrowIfIsNull(Runtime.PyInt_FromInt64(value)))
         {
         }
 
@@ -89,7 +89,7 @@ namespace Python.Runtime
         /// Creates a new Python int from a uint64 value.
         /// </remarks>
         [CLSCompliant(false)]
-        public PyInt(ulong value) : base(Exceptions.ErrorOccurredCheck(Runtime.PyInt_FromInt64((long)value)))
+        public PyInt(ulong value) : base(PythonException.ThrowIfIsNull(Runtime.PyInt_FromInt64((long)value)))
         {
         }
 
@@ -147,7 +147,7 @@ namespace Python.Runtime
         /// Creates a new Python int from a string value.
         /// </remarks>
         public PyInt(string value):base(
-            Exceptions.ErrorOccurredCheck(
+            PythonException.ThrowIfIsNull(
                 Runtime.PyInt_FromString(value ?? throw new ArgumentNullException(nameof(value)), IntPtr.Zero, 0)))
         {
         }

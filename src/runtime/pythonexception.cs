@@ -311,12 +311,14 @@ namespace Python.Runtime
             return Runtime.PyErr_ExceptionMatches(ob) != 0;
         }
 
-        public static void ThrowIfIsNull(IntPtr ob)
+        public static IntPtr ThrowIfIsNull(IntPtr ob)
         {
             if (ob == IntPtr.Zero)
             {
                 throw PythonException.ThrowLastAsClrException();
             }
+
+            return ob;
         }
 
         public static void ThrowIfIsNotZero(int value)
