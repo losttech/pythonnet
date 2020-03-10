@@ -5,6 +5,7 @@ namespace Python.Runtime
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using Python.Runtime.Codecs;
 
     /// <summary>
     /// Defines <see cref="PyObject"/> conversion to CLR types (unmarshalling)
@@ -49,8 +50,8 @@ namespace Python.Runtime
     [Obsolete(Util.UnstableApiMessage)]
     public static class PyObjectConversions
     {
-        static readonly List<IPyObjectDecoder> decoders = new List<IPyObjectDecoder>();
-        static readonly List<IPyObjectEncoder> encoders = new List<IPyObjectEncoder>();
+        static readonly DecoderGroup decoders = new DecoderGroup();
+        static readonly EncoderGroup encoders = new EncoderGroup();
 
         /// <summary>
         /// Registers specified encoder (marshaller)
@@ -62,7 +63,7 @@ namespace Python.Runtime
 
             lock (encoders)
             {
-                encoders.Add(encoder);
+                encoders.Encoders.Add(encoder);
             }
         }
 
@@ -76,7 +77,7 @@ namespace Python.Runtime
 
             lock (decoders)
             {
-                decoders.Add(decoder);
+                decoders.Decoders.Add(decoder);
             }
         }
 
@@ -101,7 +102,7 @@ namespace Python.Runtime
         {
             lock (encoders)
             {
-                return encoders.Where(encoder => encoder.CanEncode(type)).ToArray();
+                return encoders.GetEncoders(type).ToArray();
             }
         }
         #endregion
@@ -128,7 +129,7 @@ namespace Python.Runtime
             {
                 lock (decoders)
                 {
-                    decoder = decoders.Find(d => d.CanDecode(pyType, targetType));
+                    decoder = decoders.GetDecoder(pyType, targetType);
                     if (decoder == null) return null;
                 }
             }
@@ -163,8 +164,8 @@ namespace Python.Runtime
                 {
                     clrToPython.Clear();
                     pythonToClr.Clear();
-                    encoders.Clear();
-                    decoders.Clear();
+                    encoders.Encoders.Clear();
+                    decoders.Decoders.Clear();
                 }
         }
 
