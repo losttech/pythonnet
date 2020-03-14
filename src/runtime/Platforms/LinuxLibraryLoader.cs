@@ -1,5 +1,6 @@
 namespace Python.Runtime.Platforms {
     using System;
+    using System.IO;
     using System.Runtime.InteropServices;
 
     sealed class LinuxLibraryLoader: UnixLibraryLoader {
@@ -8,7 +9,7 @@ namespace Python.Runtime.Platforms {
         const int RTLD_GLOBAL = 0x100;
         const string LinuxNativeDll = "libdl.so";
         public override IntPtr LoadLibrary(string path) {
-            path = string.IsNullOrEmpty(System.IO.Path.GetExtension(path)) ? $"lib{path}.so" : path;
+            path = File.Exists(path) ? path : $"lib{path}.so";
             return Linux.dlopen(path, RTLD_NOW | RTLD_GLOBAL);
         }
 

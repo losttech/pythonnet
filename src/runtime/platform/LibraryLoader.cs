@@ -1,5 +1,6 @@
 using System;
 using System.ComponentModel;
+using System.IO;
 using System.Runtime.InteropServices;
 
 namespace Python.Runtime.Platform
@@ -40,7 +41,7 @@ namespace Python.Runtime.Platform
 
         public IntPtr Load(string dllToLoad)
         {
-            var filename = $"lib{dllToLoad}.so";
+            var filename = File.Exists(dllToLoad) ? dllToLoad : $"lib{dllToLoad}.so";
             ClearError();
             var res = dlopen(filename, RTLD_NOW | RTLD_GLOBAL);
             if (res == IntPtr.Zero)
@@ -111,7 +112,7 @@ namespace Python.Runtime.Platform
 
         public IntPtr Load(string dllToLoad)
         {
-            var filename = $"lib{dllToLoad}.dylib";
+            var filename = File.Exists(dllToLoad) ? dllToLoad : $"lib{dllToLoad}.dylib";
             ClearError();
             var res = dlopen(filename, RTLD_NOW | RTLD_GLOBAL);
             if (res == IntPtr.Zero)

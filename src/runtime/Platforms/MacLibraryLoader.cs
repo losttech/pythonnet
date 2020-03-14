@@ -1,12 +1,13 @@
 namespace Python.Runtime.Platforms {
     using System;
+    using System.IO;
     using System.Runtime.InteropServices;
 
     class MacLibraryLoader: UnixLibraryLoader {
         public static MacLibraryLoader Instance { get; } = new MacLibraryLoader();
         const int RTLD_GLOBAL = 0x8;
         public override IntPtr LoadLibrary(string path) {
-            path = string.IsNullOrEmpty(System.IO.Path.GetExtension(path)) ? $"lib{path}.dylib" : path;
+            path = File.Exists(path) ? path : $"lib{path}.dylib";
             return Mac.dlopen(path, RTLD_NOW | RTLD_GLOBAL);
         }
 
