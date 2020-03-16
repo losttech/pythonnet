@@ -110,7 +110,7 @@ namespace Python.Runtime
         }
 
         /// <summary>
-        /// Requires lock to be acquired eslewhere
+        /// Requires lock to be acquired elsewhere
         /// </summary>
         static Exception FromPyErr(IntPtr pyTypeHandle, IntPtr pyValueHandle, IntPtr pyTracebackHandle) {
             Exception inner = null;
