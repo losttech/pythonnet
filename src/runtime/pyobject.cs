@@ -31,8 +31,6 @@ namespace Python.Runtime
 
         readonly long run = Runtime.GetRun();
         protected internal IntPtr obj = IntPtr.Zero;
-        private bool disposed = false;
-        private bool _finalized = false;
 
         internal BorrowedReference Reference => new BorrowedReference(obj);
 
@@ -50,6 +48,7 @@ namespace Python.Runtime
             if (ptr == IntPtr.Zero) throw new ArgumentNullException(nameof(ptr));
 
             obj = ptr;
+            Finalizer.Instance.ThrottledCollect();
 #if TRACE_ALLOC
             Traceback = new StackTrace(1);
 #endif
@@ -65,6 +64,7 @@ namespace Python.Runtime
             if (reference.IsNull) throw new ArgumentNullException(nameof(reference));
 
             obj = Runtime.SelfIncRef(reference.DangerousGetAddress());
+            Finalizer.Instance.ThrottledCollect();
 #if TRACE_ALLOC
             Traceback = new StackTrace(1);
 #endif
@@ -75,6 +75,7 @@ namespace Python.Runtime
         [Obsolete("Please, always use PyObject(*Reference)")]
         protected PyObject()
         {
+            Finalizer.Instance.ThrottledCollect();
 #if TRACE_ALLOC
             Traceback = new StackTrace(1);
 #endif
@@ -88,12 +89,6 @@ namespace Python.Runtime
             {
                 return;
             }
-            if (_finalized || disposed)
-            {
-                return;
-            }
-            // Prevent a infinity loop by calling GC.WaitForPendingFinalizers
-            _finalized = true;
             Finalizer.Instance.AddFinalizedObject(this);
         }
 
@@ -182,17 +177,16 @@ namespace Python.Runtime
         /// </remarks>
         protected virtual void Dispose(bool disposing)
         {
-            if (!disposed)
+            if (this.obj != IntPtr.Zero)
             {
-                if (Runtime.Py_IsInitialized() > 0 && !Runtime.IsFinalizing && this.run == Runtime.GetRun())
+                if (Runtime.Py_IsInitialized() == 0)
+                    throw new InvalidOperationException("Python runtime must be initialized");
+
+                if (!Runtime.IsFinalizing)
                 {
-                    Debug.Assert(this.run == Runtime.GetRun(), "Attempt to dispose PyObject from wrong run");
-                    IntPtr gs = PythonEngine.AcquireLock();
                     Runtime.XDecref(obj);
-                    obj = IntPtr.Zero;
-                    PythonEngine.ReleaseLock(gs);
                 }
-                disposed = true;
+                obj = IntPtr.Zero;
             }
         }
 

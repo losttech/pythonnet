@@ -24,6 +24,7 @@ This document follows the conventions laid out in [Keep a CHANGELOG][].
 -   Changed usage of obselete function GetDelegateForFunctionPointer(IntPtr, Type) to GetDelegateForFunctionPointer<TDelegate>(IntPtr)
 -   When calling C# from Python, enable passing argument of any type to a parameter of C# type `object` by wrapping it into `PyObject` instance. ([#881][i881])
 -   Added support for kwarg parameters when calling .NET methods from Python
+-   Reworked `Finalizer`. Now objects drop into its queue upon finalization, which is periodically drained when new objects are created.
 
 ### Fixed
 
