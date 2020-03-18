@@ -340,6 +340,8 @@ namespace Python.Runtime
             PyList_Append(new BorrowedReference(path), item);
             XDecref(item);
             AssemblyManager.UpdatePath();
+
+            inspect = GetInspectModuleLazy();
         }
 
         /// <summary>
@@ -431,6 +433,9 @@ namespace Python.Runtime
             Py_Finalize();
         }
 
+        private static Lazy<PyObject> GetInspectModuleLazy()
+            => new Lazy<PyObject>(() => PythonEngine.ImportModule("inspect"), isThreadSafe: false);
+
         // called *without* the GIL acquired by clr._AtExit
         internal static int AtExit()
         {
@@ -509,8 +514,7 @@ namespace Python.Runtime
             }
         }
 
-        private static readonly Lazy<PyObject> inspect =
-            new Lazy<PyObject>(() => PythonEngine.ImportModule("inspect"), isThreadSafe: false);
+        private static Lazy<PyObject> inspect;
         public static PyObject InspectModule => inspect.Value;
 
         /// <summary>
