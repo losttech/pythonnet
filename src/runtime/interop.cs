@@ -87,32 +87,40 @@ namespace Python.Runtime
             ob_data = (n + 3) * size;
         }
 
-        public static int magic(IntPtr ob)
+        public static int GetDefaultGCHandleOffset() => ob_data;
+
+        /// <summary>
+        /// Gets GC handle offset in the instances of the specified type
+        /// </summary>
+        public static int InstanceGCHandle(BorrowedReference type)
         {
-            if (ob == IntPtr.Zero) throw new ArgumentNullException(nameof(ob));
-
-            if ((Runtime.PyObject_TypeCheck(ob, Exceptions.BaseException) ||
-                 (Runtime.PyType_Check(ob) && Runtime.PyType_IsSubtype(ob, Exceptions.BaseException))))
-            {
-                return ExceptionOffset.ob_data;
-            }
-
-            IntPtr tp = Runtime.PyObject_TYPE(ob);
-            IntPtr metatype = Runtime.PyObject_TYPE(tp);
-            if (metatype == Runtime.PyCLRMetaType) {
-                int offset = (int)Marshal.ReadIntPtr(tp, TypeOffset.clr_gchandle_offset);
-                ClrGcHandleOffsetAssertSanity(offset);
-                return offset;
-            } else {
-                return ob_data;
-            }
+#if DEBUG
+            Debug.Assert(ManagedType.IsManagedType(type));
+            var meta = Runtime.PyObject_TYPE(type);
+            if (meta.DangerousGetAddress() != Runtime.PyCLRMetaType)
+                Debug.Assert(new PyObject(meta).ToString() == "<class 'CLR.CLR Metatype'>");
+#endif
+            int offset = (int)Marshal.ReadIntPtr(type.DangerousGetAddress(), TypeOffset.clr_gchandle_offset);
+#if DEBUG
+            Debug.Assert(offset < checked((int)Marshal.ReadIntPtr(type.DangerousGetAddress(), TypeOffset.tp_basicsize)));
+#endif
+            ClrGcHandleOffsetAssertSanity(offset);
+            return offset;
+        }
+        /// <summary>
+        /// Gets GC handle offset in the instance
+        /// </summary>
+        public static int ReflectedObjectGCHandle(BorrowedReference reflectedManagedObject)
+        {
+            var type = Runtime.PyObject_TYPE(reflectedManagedObject);
+            return InstanceGCHandle(type);
         }
 
         [Conditional("DEBUG")]
         static void AssertIsClrType(IntPtr tp) => Debug.Assert(Runtime.PyObject_TYPE(tp) == Runtime.PyCLRMetaType);
         [Conditional("DEBUG")]
         internal static void ClrGcHandleOffsetAssertSanity(int offset)
-            => Debug.Assert(offset > 0 && offset < 1024*1024, "GC handle offset is insane");
+            => Debug.Assert(offset > 0 && offset < 1024*4, "GC handle offset is insane");
 
         public static int DictOffset(IntPtr ob)
         {
@@ -131,6 +139,12 @@ namespace Python.Runtime
             {
                 return ExceptionOffset.Size();
             }
+
+            return PyObject_HEAD_Size();
+        }
+
+        public static int PyObject_HEAD_Size()
+        {
 #if PYTHON_WITH_PYDEBUG
             return 6 * IntPtr.Size;
 #else

@@ -251,7 +251,7 @@ namespace Python.Runtime
         /// </summary>
         public static IntPtr tp_getattro(IntPtr ob, IntPtr key)
         {
-            var self = (ModuleObject)GetManagedObject(ob);
+            var self = GetManagedObject<ModuleObject>(new BorrowedReference(ob));
 
             if (!Runtime.PyString_Check(key))
             {
@@ -301,7 +301,7 @@ namespace Python.Runtime
         /// </summary>
         public static IntPtr tp_repr(IntPtr ob)
         {
-            var self = (ModuleObject)GetManagedObject(ob);
+            var self = GetManagedObject<ModuleObject>(new BorrowedReference(ob));
             return Runtime.PyString_FromString($"<module '{self.moduleName}'>");
         }
     }

@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
@@ -111,7 +112,7 @@ namespace Python.Runtime
         {
             string name = GetPythonTypeName(clrType);
 
-            int ob_size = ObjectOffset.Size(Runtime.PyTypeType);
+            int ob_size;
             int tp_dictoffset = ObjectOffset.DictOffset(Runtime.PyTypeType);
 
             // XXX Hack, use a different base class for System.Exception
@@ -119,7 +120,6 @@ namespace Python.Runtime
             // subclass BaseException (or better Exception).
             if (typeof(Exception).IsAssignableFrom(clrType))
             {
-                ob_size = ObjectOffset.Size(Exceptions.Exception);
                 tp_dictoffset = ObjectOffset.DictOffset(Exceptions.Exception);
             }
 
@@ -141,33 +141,34 @@ namespace Python.Runtime
                 InitializeSlot(type, TypeOffset.tp_getattro, typeof(SlotOverrides).GetMethod(nameof(SlotOverrides.tp_getattro)));
             }
 
-            int extraTypeDataOffset = ob_size - MetaType.ExtraTypeDataSize;
+            int extraTypeDataOffset;
             try
             {
                 using PyTuple baseTuple = GetBaseTypeTuple(clrType);
-                if (baseTuple.Length() > 0)
-                {
-                    IntPtr primaryBase = baseTuple[0].Reference.DangerousIncRefOrNull();
-                    Marshal.WriteIntPtr(type, TypeOffset.tp_base, primaryBase);
+                Debug.Assert(baseTuple.Length() > 0);
+                IntPtr primaryBase = baseTuple[0].Reference.DangerousIncRefOrNull();
+                Marshal.WriteIntPtr(type, TypeOffset.tp_base, primaryBase);
 
-                    if (baseTuple.Length() > 1) {
-                        Marshal.WriteIntPtr(type, TypeOffset.tp_bases, baseTuple.Reference.DangerousIncRefOrNull());
-                    }
-
-                    int baseSize = checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.tp_basicsize));
-                    if (!ClassObject.IsManagedType(primaryBase))
-                    {
-                        // custom base type is a Python type, so we must allocate additional space for GC handle
-                        extraTypeDataOffset = baseSize;
-                        ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
-                        ob_size = baseSize + MetaType.ExtraTypeDataSize;
-                    } else
-                    {
-                        extraTypeDataOffset = checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.clr_gchandle_offset));
-                        ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
-                        ob_size = baseSize;
-                    }
+                if (baseTuple.Length() > 1) {
+                    Marshal.WriteIntPtr(type, TypeOffset.tp_bases, baseTuple.Reference.DangerousIncRefOrNull());
                 }
+
+                int baseSize = primaryBase == Runtime.PyBaseObjectType ? ObjectOffset.PyObject_HEAD_Size()
+                    : primaryBase == Exceptions.Exception ? ExceptionOffset.Size()
+                    : checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.tp_basicsize));
+                if (!ManagedType.IsManagedType(primaryBase))
+                {
+                    // base type is a Python type, so we must allocate additional space for GC handle
+                    extraTypeDataOffset = baseSize;
+                    ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
+                    ob_size = baseSize + MetaType.ExtraTypeDataSize;
+                } else
+                {
+                    extraTypeDataOffset = checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.clr_gchandle_offset));
+                    ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
+                    ob_size = baseSize;
+                }
+                Debug.Assert(extraTypeDataOffset > tp_dictoffset);
             }
             catch (Exception error)
             {
@@ -282,8 +283,11 @@ namespace Python.Runtime
             var baseOverride = Util.GetLatestAttribute<BaseTypeAttributeBase>(clrType)
                 ?? BaseTypeAttributeBase.Default;
             var types = baseOverride.BaseTypes(clrType);
-            if (types is null) throw new InvalidOperationException();
-            if (types.Length() == 0) return new PyTuple();
+            if (types is null || types.Length() == 0)
+            {
+                throw new InvalidOperationException("At least one base type must be specified");
+            }
+
             for (int index = 0; index < types.Length(); index++) {
                 IntPtr baseType = Runtime.PyTuple_GetItem(types.Handle, index);
                 if (!PyType.IsTypeType(baseType)) {

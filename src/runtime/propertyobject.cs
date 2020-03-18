@@ -21,7 +21,8 @@ namespace Python.Runtime
             info = md;
         }
 
-
+        static PropertyObject GetInstance(IntPtr ob)
+            => GetManagedObject<PropertyObject>(new BorrowedReference(ob));
         /// <summary>
         /// Descriptor __get__ implementation. This method returns the
         /// value of the property on the given object. The returned value
@@ -29,7 +30,7 @@ namespace Python.Runtime
         /// </summary>
         public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
         {
-            var self = (PropertyObject)GetManagedObject(ds);
+            var self = GetInstance(ds);
             MethodInfo getter = self.getter;
             object result;
 
@@ -89,7 +90,7 @@ namespace Python.Runtime
         /// </summary>
         public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
         {
-            var self = (PropertyObject)GetManagedObject(ds);
+            var self = GetInstance(ds);
             MethodInfo setter = self.setter;
             object newval;
 
@@ -157,7 +158,7 @@ namespace Python.Runtime
         /// </summary>
         public static IntPtr tp_repr(IntPtr ob)
         {
-            var self = (PropertyObject)GetManagedObject(ob);
+            var self = GetInstance(ob);
             return Runtime.PyString_FromString($"<property '{self.info.Name}'>");
         }
     }

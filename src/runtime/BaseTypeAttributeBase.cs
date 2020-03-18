@@ -27,7 +27,7 @@ namespace Python.Runtime
                 return PyTuple.FromSingleElement(new PyObject(new BorrowedReference(bc.pyHandle)));
             }
 
-            return new PyTuple();
+            return PyTuple.FromSingleElement(new PyObject(new BorrowedReference(Runtime.PyBaseObjectType)));
         }
 
         internal static BaseTypeAttributeBase Default { get; } = new BaseTypeAttributeBase();

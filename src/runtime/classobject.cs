@@ -394,17 +394,5 @@ namespace Python.Runtime
                 }
             }
         }
-
-        /// <summary>
-        /// Checks if specified type is a CLR type
-        /// </summary>
-        internal static bool IsManagedType(IntPtr tp)
-        {
-            var flags = Util.ReadCLong(tp, TypeOffset.tp_flags);
-            return (flags & TypeFlags.Managed) != 0;
-        }
-        /// <summary>Checks if specified type is a CLR type</summary>
-        internal static bool IsManagedType(BorrowedReference type)
-            => IsManagedType(type.DangerousGetAddress());
     }
 }

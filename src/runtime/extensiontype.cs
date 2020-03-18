@@ -29,7 +29,7 @@ namespace Python.Runtime
             IntPtr py = Runtime.PyType_GenericAlloc(tp, 0);
 
             GCHandle gc = GCHandle.Alloc(this);
-            Marshal.WriteIntPtr(py, ObjectOffset.magic(tp), (IntPtr)gc);
+            Marshal.WriteIntPtr(py, ObjectOffset.GetDefaultGCHandleOffset(), (IntPtr)gc);
 
             // We have to support gc because the type machinery makes it very
             // hard not to - but we really don't have a need for it in most
@@ -48,7 +48,7 @@ namespace Python.Runtime
         /// <summary>
         /// Common finalization code to support custom tp_deallocs.
         /// </summary>
-        public static void FinalizeObject(ManagedType self)
+        public static void FinalizeObject(ExtensionType self)
         {
             Runtime.PyObject_GC_Del(self.pyHandle);
             // Not necessary for decref of `tpHandle`.
@@ -89,7 +89,7 @@ namespace Python.Runtime
         {
             // Clean up a Python instance of this extension type. This
             // frees the allocated Python object and decrefs the type.
-            ManagedType self = GetManagedObject(ob);
+            var self = GetManagedObject<ExtensionType>(new BorrowedReference(ob));
             FinalizeObject(self);
         }
     }

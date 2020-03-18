@@ -150,7 +150,7 @@ namespace Python.Runtime
         /// </summary>
         public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
         {
-            var self = (MethodObject)GetManagedObject(ds);
+            var self = GetManagedObject<MethodObject>(new BorrowedReference(ds));
             MethodBinding binding;
 
             // If the method is accessed through its type (rather than via

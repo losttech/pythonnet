@@ -290,7 +290,8 @@ namespace Python.Runtime
         /// </summary>
         public static void tp_dealloc(IntPtr ob)
         {
-            ManagedType self = GetManagedObject(ob);
+            var reference = new BorrowedReference(ob);
+            var self = GetManagedObject(reference, ObjectOffset.ReflectedObjectGCHandle(reference));
             IntPtr dict = Marshal.ReadIntPtr(ob, ObjectOffset.DictOffset(ob));
             if (dict != IntPtr.Zero)
             {
