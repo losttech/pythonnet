@@ -145,5 +145,12 @@ namespace Python.Runtime
                 Debug.Assert(Runtime.PyGILState_Check() == 1, "GIL must be acquired");
             }
         }
+
+        [Conditional("DEBUG")]
+        public static void AssertRefcount(IntPtr ob, long expected = 1) {
+            long refcount = Runtime.Refcount(ob);
+            if (refcount != expected)
+                throw new InvalidProgramException();
+        }
     }
 }

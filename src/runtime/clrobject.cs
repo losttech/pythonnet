@@ -78,7 +78,9 @@ namespace Python.Runtime
             if (obj is null) throw new ArgumentNullException(nameof(obj));
 
             // TODO: CLRObject currently does not have Dispose or finalizer which might change in the future
-            return NewReference.DangerousFromPointer(GetInstHandle(obj));
+            IntPtr handle = GetInstHandle(obj);
+            DebugUtil.AssertRefcount(handle);
+            return NewReference.DangerousFromPointer(handle);
         }
     }
 }
