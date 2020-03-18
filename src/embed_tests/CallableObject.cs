@@ -10,7 +10,7 @@ namespace Python.EmbeddingTest {
         public void SetUp() {
             PythonEngine.Initialize();
             using (Py.GIL()) {
-                var locals = new PyDict();
+                using var locals = new PyDict();
                 PythonEngine.Exec(CallViaInheritance.BaseClassSource, locals: locals.Handle);
                 CustomBaseTypeAttribute.BaseClass = locals[CallViaInheritance.BaseClassName];
             }
@@ -20,7 +20,6 @@ namespace Python.EmbeddingTest {
         public void Dispose() {
             PythonEngine.Shutdown();
         }
-
         [Test]
         public void CallMethodMakesObjectCallable() {
             var doubler = new DerivedDoubler();
@@ -29,7 +28,6 @@ namespace Python.EmbeddingTest {
                 Assert.AreEqual(doubler.__call__(21), (int)applyObjectTo21(doubler.ToPython()));
             }
         }
-
         [Test]
         public void CallMethodCanBeInheritedFromPython() {
             var callViaInheritance = new CallViaInheritance();
