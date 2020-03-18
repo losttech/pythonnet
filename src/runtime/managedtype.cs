@@ -14,7 +14,7 @@ namespace Python.Runtime
         internal IntPtr pyHandle; // PyObject *
         internal IntPtr tpHandle; // PyType *
         internal BorrowedReference Type => new BorrowedReference(this.tpHandle);
-        internal BorrowedReference Instance => new BorrowedReference(this.tpHandle);
+        internal BorrowedReference Instance => new BorrowedReference(this.pyHandle);
 
 
         /// <summary>
