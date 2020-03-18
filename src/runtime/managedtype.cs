@@ -18,6 +18,7 @@ namespace Python.Runtime
         /// <summary>
         /// Given a Python object, return the associated managed object or null.
         /// </summary>
+        [Obsolete("Use GetManagedObject(BorrowedReference)")]
         internal static ManagedType GetManagedObject(IntPtr ob)
         {
             if (ob != IntPtr.Zero)
@@ -44,6 +45,9 @@ namespace Python.Runtime
             }
             return null;
         }
+
+        internal static ManagedType GetManagedObject(BorrowedReference ob)
+            => ob.IsNull ? null : GetManagedObject(ob.DangerousGetAddress());
 
 
         internal static ManagedType GetManagedObjectErr(IntPtr ob)
