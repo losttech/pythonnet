@@ -60,6 +60,7 @@ class {BaseClassName}(MyCallableBase): pass
             internal static PyObject BaseClass;
 
             public override PyTuple BaseTypes(Type type) {
+                Assert.Greater(BaseClass.Refcount, 0);
                 return type != typeof(CallViaInheritance)
                     ? base.BaseTypes(type)
                     : PyTuple.FromSingleElement(BaseClass);
