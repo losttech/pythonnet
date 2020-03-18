@@ -35,6 +35,7 @@ namespace Python.Runtime
         /// the variable dict of the scope.
         /// </summary>
         internal readonly IntPtr variables;
+        internal BorrowedReference VarsReference => new BorrowedReference(variables);
 
         private bool _isDisposed;
         private bool _finalized = false;

@@ -248,7 +248,7 @@ namespace Python.Runtime
                 MethodAttributes.HideBySig,
                 CallingConventions.Standard,
                 typeof(void),
-                Type.EmptyTypes);
+                System.Type.EmptyTypes);
             ILGenerator il = methodBuilder.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod("Finalize"));

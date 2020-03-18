@@ -19,7 +19,7 @@ namespace Python.Runtime
             var coclass = (CoClassAttribute)Attribute.GetCustomAttribute(tp, cc_attr);
             if (coclass != null)
             {
-                ctor = coclass.CoClass.GetConstructor(Type.EmptyTypes);
+                ctor = coclass.CoClass.GetConstructor(System.Type.EmptyTypes);
             }
         }
 

@@ -13,6 +13,8 @@ namespace Python.Runtime
         internal GCHandle gcHandle; // Native handle
         internal IntPtr pyHandle; // PyObject *
         internal IntPtr tpHandle; // PyType *
+        internal BorrowedReference Type => new BorrowedReference(this.tpHandle);
+        internal BorrowedReference Instance => new BorrowedReference(this.tpHandle);
 
 
         /// <summary>

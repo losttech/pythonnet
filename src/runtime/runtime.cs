@@ -884,6 +884,12 @@ namespace Python.Runtime
                 : new IntPtr((void*)(*((ulong*)p + n)));
         }
 
+        internal static BorrowedReference PyObject_TYPE(BorrowedReference reference) {
+            return reference.IsNull
+                ? throw new ArgumentNullException(nameof(reference))
+                : new BorrowedReference(PyObject_TYPE(reference.DangerousGetAddress()));
+        }
+
         /// <summary>
         /// Managed version of the standard Python C API PyObject_Type call.
         /// This version avoids a managed  &lt;-&gt; unmanaged transition.
