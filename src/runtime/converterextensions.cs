@@ -110,16 +110,16 @@ namespace Python.Runtime
         #region Decoding
         static readonly ConcurrentDictionary<TypePair, Converter.TryConvertFromPythonDelegate>
             pythonToClr = new ConcurrentDictionary<TypePair, Converter.TryConvertFromPythonDelegate>();
-        internal static bool TryDecode(IntPtr pyHandle, IntPtr pyType, Type targetType, out object result)
+        internal static bool TryDecode(BorrowedReference obj, BorrowedReference objType, Type targetType, out object result)
         {
-            if (pyHandle == IntPtr.Zero) throw new ArgumentNullException(nameof(pyHandle));
-            if (pyType == IntPtr.Zero) throw new ArgumentNullException(nameof(pyType));
+            if (obj.IsNull) throw new ArgumentNullException(nameof(obj));
+            if (objType.IsNull) throw new ArgumentNullException(nameof(objType));
             if (targetType == null) throw new ArgumentNullException(nameof(targetType));
 
-            var decoder = pythonToClr.GetOrAdd(new TypePair(pyType, targetType), pair => GetDecoder(pair.PyType, pair.ClrType));
+            var decoder = pythonToClr.GetOrAdd(new TypePair(objType.DangerousGetAddress(), targetType), pair => GetDecoder(pair.PyType, pair.ClrType));
             result = null;
             if (decoder == null) return false;
-            return decoder.Invoke(pyHandle, out result);
+            return decoder.Invoke(obj, out result);
         }
 
         static Converter.TryConvertFromPythonDelegate GetDecoder(IntPtr sourceType, Type targetType)
@@ -136,9 +136,9 @@ namespace Python.Runtime
 
             var decode = genericDecode.MakeGenericMethod(targetType);
 
-            bool TryDecode(IntPtr pyHandle, out object result)
+            bool TryDecode(BorrowedReference pyHandle, out object result)
             {
-                var pyObj = new PyObject(Runtime.SelfIncRef(pyHandle));
+                var pyObj = new PyObject(pyHandle);
                 var @params = new object[] { pyObj, null };
                 bool success = (bool)decode.Invoke(decoder, @params);
                 if (!success)

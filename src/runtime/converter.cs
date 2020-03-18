@@ -392,8 +392,8 @@ namespace Python.Runtime
                 }
 
                 // give custom codecs a chance to take over conversion of sequences
-                IntPtr pyType = Runtime.PyObject_TYPE(value);
-                if (PyObjectConversions.TryDecode(value, pyType, obType, out result))
+                var pyType = new BorrowedReference(Runtime.PyObject_TYPE(value));
+                if (PyObjectConversions.TryDecode(new BorrowedReference(value), pyType, obType, out result))
                 {
                     return true;
                 }
@@ -459,13 +459,13 @@ namespace Python.Runtime
             if (typeCode == TypeCode.Object)
             {
                 var converter = TypeConverterCache.GetOrAdd(obType, GetConverter);
-                if (converter != null && converter(value, out result))
+                if (converter != null && converter(new BorrowedReference(value), out result))
                 {
                     return true;
                 }
 
-                IntPtr pyType = Runtime.PyObject_TYPE(value);
-                if (PyObjectConversions.TryDecode(value, pyType, obType, out result))
+                var pyType = new BorrowedReference(Runtime.PyObject_TYPE(value));
+                if (PyObjectConversions.TryDecode(new BorrowedReference(value), pyType, obType, out result))
                 {
                     return true;
                 }
@@ -496,19 +496,22 @@ namespace Python.Runtime
             }
             convert = convert.MakeGenericMethod(targetType);
 
-            bool TryConvert(IntPtr pyHandle, out object result) {
-                using (var pyObj = new PyObject(Runtime.SelfIncRef(pyHandle))) {
-                    var @params = new object[] {pyObj, null};
-                    bool success = (bool)convert.Invoke(converterAttribute, @params);
-                    result = @params[1];
-                    return success;
+            bool TryConvert(BorrowedReference pyHandle, out object result) {
+                var pyObj = new PyObject(pyHandle);
+                var @params = new object[] {pyObj, null};
+                bool success = (bool)convert.Invoke(converterAttribute, @params);
+                if (!success)
+                {
+                    pyObj.Dispose();
                 }
+                result = @params[1];
+                return success;
             }
 
             return TryConvert;
         }
 
-        internal delegate bool TryConvertFromPythonDelegate(IntPtr pyObj, out object result);
+        internal delegate bool TryConvertFromPythonDelegate(BorrowedReference pyObj, out object result);
         static readonly ConcurrentDictionary<Type, TryConvertFromPythonDelegate> TypeConverterCache =
             new ConcurrentDictionary<Type, TryConvertFromPythonDelegate>();
 
