@@ -76,7 +76,7 @@ namespace Python.Runtime
 
                 var parameters = new PyList();
                 var parameterClass = primaryParameters.Length > 0 ? Runtime.InspectModule.GetAttr("Parameter") : null;
-                var positionalOrKeyword = primaryParameters.Length > 0 ? parameterClass.GetAttr("POSITIONAL_OR_KEYWORD") : null;
+                var positionalOrKeyword = parameterClass?.GetAttr("POSITIONAL_OR_KEYWORD");
                 for (int i = 0; i < primaryParameters.Length; i++) {
                     var parameter = primaryParameters[i];
                     var alternatives = infos.Select(info => {
@@ -141,7 +141,11 @@ namespace Python.Runtime
                     return om.pyHandle;
                 case "__signature__":
                     var sig = self.Singature;
-                    return sig.Handle;
+                    if (sig is null)
+                    {
+                        return Runtime.PyObject_GenericGetAttr(ob, key);
+                    }
+                    return sig.Reference.DangerousIncRefOrNull();
                 case "__name__":
                     var pyName = self.m.GetName();
                     return pyName == IntPtr.Zero
