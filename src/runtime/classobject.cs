@@ -309,11 +309,12 @@ namespace Python.Runtime
                     return callBinder.Invoke(ob, args, kw);
                 }
 
-                using var super = new PyObject(Runtime.SelfIncRef(Runtime.PySuper_Type));
-                using var self = new PyObject(Runtime.SelfIncRef(ob));
-                using var none = new PyObject(Runtime.SelfIncRef(Runtime.PyNone));
-                foreach (IntPtr managedTypeDerivingFromPython in GetTypesWithPythonBasesInHierarchy(tp)) {
-                    using var @base = super.Invoke(new PyObject(managedTypeDerivingFromPython), self);
+                using var super = new PyObject(new BorrowedReference(Runtime.PySuper_Type));
+                using var self = new PyObject(new BorrowedReference(ob));
+                using var none = new PyObject(new BorrowedReference(Runtime.PyNone));
+                foreach (IntPtr rawTypePointer in GetTypesWithPythonBasesInHierarchy(tp)) {
+                    using var managedTypeDerivingFromPython = new PyObject(new BorrowedReference(rawTypePointer));
+                    using var @base = super.Invoke(managedTypeDerivingFromPython, self);
                     using var call = @base.GetAttrOrElse("__call__", none);
 
                     if (call.Handle == Runtime.PyNone) continue;
