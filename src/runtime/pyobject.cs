@@ -1064,6 +1064,7 @@ namespace Python.Runtime
         {
             DebugUtil.EnsureGIL();
             IntPtr strval = Runtime.PyObject_Unicode(obj);
+            PythonException.ThrowIfIsNull(strval);
             string result = Runtime.GetManagedString(strval);
             Runtime.XDecref(strval);
             return result;
