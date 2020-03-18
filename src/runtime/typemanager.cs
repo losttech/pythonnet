@@ -144,19 +144,18 @@ namespace Python.Runtime
             int extraTypeDataOffset = ob_size - MetaType.ExtraTypeDataSize;
             try
             {
-                IntPtr base_ = GetBaseType(clrType, out IntPtr bases);
-                if (base_ != IntPtr.Zero)
+                using PyTuple baseTuple = GetBaseTypeTuple(clrType);
+                if (baseTuple.Length() > 0)
                 {
-                    Marshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
-                    Runtime.XIncref(base_);
+                    IntPtr primaryBase = baseTuple[0].Reference.DangerousIncRefOrNull();
+                    Marshal.WriteIntPtr(type, TypeOffset.tp_base, primaryBase);
 
-                    if (bases != IntPtr.Zero) {
-                        Marshal.WriteIntPtr(type, TypeOffset.tp_bases, bases);
-                        Runtime.XIncref(bases);
+                    if (baseTuple.Length() > 1) {
+                        Marshal.WriteIntPtr(type, TypeOffset.tp_bases, baseTuple.Reference.DangerousIncRefOrNull());
                     }
 
-                    int baseSize = checked((int)Marshal.ReadIntPtr(base_, TypeOffset.tp_basicsize));
-                    if (!ClassObject.IsManagedType(base_))
+                    int baseSize = checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.tp_basicsize));
+                    if (!ClassObject.IsManagedType(primaryBase))
                     {
                         // custom base type is a Python type, so we must allocate additional space for GC handle
                         extraTypeDataOffset = baseSize;
@@ -164,7 +163,7 @@ namespace Python.Runtime
                         ob_size = baseSize + MetaType.ExtraTypeDataSize;
                     } else
                     {
-                        extraTypeDataOffset = checked((int)Marshal.ReadIntPtr(base_, TypeOffset.clr_gchandle_offset));
+                        extraTypeDataOffset = checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.clr_gchandle_offset));
                         ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
                         ob_size = baseSize;
                     }
@@ -273,26 +272,26 @@ namespace Python.Runtime
             return name;
         }
 
-        static IntPtr GetBaseType(Type clrType, out IntPtr baseTypes)
+        static PyTuple GetBaseTypeTuple(Type clrType)
         {
-            baseTypes = IntPtr.Zero;
-            if (clrType == typeof(Exception))
-            {
-                return Exceptions.Exception;
+            if (clrType == typeof(Exception)) {
+                var exception = new PyObject(new BorrowedReference(Exceptions.Exception));
+                return PyTuple.FromSingleElement(exception);
             }
 
             var baseOverride = Util.GetLatestAttribute<BaseTypeAttributeBase>(clrType)
                 ?? BaseTypeAttributeBase.Default;
             var types = baseOverride.BaseTypes(clrType);
-            if (types.Length() == 0) return IntPtr.Zero;
+            if (types is null) throw new InvalidOperationException();
+            if (types.Length() == 0) return new PyTuple();
             for (int index = 0; index < types.Length(); index++) {
                 IntPtr baseType = Runtime.PyTuple_GetItem(types.Handle, index);
                 if (!PyType.IsTypeType(baseType)) {
                     throw new InvalidOperationException("Entries in base types must be Python types themselves");
                 }
             }
-            baseTypes = types.Handle;
-            return types[0].Handle;
+
+            return types;
         }
 
         internal static IntPtr CreateSubType(IntPtr py_name, IntPtr py_base_type, IntPtr py_dict)
