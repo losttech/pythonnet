@@ -15,6 +15,10 @@ namespace Python.Runtime
         public static implicit operator BorrowedReference(in NewReference reference)
             => new BorrowedReference(reference.pointer);
 
+        [Pure]
+        [Obsolete("This should be replaced by implicit conversion after https://github.com/ufcpp/NonCopyableAnalyzer/issues/14")]
+        public BorrowedReference Borrow() => new BorrowedReference(this.pointer);
+
         /// <summary>
         /// Returns <see cref="PyObject"/> wrapper around this reference, which now owns
         /// the pointer. Sets the original reference to <c>null</c>, as it no longer owns it.
