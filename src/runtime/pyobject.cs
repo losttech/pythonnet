@@ -201,7 +201,7 @@ namespace Python.Runtime
             return new IntPtr[] { obj };
         }
 
-        internal IntPtr GetPythonTypeHandle() => Runtime.PyObject_Type(obj);
+        internal BorrowedReference GetPythonTypeHandle() => new BorrowedReference(Runtime.PyObject_TYPE(obj));
 
         /// <summary>
         /// GetPythonType Method

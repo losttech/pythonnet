@@ -22,4 +22,9 @@ namespace Python.Runtime
             this.pointer = pointer;
         }
     }
+
+    static class BorrowedReferenceExtensions {
+        public static IntPtr DangerousIncRefOrNull(this in BorrowedReference reference)
+            => reference.IsNull ? IntPtr.Zero : Runtime.SelfIncRef(reference.DangerousGetAddress());
+    }
 }

@@ -1753,7 +1753,8 @@ namespace Python.Runtime
 
         internal static IntPtr PyErr_Occurred() => Delegates.PyErr_Occurred();
 
-        internal static void PyErr_Fetch(out IntPtr ob, out IntPtr val, out IntPtr tb) => Delegates.PyErr_Fetch(out ob, out val, out tb);
+        internal static void PyErr_Fetch(out NewReference type, out NewReference value, out NewReference traceback)
+            => Delegates.PyErr_Fetch(out type, out value, out traceback);
 
         internal static void PyErr_Restore(IntPtr ob, IntPtr val, IntPtr tb) => Delegates.PyErr_Restore(ob, val, tb);
 
@@ -3163,7 +3164,7 @@ namespace Python.Runtime
             internal static PyErr_FetchDelegate PyErr_Fetch { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate void PyErr_FetchDelegate(out IntPtr ob, out IntPtr val, out IntPtr tb);
+            internal delegate void PyErr_FetchDelegate(out NewReference ob, out NewReference val, out NewReference tb);
 
             internal static PyErr_RestoreDelegate PyErr_Restore { get; }
 
