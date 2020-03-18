@@ -82,8 +82,8 @@ namespace Python.Runtime
                     if (items[i] == null) throw new ArgumentNullException();
 
                     IntPtr ptr = items[i].obj;
-                    PythonException.ThrowIfIsNotZero(Runtime.PyTuple_SetItem(obj, i, ptr));
                     Runtime.XIncref(ptr);
+                    PythonException.ThrowIfIsNotZero(Runtime.PyTuple_SetItem(obj, i, ptr));
                 }
             } catch {
                 Runtime.XDecref(obj);
