@@ -19,7 +19,7 @@ namespace Python.Runtime
 
         public MethodBinding(MethodObject m, IntPtr target, IntPtr targetType)
         {
-            Runtime.XIncref(target);
+            if (target != IntPtr.Zero) Runtime.XIncref(target);
             this.target = target;
 
             Runtime.XIncref(targetType);
