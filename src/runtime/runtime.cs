@@ -599,6 +599,18 @@ namespace Python.Runtime
         /// </summary>
         internal static unsafe void XIncref(IntPtr op)
         {
+            DebugUtil.EnsureGIL();
+#if DEBUG
+            if (op == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(op));
+            long refcount = Refcount(op);
+            if (refcount < 0 || refcount > 100000)
+                throw new ArgumentOutOfRangeException(
+                    message: "Reference count is insane",
+                    paramName: nameof(op),
+                    actualValue: refcount);
+#endif
+
 #if PYTHON_WITH_PYDEBUG || NETSTANDARD
             Py_IncRef(op);
             return;
@@ -629,6 +641,18 @@ namespace Python.Runtime
 
         internal static unsafe void XDecref(IntPtr op)
         {
+            DebugUtil.EnsureGIL();
+#if DEBUG
+            if (op == IntPtr.Zero)
+                throw new ArgumentNullException(nameof(op));
+            long refcount = Refcount(op);
+            if (refcount <= 0 || refcount > 100000)
+                throw new ArgumentOutOfRangeException(
+                    paramName: nameof(refcount),
+                    actualValue: refcount,
+                    message: "Reference count is insane");
+#endif
+
 #if PYTHON_WITH_PYDEBUG || NETSTANDARD
             Py_DecRef(op);
             return;
