@@ -962,7 +962,7 @@ namespace Python.Runtime
         internal static int PyObject_SetAttr(IntPtr pointer, IntPtr name, IntPtr value) => Delegates.PyObject_SetAttr(pointer, name, value);
 
         
-        internal static IntPtr PyObject_GetItem(IntPtr pointer, IntPtr key) => Delegates.PyObject_GetItem(pointer, key);
+        internal static NewReference PyObject_GetItem(BorrowedReference pointer, BorrowedReference key) => Delegates.PyObject_GetItem(pointer, key);
 
         
         internal static int PyObject_SetItem(IntPtr pointer, IntPtr key, IntPtr value) => Delegates.PyObject_SetItem(pointer, key, value);
@@ -2373,7 +2373,7 @@ namespace Python.Runtime
             internal static PyObject_GetItemDelegate PyObject_GetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyObject_GetItemDelegate(IntPtr pointer, IntPtr key);
+            internal delegate NewReference PyObject_GetItemDelegate(BorrowedReference pointer, BorrowedReference key);
 
             internal static PyObject_SetItemDelegate PyObject_SetItem { get; }
 

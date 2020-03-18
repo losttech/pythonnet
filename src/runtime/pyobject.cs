@@ -473,12 +473,13 @@ namespace Python.Runtime
 
             DebugUtil.EnsureGIL();
 
-            IntPtr op = Runtime.PyObject_GetItem(obj, key.obj);
-            if (op == IntPtr.Zero)
+            using var op = Runtime.PyObject_GetItem(Reference, key.Reference);
+            if (op.IsNull())
             {
                 throw PythonException.ThrowLastAsClrException();
             }
-            return new PyObject(op);
+
+            return op.MoveToPyObject();
         }
 
 

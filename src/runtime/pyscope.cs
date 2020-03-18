@@ -436,18 +436,17 @@ namespace Python.Runtime
             {
                 if (Runtime.PyMapping_HasKey(variables, pyKey.obj) != 0)
                 {
-                    IntPtr op = Runtime.PyObject_GetItem(variables, pyKey.obj);
-                    if (op == IntPtr.Zero)
+                    using var op = Runtime.PyObject_GetItem(VarsReference, pyKey.Reference);
+                    if (op.IsNull())
                     {
                         throw PythonException.ThrowLastAsClrException();
                     }
-                    if (op == Runtime.PyNone)
+                    if (op.IsNone())
                     {
-                        Runtime.XDecref(op);
                         value = null;
                         return true;
                     }
-                    value = new PyObject(op);
+                    value = op.MoveToPyObject();
                     return true;
                 }
                 else
