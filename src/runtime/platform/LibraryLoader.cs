@@ -6,11 +6,13 @@ namespace Python.Runtime.Platform
 {
     interface ILibraryLoader
     {
-        IntPtr Load(string dllToLoad);
+        INativeLibrary Load(string dllToLoad);
+        INativeLibrary Default { get; }
+    }
 
-        IntPtr GetFunction(IntPtr hModule, string procedureName);
-
-        void Free(IntPtr hModule);
+    interface INativeLibrary: IDisposable
+    {
+        IntPtr GetFunction(string procedureName);
     }
 
     static class LibraryLoader
@@ -36,9 +38,8 @@ namespace Python.Runtime.Platform
         private static int RTLD_NOW = 0x2;
         private static int RTLD_GLOBAL = 0x100;
         private static IntPtr RTLD_DEFAULT = IntPtr.Zero;
-        private const string NativeDll = "libdl.so";
 
-        public IntPtr Load(string dllToLoad)
+        public INativeLibrary Load(string dllToLoad)
         {
             var filename = $"lib{dllToLoad}.so";
             ClearError();
@@ -49,29 +50,6 @@ namespace Python.Runtime.Platform
                 throw new DllNotFoundException($"Could not load {filename} with flags RTLD_NOW | RTLD_GLOBAL: {err}");
             }
 
-            return res;
-        }
-
-        public void Free(IntPtr handle)
-        {
-            dlclose(handle);
-        }
-
-        public IntPtr GetFunction(IntPtr dllHandle, string name)
-        {
-            // look in the exe if dllHandle is NULL
-            if (dllHandle == IntPtr.Zero)
-            {
-                dllHandle = RTLD_DEFAULT;
-            }
-
-            ClearError();
-            IntPtr res = dlsym(dllHandle, name);
-            if (res == IntPtr.Zero)
-            {
-                var err = GetError();
-                throw new MissingMethodException($"Failed to load symbol {name}: {err}");
-            }
             return res;
         }
 
@@ -91,6 +69,42 @@ namespace Python.Runtime.Platform
 
         [DllImport(NativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         public static extern IntPtr dlopen(string fileName, int flags);
+    }
+
+    class LinuxLibrary : INativeLibrary
+    {
+        internal const string NativeDll = "libdl.so";
+
+        IntPtr handle;
+
+        public IntPtr GetFunction(string name)
+        {
+            // look in the exe if dllHandle is NULL
+            if (dllHandle == IntPtr.Zero)
+            {
+                dllHandle = RTLD_DEFAULT;
+            }
+
+            ClearError();
+            IntPtr res = dlsym(dllHandle, name);
+            if (res == IntPtr.Zero)
+            {
+                var err = GetError();
+                throw new MissingMethodException($"Failed to load symbol {name}: {err}");
+            }
+            return res;
+        }
+
+        public void Dispose()
+        {
+            if (this.handle != IntPtr.Zero)
+            {
+                dlclose(this.handle);
+                this.handle = IntPtr.Zero;
+            }
+        }
+
+        public IntPtr GetFunction(string procedureName) => throw new NotImplementedException();
 
         [DllImport(NativeDll, CallingConvention = CallingConvention.Cdecl, CharSet = CharSet.Ansi)]
         private static extern IntPtr dlsym(IntPtr handle, string symbol);
