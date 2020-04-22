@@ -401,7 +401,7 @@ class BuildExtPythonnet(build_ext.build_ext):
         glib_libs = _check_output("pkg-config --libs glib-2.0", shell=True)
         glib_cflags = _check_output("pkg-config --cflags glib-2.0", shell=True)
         cflags = mono_cflags.strip() + " " + glib_cflags.strip()
-        libs = mono_libs.strip() + " " + glib_libs.strip()
+        libs = mono_libs.strip() + " " + glib_libs.strip() + " -lstdc++"
 
         # build the clr python module
         clr_ext = Extension(
