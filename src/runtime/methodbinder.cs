@@ -5,7 +5,10 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
+using Microsoft.CSharp.RuntimeBinder;
+using CSharpBinder = Microsoft.CSharp.RuntimeBinder.Binder;
 
 namespace Python.Runtime
 {
@@ -550,6 +553,41 @@ namespace Python.Runtime
 
         internal virtual IntPtr Invoke(IntPtr inst, IntPtr args, IntPtr kw, MethodBase info, MethodInfo[] methodinfo)
         {
+            var method = info ?? methodinfo.First();
+            int argLen = (int)Runtime.PyTuple_Size(args);
+            int argCapacity = Math.Max(argLen, method.GetParameters().Length);
+            var parameters = new List<object>(argCapacity);
+            var arguments = new List<CSharpArgumentInfo>(argCapacity) {
+                CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null),
+            };
+            for (int argN = 0; argN < argLen; argN++) {
+                arguments.Add(CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.None, null));
+                if (!Converter.ToManaged(Runtime.PyTuple_GetItem(args, argN), typeof(object), out var managed, setError: true))
+                    return IntPtr.Zero;
+                parameters.Add(managed);
+            }
+
+            if (kw != IntPtr.Zero) {
+                int kwLen = (int)Runtime.PyDict_Size(kw);
+                var keys = Runtime.PyDict_Keys(kw);
+                var items = Runtime.PyDict_Values(kw);
+                for (int kwN = 0; kwN < kwLen; kwN++) {
+                    string argName = Runtime.GetManagedString(Runtime.PyList_GetItem(keys, kwN));
+                    arguments.Add(CSharpArgumentInfo.Create(CSharpArgumentInfoFlags.NamedArgument, argName));
+                    var item = Runtime.PyList_GetItem(items, kwN);
+                    if (!Converter.ToManaged(item.DangerousGetAddress(), typeof(object), out var managed, setError: true))
+                        return IntPtr.Zero;
+                    parameters.Add(managed);
+                }
+            }
+
+            var dlrBinding = CSharpBinder.InvokeMember(CSharpBinderFlags.ResultDiscarded, method.Name, new Type[0],
+                method.DeclaringType, arguments);
+            var callSite = CallSite<Action<CallSite, object, object>>.Create(dlrBinding);
+
+            var co = ManagedType.GetManagedObject(inst) as CLRObject;
+            callSite.Target(callSite, co.inst, parameters[0]);
+
             Binding binding = Bind(inst, args, kw, info, methodinfo);
             object result;
             IntPtr ts = IntPtr.Zero;
