@@ -44,6 +44,15 @@ namespace Python.Runtime
         public static NewReference DangerousFromPointer(IntPtr pointer)
             => new NewReference {pointer = pointer};
 
+        public IntPtr DangerousMoveToPointer()
+        {
+            if (this.IsNull()) throw new NullReferenceException();
+
+            var result = this.pointer;
+            this.pointer = IntPtr.Zero;
+            return result;
+        }
+
         [Pure]
         internal static IntPtr DangerousGetAddress(in NewReference reference)
             => IsNull(reference) ? throw new NullReferenceException() : reference.pointer;

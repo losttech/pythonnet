@@ -25,9 +25,9 @@ namespace Python.Runtime
         {
             IntPtr gs = PythonEngine.AcquireLock();
             Runtime.PyErr_Fetch(out var type, out var value, out var traceback);
-            _pyType = type.DangerousGetAddress();
-            _pyValue = value.DangerousGetAddress();
-            _pyTB = traceback.DangerousGetAddress();
+            _pyType = type.IsNull() ? IntPtr.Zero : type.DangerousMoveToPointer();
+            _pyValue = value.IsNull() ? IntPtr.Zero :  value.DangerousMoveToPointer();
+            _pyTB = traceback.IsNull() ? IntPtr.Zero : traceback.DangerousMoveToPointer();
             if (_pyType != IntPtr.Zero && _pyValue != IntPtr.Zero)
             {
                 string message;
