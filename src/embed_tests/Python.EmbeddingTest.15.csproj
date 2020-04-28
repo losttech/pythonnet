@@ -75,6 +75,7 @@
 
   
   <ItemGroup>
+    <PackageReference Include="NonCopyableAnalyzer" Version="0.6.0" />
     <PackageReference Include="System.ValueTuple" Version="4.5.0" />
     <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.5.0" />
     <PackageReference Include="NUnit" Version="3.12.0" />

@@ -1809,10 +1809,9 @@ namespace Python.Runtime
         internal static void SetNoSiteFlag() {
             var loader = LibraryLoader.Get(OperatingSystem);
 
-            IntPtr dllLocal = IntPtr.Zero;
-            if (PythonDLL != "__Internal") {
-                dllLocal = loader.Load(PythonDLL);
-            }
+            IntPtr dllLocal = PythonDLL != "__Internal"
+                ? loader.Load(PythonDLL)
+                : IntPtr.Zero;
 
             try {
                 Py_NoSiteFlag = loader.GetFunction(dllLocal, "Py_NoSiteFlag");
