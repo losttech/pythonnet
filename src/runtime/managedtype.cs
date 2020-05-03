@@ -70,7 +70,7 @@ namespace Python.Runtime
         /// </summary>
         internal static bool IsManagedType(IntPtr tp)
         {
-            var flags = Util.ReadCLong(tp, TypeOffset.tp_flags);
+            var flags = (TypeFlags)Util.ReadCLong(tp, TypeOffset.tp_flags);
             return (flags & TypeFlags.Managed) != 0;
         }
 

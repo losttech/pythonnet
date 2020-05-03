@@ -293,42 +293,43 @@ namespace Python.Runtime
     /// Note that the two values reserved for stackless have been put
     /// to good use as PythonNet specific flags (Managed and Subclass)
     /// </summary>
-    internal static class TypeFlags
+    [Flags]
+    enum TypeFlags: int
     {
-        public static int HeapType = (1 << 9);
+        HeapType = (1 << 9),
         /// <summary>
         /// Unless this flag is set, the type can't be inherited from (equivalent to C# sealed)
         /// </summary>
-        public static int BaseType = (1 << 10);
-        public static int Ready = (1 << 12);
-        public static int Readying = (1 << 13);
-        public static int HaveGC = (1 << 14);
+        BaseType = (1 << 10),
+        Ready = (1 << 12),
+        Readying = (1 << 13),
+        HaveGC = (1 << 14),
         // 15 and 16 are reserved for stackless
-        public static int HaveStacklessExtension = 0;
+        HaveStacklessExtension = 0,
         /* XXX Reusing reserved constants */
-        public static int Managed = (1 << 15); // PythonNet specific
-        public static int Subclass = (1 << 16); // PythonNet specific
-        public static int HaveIndex = (1 << 17);
+        Managed = (1 << 15), // PythonNet specific
+        Subclass = (1 << 16), // PythonNet specific
+        HaveIndex = (1 << 17),
         /* Objects support nb_index in PyNumberMethods */
-        public static int HaveVersionTag = (1 << 18);
-        public static int ValidVersionTag = (1 << 19);
-        public static int IsAbstract = (1 << 20);
-        public static int HaveNewBuffer = (1 << 21);
+        HaveVersionTag = (1 << 18),
+        ValidVersionTag = (1 << 19),
+        IsAbstract = (1 << 20),
+        HaveNewBuffer = (1 << 21),
         // TODO: Implement FastSubclass functions
-        public static int IntSubclass = (1 << 23);
-        public static int LongSubclass = (1 << 24);
-        public static int ListSubclass = (1 << 25);
-        public static int TupleSubclass = (1 << 26);
-        public static int StringSubclass = (1 << 27);
-        public static int UnicodeSubclass = (1 << 28);
-        public static int DictSubclass = (1 << 29);
-        public static int BaseExceptionSubclass = (1 << 30);
-        public static int TypeSubclass = (1 << 31);
+        IntSubclass = (1 << 23),
+        LongSubclass = (1 << 24),
+        ListSubclass = (1 << 25),
+        TupleSubclass = (1 << 26),
+        StringSubclass = (1 << 27),
+        UnicodeSubclass = (1 << 28),
+        DictSubclass = (1 << 29),
+        BaseExceptionSubclass = (1 << 30),
+        TypeSubclass = (1 << 31),
 
 
-        public static int Default = (
+        Default = (
             HaveStacklessExtension |
-            HaveVersionTag);
+            HaveVersionTag),
     }
 
 
