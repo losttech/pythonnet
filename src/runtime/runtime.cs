@@ -6,8 +6,8 @@ using System.Security;
 using System.Text;
 using System.Threading;
 using System.Collections.Generic;
+using Python.Runtime.Native;
 using Python.Runtime.Platform;
-
 using Python.Runtime.Platforms;
 
 namespace Python.Runtime
@@ -1708,6 +1708,9 @@ namespace Python.Runtime
             return PyObject_TypeCheck(ob, PyTypeType);
         }
 
+        internal static NewReference PyType_FromSpecWithBases(PyTypeSpec spec, BorrowedReference bases)
+            => Delegates.PyType_FromSpecWithBases(spec, bases);
+
         internal static void PyType_Modified(IntPtr type) => Delegates.PyType_Modified(type);
 
         internal static bool PyType_IsSubtype(IntPtr t1, IntPtr t2) => Delegates.PyType_IsSubtype(t1, t2);
@@ -2028,6 +2031,7 @@ namespace Python.Runtime
                 PySys_SetArgvEx = GetDelegateForFunctionPointer<PySys_SetArgvExDelegate>(GetFunctionByName(nameof(PySys_SetArgvEx), GetUnmanagedDll(PythonDLL)));
                 PySys_GetObject = GetDelegateForFunctionPointer<PySys_GetObjectDelegate>(GetFunctionByName(nameof(PySys_GetObject), GetUnmanagedDll(PythonDLL)));
                 PySys_SetObject = GetDelegateForFunctionPointer<PySys_SetObjectDelegate>(GetFunctionByName(nameof(PySys_SetObject), GetUnmanagedDll(PythonDLL)));
+                PyType_FromSpecWithBases = GetDelegateForFunctionPointer<PyType_FromSpecWithBasesDelegate>(GetFunctionByName(nameof(PyType_FromSpecWithBases), GetUnmanagedDll(PythonDLL)));
                 PyType_Modified = GetDelegateForFunctionPointer<PyType_ModifiedDelegate>(GetFunctionByName(nameof(PyType_Modified), GetUnmanagedDll(PythonDLL)));
                 PyType_IsSubtype = GetDelegateForFunctionPointer<PyType_IsSubtypeDelegate>(GetFunctionByName(nameof(PyType_IsSubtype), GetUnmanagedDll(PythonDLL)));
                 PyType_GenericNew = GetDelegateForFunctionPointer<PyType_GenericNewDelegate>(GetFunctionByName(nameof(PyType_GenericNew), GetUnmanagedDll(PythonDLL)));
@@ -3074,6 +3078,11 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate int PySys_SetObjectDelegate(string name, IntPtr ob);
+
+            internal static PyType_FromSpecWithBasesDelegate PyType_FromSpecWithBases { get; }
+
+            [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
+            internal delegate NewReference PyType_FromSpecWithBasesDelegate(PyTypeSpec spec, BorrowedReference bases);
 
             internal static PyType_ModifiedDelegate PyType_Modified { get; }
 
