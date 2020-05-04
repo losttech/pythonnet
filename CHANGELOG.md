@@ -14,6 +14,7 @@ This document follows the conventions laid out in [Keep a CHANGELOG][].
 -   Added support for Jetson Nano.
 -   Added support for __len__ for .NET classes that implement ICollection
 -   Added `PyExport` attribute to hide .NET types from Python
+-   Added `__name__` and `__signature__` to reflected .NET methods
 -   Added PythonException.Format method to format exceptions the same as traceback.format_exception
 -   Added Runtime.None to be able to pass None as parameter into Python from .NET
 -   Added PyObject.IsNone() to check if a Python object is None in .NET.
