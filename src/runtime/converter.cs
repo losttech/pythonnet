@@ -123,17 +123,6 @@ namespace Python.Runtime
                 return handle;
             }
 
-            if (value is IConvertibleToPython convertible)
-            {
-                pyObject = convertible.TryConvertToPython();
-                if (pyObject != null)
-                {
-                    IntPtr handle = pyObject.Handle;
-                    Runtime.XIncref(handle);
-                    return handle;
-                }
-            }
-
             IntPtr result;
 
             // Null always converts to None in Python.
@@ -458,12 +447,6 @@ namespace Python.Runtime
             TypeCode typeCode = Type.GetTypeCode(obType);
             if (typeCode == TypeCode.Object)
             {
-                var converter = TypeConverterCache.GetOrAdd(obType, GetConverter);
-                if (converter != null && converter(new BorrowedReference(value), out result))
-                {
-                    return true;
-                }
-
                 var pyType = new BorrowedReference(Runtime.PyObject_TYPE(value));
                 if (PyObjectConversions.TryDecode(new BorrowedReference(value), pyType, obType, out result))
                 {
@@ -479,41 +462,7 @@ namespace Python.Runtime
             return ToPrimitive(value, obType, out result, setError);
         }
 
-        static TryConvertFromPythonDelegate GetConverter(Type targetType)
-        {
-            var converterAttribute = Util.GetLatestAttribute<ConvertibleFromPythonAttribute>(targetType);
-            if (converterAttribute == null)
-            {
-                return null;
-            }
-
-            var convert = converterAttribute.GetType()
-                .GetMethod(nameof(converterAttribute.TryConvertFromPython),
-                           BindingFlags.Instance | BindingFlags.Public);
-            if (convert == null)
-            {
-                throw new NotSupportedException($"The type {converterAttribute.GetType()} must have exactly one public conversion method");
-            }
-            convert = convert.MakeGenericMethod(targetType);
-
-            bool TryConvert(BorrowedReference pyHandle, out object result) {
-                var pyObj = new PyObject(pyHandle);
-                var @params = new object[] {pyObj, null};
-                bool success = (bool)convert.Invoke(converterAttribute, @params);
-                if (!success)
-                {
-                    pyObj.Dispose();
-                }
-                result = @params[1];
-                return success;
-            }
-
-            return TryConvert;
-        }
-
         internal delegate bool TryConvertFromPythonDelegate(BorrowedReference pyObj, out object result);
-        static readonly ConcurrentDictionary<Type, TryConvertFromPythonDelegate> TypeConverterCache =
-            new ConcurrentDictionary<Type, TryConvertFromPythonDelegate>();
 
         /// <summary>
         /// Convert a Python value to an instance of a primitive managed type.

@@ -4,8 +4,6 @@ using Python.Runtime;
 
 namespace Python.EmbeddingTest
 {
-    using Runtime = Python.Runtime.Runtime;
-
     class TestCustomArgMarshal
     {
         [OneTimeSetUp]
@@ -39,50 +37,6 @@ namespace Python.EmbeddingTest
                 callWithInt(obj.ToPython());
             }
             Assert.AreEqual(expected: 42, actual: obj.LastArgument);
-        }
-
-        [Test]
-        public void ConvertibleToPython() {
-            var obj = new Convertible(convert: true);
-            int converted;
-            using (Py.GIL()) {
-                dynamic identity = PythonEngine.Eval("lambda o: o");
-                converted = identity(obj);
-            }
-            Assert.AreEqual(expected: Convertible.Value, actual: converted);
-        }
-
-        [Test]
-        public void ConvertibleToPythonBypass() {
-            var obj = new Convertible(convert: false);
-            Convertible converted;
-            using (Py.GIL()) {
-                dynamic identity = PythonEngine.Eval("lambda o: o");
-                converted = identity(obj);
-            }
-            Assert.AreEqual(expected: obj, actual: converted);
-        }
-
-        [Test]
-        public void ConvertibleFromPython() {
-            using (Py.GIL()) {
-                bool ok = false;
-                void Accept(ConvertibleFromPython obj) => ok = true;
-                dynamic callWithInt = PythonEngine.Eval("lambda f: f(42)");
-                callWithInt(new Action<ConvertibleFromPython>(Accept));
-                Assert.IsTrue(ok);
-            }
-        }
-
-        [Test]
-        public void ConvertibleFromPythonBypass() {
-            using (Py.GIL()) {
-                void Accept(ConvertibleFromPython obj) { }
-                dynamic callWithInt = PythonEngine.Eval("lambda f: f('42')");
-                Assert.Throws<PythonException>(() =>
-                    callWithInt(new Action<ConvertibleFromPython>(Accept)),
-                    message: "Python.Runtime.PythonException : TypeError : No method matches given arguments: (<class 'str'>)");
-            }
         }
     }
 
@@ -129,26 +83,4 @@ namespace Python.EmbeddingTest
             return true;
         }
     }
-
-    class Convertible : IConvertibleToPython {
-        public const int Value = 42;
-        readonly bool convert;
-        public Convertible(bool convert) { this.convert = convert; }
-        public PyObject TryConvertToPython() => this.convert ? Value.ToPython() : null;
-    }
-
-    class ConvertibleAttribute : ConvertibleFromPythonAttribute {
-        public override bool TryConvertFromPython<T>(PyObject pyObj, out T value) {
-            if (Runtime.PyString_Check(pyObj.Handle)) {
-                value = default;
-                return false;
-            }
-
-            value = Activator.CreateInstance<T>();
-            return true;
-        }
-    }
-
-    [Convertible]
-    class ConvertibleFromPython { }
 }
