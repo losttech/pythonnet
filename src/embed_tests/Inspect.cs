@@ -5,6 +5,8 @@ using NUnit.Framework;
 using Python.Runtime;
 
 namespace Python.EmbeddingTest {
+    using Runtime = Python.Runtime.Runtime;
+
     public class Inspect {
         [SetUp]
         public void SetUp() {
@@ -18,6 +20,8 @@ namespace Python.EmbeddingTest {
 
         [Test]
         public void BoundMethodsAreInspectable() {
+            if (Runtime.IsPython2)
+                Assert.Ignore("inspect.getfullargspec requires Python 3");
             var obj = new Class();
             using (var scope = Py.CreateScope()) {
                 scope.Import("inspect");
