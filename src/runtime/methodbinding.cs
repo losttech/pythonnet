@@ -145,7 +145,9 @@ namespace Python.Runtime
                     {
                         return Runtime.PyObject_GenericGetAttr(ob, key);
                     }
-                    return sig.Reference.DangerousIncRefOrNull();
+                    return sig.Reference.IsNull
+                        ? IntPtr.Zero
+                        : Runtime.SelfIncRef(sig.Reference.DangerousGetAddress());
                 case "__name__":
                     var pyName = self.m.GetName();
                     return pyName == IntPtr.Zero
