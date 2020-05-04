@@ -21,7 +21,6 @@ namespace Python.Runtime
         public MethodBase[] methods;
         public bool init = false;
         public bool allow_threads = true;
-        IPyArgumentConverter pyArgumentConverter;
 
         internal MethodBinder()
         {
@@ -168,48 +167,9 @@ namespace Python.Runtime
                 // I'm sure this could be made more efficient.
                 list.Sort(new MethodSorter());
                 methods = (MethodBase[])list.ToArray(typeof(MethodBase));
-                pyArgumentConverter = GetArgumentConverter(this.methods);
                 init = true;
             }
             return methods;
-        }
-
-        static IPyArgumentConverter GetArgumentConverter(IEnumerable<MethodBase> methods) {
-            IPyArgumentConverter converter = null;
-            Type converterType = null;
-            foreach (MethodBase method in methods)
-            {
-                PyArgConverterAttribute attribute = TryGetArgConverter(method.DeclaringType);
-                if (converterType == null)
-                {
-                    if (attribute == null) continue;
-
-                    converterType = attribute.ConverterType;
-                    converter = attribute.Converter;
-                } else if (converterType != attribute?.ConverterType)
-                {
-                    throw new NotSupportedException("All methods must have the same IPyArgumentConverter");
-                }
-            }
-
-            return converter ?? DefaultPyArgumentConverter.Instance;
-        }
-
-        static readonly ConcurrentDictionary<Type, PyArgConverterAttribute> ArgConverterCache =
-            new ConcurrentDictionary<Type, PyArgConverterAttribute>();
-        static PyArgConverterAttribute TryGetArgConverter(Type type) {
-            if (type == null) return null;
-
-            return ArgConverterCache.GetOrAdd(type, declaringType =>
-                declaringType
-                    .GetCustomAttributes(typeof(PyArgConverterAttribute), inherit: true)
-                    .OfType<PyArgConverterAttribute>()
-                    .SingleOrDefault()
-                ?? declaringType.Assembly
-                    .GetCustomAttributes(typeof(PyArgConverterAttribute), inherit: true)
-                    .OfType<PyArgConverterAttribute>()
-                    .SingleOrDefault()
-            );
         }
 
         /// <summary>
@@ -343,17 +303,14 @@ namespace Python.Runtime
 
             var pynargs = (int)Runtime.PyTuple_Size(args);
             var isGeneric = false;
-            IPyArgumentConverter argumentConverter;
             if (info != null)
             {
                 _methods = new MethodBase[1];
                 _methods.SetValue(info, 0);
-                argumentConverter = GetArgumentConverter(_methods);
             }
             else
             {
                 _methods = GetMethods();
-                argumentConverter = this.pyArgumentConverter;
             }
 
             // TODO: Clean up
@@ -372,7 +329,7 @@ namespace Python.Runtime
                     continue;
                 }
                 var outs = 0;
-                var margs = TryConvertArguments(pi, paramsArray, argumentConverter, args, pynargs, kwargDict, defaultArgList,
+                var margs = TryConvertArguments(pi, paramsArray, args, pynargs, kwargDict, defaultArgList,
                     needsResolution: _methods.Length > 1,
                     outs: out outs);
 
@@ -421,7 +378,6 @@ namespace Python.Runtime
         /// </summary>
         /// <param name="pi">Information about expected parameters</param>
         /// <param name="paramsArray"><c>true</c>, if the last parameter is a params array.</param>
-        /// <param name="argumentConverter">Converter, that will be used to convert marshal arguments to .NET</param>
         /// <param name="args">A pointer to the Python argument tuple</param>
         /// <param name="pyArgCount">Number of arguments, passed by Python</param>
         /// <param name="kwargDict">Dictionary of keyword argument name to python object pointer</param>
@@ -430,7 +386,6 @@ namespace Python.Runtime
         /// <param name="outs">Returns number of output parameters</param>
         /// <returns>An array of .NET arguments, that can be passed to a method.</returns>
         static object[] TryConvertArguments(ParameterInfo[] pi, bool paramsArray,
-            IPyArgumentConverter argumentConverter,
             IntPtr args, int pyArgCount,
             Dictionary<string, IntPtr> kwargDict,
             ArrayList defaultArgList,
@@ -440,12 +395,15 @@ namespace Python.Runtime
             outs = 0;
             var margs = new object[pi.Length];
             int arrayStart = paramsArray ? pi.Length - 1 : -1;
-            for (int paramIndex = 0; paramIndex < pi.Length; paramIndex++) {
+            for (int paramIndex = 0; paramIndex < pi.Length; paramIndex++)
+            {
                 var parameter = pi[paramIndex];
                 bool hasNamedParam = kwargDict.ContainsKey(parameter.Name);
 
-                if (paramIndex >= pyArgCount && !hasNamedParam) {
-                    if (defaultArgList != null) {
+                if (paramIndex >= pyArgCount && !hasNamedParam)
+                {
+                    if (defaultArgList != null)
+                    {
                         margs[paramIndex] = defaultArgList[paramIndex - pyArgCount];
                     }
 
@@ -453,9 +411,12 @@ namespace Python.Runtime
                 }
 
                 IntPtr op;
-                if (hasNamedParam) {
+                if (hasNamedParam)
+                {
                     op = kwargDict[parameter.Name];
-                } else {
+                }
+                else
+                {
                     op = (arrayStart == paramIndex)
                         // map remaining Python arguments to a tuple since
                         // the managed function accepts it - hopefully :]
@@ -464,23 +425,109 @@ namespace Python.Runtime
                 }
 
                 bool isOut;
-                if (!argumentConverter.TryConvertArgument(op, parameter.ParameterType, needsResolution, out margs[paramIndex], out isOut)) {
+                if (!TryConvertArgument(op, parameter.ParameterType, needsResolution, out margs[paramIndex], out isOut)) {
                     return null;
                 }
 
-                if (arrayStart == paramIndex) {
+                if (arrayStart == paramIndex)
+                {
                     // TODO: is this a bug? Should this happen even if the conversion fails?
                     // GetSlice() creates a new reference but GetItem()
                     // returns only a borrow reference.
                     Runtime.XDecref(op);
                 }
 
-                if (parameter.IsOut || isOut) {
+                if (parameter.IsOut || isOut)
+                {
                     outs++;
                 }
             }
 
             return margs;
+        }
+
+        static bool TryConvertArgument(IntPtr op, Type parameterType, bool needsResolution,
+                                       out object arg, out bool isOut)
+        {
+            arg = null;
+            isOut = false;
+            var clrtype = TryComputeClrArgumentType(parameterType, op, needsResolution: needsResolution);
+            if (clrtype == null)
+            {
+                return false;
+            }
+
+            if (!Converter.ToManaged(op, clrtype, out arg, false))
+            {
+                Exceptions.Clear();
+                return false;
+            }
+
+            isOut = clrtype.IsByRef;
+            return true;
+        }
+
+        static Type TryComputeClrArgumentType(Type parameterType, IntPtr argument, bool needsResolution)
+        {
+            // this logic below handles cases when multiple overloading methods
+            // are ambiguous, hence comparison between Python and CLR types
+            // is necessary
+            Type clrtype = null;
+            IntPtr pyoptype;
+            if (needsResolution)
+            {
+                // HACK: each overload should be weighted in some way instead
+                pyoptype = Runtime.PyObject_Type(argument);
+                Exceptions.Clear();
+                if (pyoptype != IntPtr.Zero)
+                {
+                    clrtype = Converter.GetTypeByAlias(pyoptype);
+                }
+                Runtime.XDecref(pyoptype);
+            }
+
+            if (clrtype != null)
+            {
+                if ((parameterType != typeof(object)) && (parameterType != clrtype))
+                {
+                    IntPtr pytype = Converter.GetPythonTypeByAlias(parameterType);
+                    pyoptype = Runtime.PyObject_Type(argument);
+                    Exceptions.Clear();
+
+                    bool typematch = false;
+                    if (pyoptype != IntPtr.Zero && pytype == pyoptype)
+                    {
+                        typematch = true;
+                        clrtype = parameterType;
+                    }
+                    if (!typematch)
+                    {
+                        // this takes care of enum values
+                        TypeCode argtypecode = Type.GetTypeCode(parameterType);
+                        TypeCode paramtypecode = Type.GetTypeCode(clrtype);
+                        if (argtypecode == paramtypecode)
+                        {
+                            typematch = true;
+                            clrtype = parameterType;
+                        }
+                    }
+                    Runtime.XDecref(pyoptype);
+                    if (!typematch)
+                    {
+                        return null;
+                    }
+                }
+                else
+                {
+                    clrtype = parameterType;
+                }
+            }
+            else
+            {
+                clrtype = parameterType;
+            }
+
+            return clrtype;
         }
 
         static bool MatchesArgumentCount(int positionalArgumentCount, ParameterInfo[] parameters,
