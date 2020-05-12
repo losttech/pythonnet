@@ -1,0 +1,32 @@
+name: Build + Test
+
+on:
+  push:
+    branches:
+      - losttech/master
+  pull_request:
+    branches:
+      - losttech/master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.5, 3.7]
+    steps:
+    - uses: actions/checkout@v2
+    - name: Setup .NET Core
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.101
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v1
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Build
+      run: dotnet build src/runtime/Python.Runtime.15.csproj --configuration Release
+    - name: Test
+      run: dotnet test src/embed_tests/Python.EmbeddingTest.15.csproj --configuration Release
+      env:
+        PYTHON_VERSION: ${{ matrix.python-version }}
