@@ -3,9 +3,9 @@ pythonnet - Python for .NET
 
 |Join the chat at https://gitter.im/pythonnet/pythonnet|
 
-|appveyor shield| |travis shield| |codecov shield|
+|github test shield|
 
-|license shield| |pypi package version| |conda-forge version| |python supported shield|
+|license shield| |nuget version|
 |stackexchange shield|
 
 Python for .NET is a package that gives Python programmers nearly
@@ -121,6 +121,9 @@ Some features are disabled in Python 3.8.0 because of
    :target: http://stackoverflow.com/questions/tagged/python.net
 .. |conda-forge version| image:: https://img.shields.io/conda/vn/conda-forge/pythonnet.svg
    :target: https://anaconda.org/conda-forge/pythonnet
+.. |github test shield| image:: https://github.com/losttech/pythonnet/workflows/Build%20%2B%20Test/badge.svg
+.. |nuget version| image:: https://img.shields.io/nuget/vpre/Python.Runtime.UnofficialNetStandard
+   :target: https://www.nuget.org/packages/Python.Runtime.UnofficialNetStandard/
 
 Resources
 ---------
