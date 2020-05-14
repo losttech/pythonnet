@@ -60,7 +60,7 @@ namespace Python.Runtime
             return mb.pyHandle;
         }
 
-        PyObject Singature {
+        PyObject Signature {
             get {
                 var infos = this.info == null ? this.m.info : new[] {this.info};
                 var type = infos.Select(i => i.DeclaringType)
@@ -140,7 +140,7 @@ namespace Python.Runtime
                     var om = new OverloadMapper(self.m, self.target);
                     return om.pyHandle;
                 case "__signature__":
-                    var sig = self.Singature;
+                    var sig = self.Signature;
                     if (sig is null)
                     {
                         return Runtime.PyObject_GenericGetAttr(ob, key);
