@@ -143,22 +143,6 @@ namespace Python.Runtime
                 }
             }
 
-            if (value is IList && !(value is INotifyPropertyChanged) && value.GetType().IsGenericType)
-            {
-                using (var resultlist = new PyList())
-                {
-                    foreach (object o in (IEnumerable)value)
-                    {
-                        using (var p = new PyObject(ToPython(o, o?.GetType())))
-                        {
-                            resultlist.Append(p);
-                        }
-                    }
-                    Runtime.XIncref(resultlist.Handle);
-                    return resultlist.Handle;
-                }
-            }
-
             // it the type is a python subclass of a managed type then return the
             // underlying python object rather than construct a new wrapper object.
             var pyderived = value as IPythonDerivedType;
@@ -239,21 +223,6 @@ namespace Python.Runtime
                     return Runtime.PyLong_FromUnsignedLongLong((ulong)value);
 
                 default:
-                    if (value is IEnumerable)
-                    {
-                        using (var resultlist = new PyList())
-                        {
-                            foreach (object o in (IEnumerable)value)
-                            {
-                                using (var p = new PyObject(ToPython(o, o?.GetType())))
-                                {
-                                    resultlist.Append(p);
-                                }
-                            }
-                            Runtime.XIncref(resultlist.Handle);
-                            return resultlist.Handle;
-                        }
-                    }
                     result = CLRObject.GetInstHandle(value, type);
                     return result;
             }
@@ -387,11 +356,6 @@ namespace Python.Runtime
                     return true;
                 }
 
-                if (Runtime.PySequence_Check(value))
-                {
-                    return ToArray(value, typeof(object[]), out result, setError);
-                }
-
                 Runtime.XIncref(value); // PyObject() assumes ownership
                 result = new PyObject(value);
                 return true;
@@ -427,12 +391,6 @@ namespace Python.Runtime
                 if (value == Runtime.PyFloatType)
                 {
                     result = doubleType;
-                    return true;
-                }
-
-                if (value == Runtime.PyListType || value == Runtime.PyTupleType)
-                {
-                    result = typeof(object[]);
                     return true;
                 }
 
