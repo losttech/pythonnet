@@ -22,7 +22,7 @@ namespace Python.Runtime
         /// </summary>
         public static IntPtr tp_iternext(IntPtr ob)
         {
-            var self = GetManagedObject(ob) as Iterator;
+            var self = GetManagedObject<Iterator>(new BorrowedReference(ob));
             try
             {
                 if (!self.iter.MoveNext())
