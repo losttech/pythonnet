@@ -182,7 +182,7 @@ namespace Python.Runtime
 
             PyObject tracebackModule = PythonEngine.ImportModule("traceback");
             using var traceback = new PyObject(tracebackHandle);
-            PyList stackLines = new PyList(tracebackModule.InvokeMethod("format_tb", traceback));
+            PyList stackLines = PyList.Wrap(tracebackModule.InvokeMethod("format_tb", traceback));
             stackLines.Reverse();
             var result = new StringBuilder();
             foreach (object stackLine in stackLines) {

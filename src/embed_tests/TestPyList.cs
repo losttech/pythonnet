@@ -78,22 +78,22 @@ namespace Python.EmbeddingTest
         }
 
         [Test]
-        public void TestPyObjectCtor()
+        public void TestWrap()
         {
             var a = new PyList();
-            var s = new PyList(a);
+            var s = PyList.Wrap(a);
 
             Assert.IsInstanceOf(typeof(PyList), s);
             Assert.AreEqual(0, s.Length());
         }
 
         [Test]
-        public void TestBadPyObjectCtor()
+        public void TestBadWrapArgument()
         {
             var i = new PyInt(5);
             PyList t = null;
 
-            var ex = Assert.Throws<ArgumentException>(() => t = new PyList(i));
+            var ex = Assert.Throws<ArgumentException>(() => t = PyList.Wrap(i));
 
             Assert.AreEqual("object is not a list", ex.Message);
             Assert.IsNull(t);

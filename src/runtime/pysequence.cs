@@ -15,6 +15,7 @@ namespace Python.Runtime
         public PySequence(IntPtr ptr) : base(ptr)
         {
         }
+        internal PySequence(BorrowedReference reference) : base(reference) { }
 
         [Obsolete]
         protected PySequence()

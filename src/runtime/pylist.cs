@@ -11,6 +11,22 @@ namespace Python.Runtime
     public class PyList : PySequence
     {
         /// <summary>
+        /// Gets an instance of <see cref="PyList"/> representing the same object as the given object.
+        /// </summary>
+        public static PyList Wrap(PyObject o)
+        {
+            if (o is null)
+            {
+                throw new ArgumentNullException(nameof(o));
+            }
+            if (!IsListType(o))
+            {
+                throw new ArgumentException("object is not a list");
+            }
+            return new PyList(o.Reference);
+        }
+
+        /// <summary>
         /// PyList Constructor
         /// </summary>
         /// <remarks>
@@ -22,25 +38,16 @@ namespace Python.Runtime
         {
         }
 
-
         /// <summary>
         /// PyList Constructor
         /// </summary>
         /// <remarks>
-        /// Copy constructor - obtain a PyList from a generic PyObject. An
-        /// ArgumentException will be thrown if the given object is not a
-        /// Python list object.
+        /// Creates a new PyList from an existing object reference.
+        /// The object reference is not checked for type-correctness.
         /// </remarks>
-        public PyList(PyObject o)
+        internal PyList(BorrowedReference reference) : base(reference)
         {
-            if (!IsListType(o))
-            {
-                throw new ArgumentException("object is not a list");
-            }
-            Runtime.XIncref(o.obj);
-            obj = o.obj;
         }
-
 
         /// <summary>
         /// PyList Constructor
@@ -48,10 +55,8 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new empty Python list object.
         /// </remarks>
-        public PyList()
+        public PyList(): base(Exceptions.ErrorCheck(Runtime.PyList_New(0)))
         {
-            obj = Runtime.PyList_New(0);
-            Exceptions.ErrorCheck(obj);
         }
 
 
