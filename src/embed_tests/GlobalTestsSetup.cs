@@ -10,7 +10,7 @@ namespace Python.EmbeddingTest
     // As the SetUpFixture, the OneTimeTearDown of this class is executed after
     // all tests have run.
     [SetUpFixture]
-    public class GlobalTestsSetup
+    public partial class GlobalTestsSetup
     {
         [OneTimeSetUp]
         public void ConfigureRuntime()
