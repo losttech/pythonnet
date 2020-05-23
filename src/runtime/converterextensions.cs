@@ -125,13 +125,11 @@ namespace Python.Runtime
         static Converter.TryConvertFromPythonDelegate GetDecoder(IntPtr sourceType, Type targetType)
         {
             IPyObjectDecoder decoder;
-            using (var pyType = new PyObject(Runtime.SelfIncRef(sourceType)))
+            var pyType = new PyObject(Runtime.SelfIncRef(sourceType));
+            lock (decoders)
             {
-                lock (decoders)
-                {
-                    decoder = decoders.GetDecoder(pyType, targetType);
-                    if (decoder == null) return null;
-                }
+                decoder = decoders.GetDecoder(pyType, targetType);
+                if (decoder == null) return null;
             }
 
             var decode = genericDecode.MakeGenericMethod(targetType);
