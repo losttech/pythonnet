@@ -9,6 +9,9 @@ namespace Python.Runtime
         internal const string UnstableApiMessage =
             "This API is unstable, and might be changed or removed in the next minor release";
 
+        internal const string UseOverloadWithReferenceTypes =
+            "This API is unsafe, and will be removed in the future. Use overloads working with *Reference types";
+
         internal static Int64 ReadCLong(IntPtr tp, int offset)
         {
             // On Windows, a C long is always 32 bits.

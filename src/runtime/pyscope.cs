@@ -70,7 +70,7 @@ namespace Python.Runtime
             Runtime.CheckExceptionOccurred();
 
             Runtime.PyDict_SetItemString(
-                variables, "__builtins__",
+                VarsReference, "__builtins__",
                 Runtime.PyEval_GetBuiltins()
             );
             this.Name = this.Get<string>("__name__");

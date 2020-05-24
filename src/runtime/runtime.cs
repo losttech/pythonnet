@@ -798,7 +798,7 @@ namespace Python.Runtime
         internal static void PyEval_RestoreThread(IntPtr tstate) => Delegates.PyEval_RestoreThread(tstate);
 
         
-        internal static IntPtr PyEval_GetBuiltins() => Delegates.PyEval_GetBuiltins();
+        internal static BorrowedReference PyEval_GetBuiltins() => Delegates.PyEval_GetBuiltins();
 
         
         internal static IntPtr PyEval_GetGlobals() => Delegates.PyEval_GetGlobals();
@@ -1477,12 +1477,14 @@ namespace Python.Runtime
         internal static IntPtr PyDict_GetItemString(IntPtr pointer, string key) => Delegates.PyDict_GetItemString(pointer, key);
 
         
-        internal static int PyDict_SetItem(IntPtr pointer, IntPtr key, IntPtr value) => Delegates.PyDict_SetItem(pointer, key, value);
+        internal static int PyDict_SetItem(BorrowedReference pointer, BorrowedReference key, BorrowedReference value) => Delegates.PyDict_SetItem(pointer, key, value);
 
         
         internal static int PyDict_SetItemString(IntPtr pointer, string key, IntPtr value) => Delegates.PyDict_SetItemString(pointer, key, value);
+        internal static int PyDict_SetItemString(BorrowedReference pointer, string key, BorrowedReference value)
+            => PyDict_SetItemString(pointer.DangerousGetAddress(), key, value.DangerousGetAddress());
 
-        
+
         internal static int PyDict_DelItem(IntPtr pointer, IntPtr key) => Delegates.PyDict_DelItem(pointer, key);
 
         
@@ -1670,10 +1672,13 @@ namespace Python.Runtime
         
         internal static string PyModule_GetName(IntPtr module) => Delegates.PyModule_GetName(module);
 
-        
-        internal static IntPtr PyModule_GetDict(IntPtr module) => Delegates.PyModule_GetDict(module);
 
-        
+        [Obsolete(Util.UseOverloadWithReferenceTypes)]
+        internal static IntPtr PyModule_GetDict(IntPtr module) => Delegates.PyModule_GetDict(module);
+        internal static BorrowedReference PyModule_GetDict(BorrowedReference module)
+            => new BorrowedReference(PyModule_GetDict(module.DangerousGetAddress()));
+
+
         internal static string PyModule_GetFilename(IntPtr module) => Delegates.PyModule_GetFilename(module);
 
         internal static IntPtr PyModule_Create2(IntPtr module, int apiver) => Delegates.PyModule_Create2(module, apiver);
@@ -1684,7 +1689,7 @@ namespace Python.Runtime
 
         internal static IntPtr PyImport_ReloadModule(IntPtr module) => Delegates.PyImport_ReloadModule(module);
 
-        internal static IntPtr PyImport_AddModule(string name) => Delegates.PyImport_AddModule(name);
+        internal static BorrowedReference PyImport_AddModule(string name) => Delegates.PyImport_AddModule(name);
 
         internal static IntPtr PyImport_GetModuleDict() => Delegates.PyImport_GetModuleDict();
 
@@ -2232,7 +2237,7 @@ namespace Python.Runtime
             internal static PyEval_GetBuiltinsDelegate PyEval_GetBuiltins { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyEval_GetBuiltinsDelegate();
+            internal delegate BorrowedReference PyEval_GetBuiltinsDelegate();
 
             internal static PyEval_GetGlobalsDelegate PyEval_GetGlobals { get; }
 
@@ -2864,7 +2869,7 @@ namespace Python.Runtime
             internal static PyDict_SetItemDelegate PyDict_SetItem { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate int PyDict_SetItemDelegate(IntPtr pointer, IntPtr key, IntPtr value);
+            internal delegate int PyDict_SetItemDelegate(BorrowedReference pointer, BorrowedReference key, BorrowedReference value);
 
             internal static PyDict_SetItemStringDelegate PyDict_SetItemString { get; }
 
@@ -3049,7 +3054,7 @@ namespace Python.Runtime
             internal static PyImport_AddModuleDelegate PyImport_AddModule { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyImport_AddModuleDelegate(string name);
+            internal delegate BorrowedReference PyImport_AddModuleDelegate(string name);
 
             internal static PyImport_GetModuleDictDelegate PyImport_GetModuleDict { get; }
 

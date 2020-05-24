@@ -214,15 +214,13 @@ namespace Python.Runtime
 
                 // Load the clr.py resource into the clr module
                 IntPtr clr = Python.Runtime.ImportHook.GetCLRModule();
-                IntPtr clr_dict = Runtime.PyModule_GetDict(clr);
+                var clr_dict = Runtime.PyModule_GetDict(new BorrowedReference(clr));
 
                 var locals = new PyDict();
                 try
                 {
-                    IntPtr module = Runtime.PyImport_AddModule("clr._extras");
-                    IntPtr module_globals = Runtime.PyModule_GetDict(module);
-                    IntPtr builtins = Runtime.PyEval_GetBuiltins();
-                    Runtime.PyDict_SetItemString(module_globals, "__builtins__", builtins);
+                    var module = DefineModule("clr._extras");
+                    var module_globals = Runtime.PyModule_GetDict(module);
 
                     Assembly assembly = Assembly.GetExecutingAssembly();
                     using (Stream stream = assembly.GetManifestResourceStream("clr.py"))
@@ -230,8 +228,10 @@ namespace Python.Runtime
                     {
                         // add the contents of clr.py to the module
                         string clr_py = reader.ReadToEnd();
-                        Exec(clr_py, module_globals, locals.Handle);
+                        Exec(clr_py, module_globals.DangerousGetAddress(), locals.Handle);
                     }
+
+                    LoadExtraModules(module_globals);
 
                     // add the imported module to the clr module, and copy the API functions
                     // and decorators into the main clr module.
@@ -241,7 +241,7 @@ namespace Python.Runtime
                         if (!key.ToString().StartsWith("_") || key.ToString().Equals("__version__"))
                         {
                             PyObject value = locals[key];
-                            Runtime.PyDict_SetItem(clr_dict, key.Handle, value.Handle);
+                            Runtime.PyDict_SetItem(clr_dict, key.Reference, value.Reference);
                             value.Dispose();
                         }
                         key.Dispose();
@@ -251,6 +251,34 @@ namespace Python.Runtime
                 {
                     locals.Dispose();
                 }
+            }
+        }
+
+        static BorrowedReference DefineModule(string name)
+        {
+            var module = Runtime.PyImport_AddModule(name);
+            var module_globals = Runtime.PyModule_GetDict(module);
+            var builtins = Runtime.PyEval_GetBuiltins();
+            Runtime.PyDict_SetItemString(module_globals, "__builtins__", builtins);
+            return module;
+        }
+
+        static void LoadExtraModules(BorrowedReference targetModuleDict)
+        {
+            Assembly assembly = Assembly.GetExecutingAssembly();
+            foreach (string nested in new[] {"collections"})
+            {
+                var module = DefineModule("clr._extras." + nested);
+                var module_globals = Runtime.PyModule_GetDict(module);
+                string resourceName = typeof(PythonEngine).Namespace + ".Mixins." + nested + ".py";
+                using (var stream = assembly.GetManifestResourceStream(resourceName))
+                using (var reader = new StreamReader(stream))
+                {
+                    string pyCode = reader.ReadToEnd();
+                    Exec(pyCode, module_globals.DangerousGetAddress(), module_globals.DangerousGetAddress());
+                }
+
+                Runtime.PyDict_SetItemString(targetModuleDict, nested, module);
             }
         }
 
@@ -585,7 +613,7 @@ namespace Python.Runtime
                 {
                     globals = Runtime.PyDict_New();
                     Runtime.PyDict_SetItemString(
-                        globals.Value, "__builtins__",
+                        new BorrowedReference(globals.Value), "__builtins__",
                         Runtime.PyEval_GetBuiltins()
                     );
                     borrowedGlobals = false;

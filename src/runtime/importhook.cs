@@ -12,6 +12,7 @@ namespace Python.Runtime
         private static CLRModule root;
         private static MethodWrapper hook;
         private static IntPtr py_clr_module;
+        public static BorrowedReference ClrModule => new BorrowedReference(py_clr_module);
 
         private static IntPtr module_def = IntPtr.Zero;
 

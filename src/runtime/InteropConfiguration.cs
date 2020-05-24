@@ -15,6 +15,7 @@ namespace Python.Runtime
             PythonBaseTypeProviders =
             {
                 CoreBaseTypeProvider.Instance,
+                new CollectionMixinsProvider(new Lazy<PyObject>(() => Py.Import("clr._extras.collections"))),
             },
         };
     }
