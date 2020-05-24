@@ -17,6 +17,7 @@ namespace Python.Runtime
     {
         private static BindingFlags tbFlags;
         private static Dictionary<Type, IntPtr> cache;
+        private static IPythonBaseTypeProvider pythonBaseTypeProvider;
 
         static TypeManager()
         {
@@ -27,6 +28,7 @@ namespace Python.Runtime
         public static void Reset()
         {
             cache = new Dictionary<Type, IntPtr>(128);
+            pythonBaseTypeProvider = PythonEngine.InteropConfiguration.pythonBaseTypeProviders;
         }
 
         /// <summary>
@@ -275,27 +277,20 @@ namespace Python.Runtime
 
         static PyTuple GetBaseTypeTuple(Type clrType)
         {
-            if (clrType == typeof(Exception)) {
-                var exception = new PyObject(new BorrowedReference(Exceptions.Exception));
-                return PyTuple.FromSingleElement(exception);
-            }
-
-            var baseOverride = Util.GetLatestAttribute<BaseTypeAttributeBase>(clrType)
-                ?? BaseTypeAttributeBase.Default;
-            var types = baseOverride.BaseTypes(clrType);
-            if (types is null || types.Length() == 0)
+            var bases = pythonBaseTypeProvider
+                .GetBaseTypes(clrType, new PyObject[0])
+                ?.ToArray();
+            if (bases is null || bases.Length == 0)
             {
                 throw new InvalidOperationException("At least one base type must be specified");
             }
 
-            for (int index = 0; index < types.Length(); index++) {
-                IntPtr baseType = Runtime.PyTuple_GetItem(types.Handle, index);
-                if (!PyType.IsTypeType(baseType)) {
-                    throw new InvalidOperationException("Entries in base types must be Python types themselves");
-                }
+            if (bases.Any(@base => !PyType.IsTypeType(@base)))
+            {
+                throw new InvalidOperationException("Entries in base types must be Python types");
             }
 
-            return types;
+            return new PyTuple(bases);
         }
 
         internal static IntPtr CreateSubType(IntPtr py_name, IntPtr py_base_type, IntPtr py_dict)

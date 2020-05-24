@@ -17,6 +17,7 @@ namespace Python.Runtime
         private static IntPtr _pythonHome = IntPtr.Zero;
         private static IntPtr _programName = IntPtr.Zero;
         private static IntPtr _pythonPath = IntPtr.Zero;
+        private static InteropConfiguration interopConfiguration = InteropConfiguration.Default;
 
         public PythonEngine()
         {
@@ -53,6 +54,18 @@ namespace Python.Runtime
                         "DelegateManager has not yet been initialized using Python.Runtime.PythonEngine.Initialize().");
                 }
                 return delegateManager;
+            }
+        }
+
+        public static InteropConfiguration InteropConfiguration
+        {
+            get => interopConfiguration;
+            set
+            {
+                if (IsInitialized)
+                    throw new NotSupportedException("Changing interop configuration when engine is running is not supported");
+
+                interopConfiguration = value ?? throw new ArgumentNullException(nameof(InteropConfiguration));
             }
         }
 
@@ -320,6 +333,8 @@ namespace Python.Runtime
                 PyObjectConversions.Reset();
 
                 initialized = false;
+
+                InteropConfiguration = InteropConfiguration.Default;
             }
         }
 

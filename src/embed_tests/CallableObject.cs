@@ -12,7 +12,8 @@ namespace Python.EmbeddingTest {
             using (Py.GIL()) {
                 using var locals = new PyDict();
                 PythonEngine.Exec(CallViaInheritance.BaseClassSource, locals: locals.Handle);
-                CustomBaseTypeAttribute.BaseClass = locals[CallViaInheritance.BaseClassName];
+                CustomBaseTypeProvider.BaseClass = locals[CallViaInheritance.BaseClassName];
+                PythonEngine.InteropConfiguration.PythonBaseTypeProviders.Add(new CustomBaseTypeProvider());
             }
         }
 
@@ -43,7 +44,6 @@ namespace Python.EmbeddingTest {
 
         class DerivedDoubler : Doubler { }
 
-        [CustomBaseType]
         class CallViaInheritance {
             public const string BaseClassName = "Forwarder";
             public static readonly string BaseClassSource = $@"
@@ -56,14 +56,14 @@ class {BaseClassName}(MyCallableBase): pass
             public int Call(int arg) => 3 * arg;
         }
 
-        class CustomBaseTypeAttribute : BaseTypeAttributeBase {
+        class CustomBaseTypeProvider : IPythonBaseTypeProvider {
             internal static PyObject BaseClass;
 
-            public override PyTuple BaseTypes(Type type) {
+            public IEnumerable<PyObject> GetBaseTypes(Type type, IList<PyObject> existingBases) {
                 Assert.Greater(BaseClass.Refcount, 0);
                 return type != typeof(CallViaInheritance)
-                    ? base.BaseTypes(type)
-                    : PyTuple.FromSingleElement(BaseClass);
+                    ? existingBases
+                    : new []{BaseClass};
             }
         }
     }

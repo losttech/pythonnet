@@ -11,7 +11,10 @@ namespace Python.EmbeddingTest {
             using (Py.GIL()) {
                 var locals = new PyDict();
                 PythonEngine.Exec(InheritanceTestBaseClassWrapper.ClassSourceCode, locals: locals.Handle);
-                CustomBaseTypeAttribute.BaseClass = locals[InheritanceTestBaseClassWrapper.ClassName];
+                CustomBaseTypeProvider.BaseClass = locals[InheritanceTestBaseClassWrapper.ClassName];
+                var baseTypeProviders = PythonEngine.InteropConfiguration.PythonBaseTypeProviders;
+                baseTypeProviders.Add(new CustomBaseTypeProvider());
+                baseTypeProviders.Add(new NoEffectBaseTypeProvider());
             }
         }
 
@@ -24,7 +27,7 @@ namespace Python.EmbeddingTest {
         public void IsInstance() {
             using (Py.GIL()) {
                 var inherited = new Inherited();
-                bool properlyInherited = PyIsInstance(inherited, CustomBaseTypeAttribute.BaseClass);
+                bool properlyInherited = PyIsInstance(inherited, CustomBaseTypeProvider.BaseClass);
                 Assert.IsTrue(properlyInherited);
             }
         }
@@ -34,7 +37,7 @@ namespace Python.EmbeddingTest {
         [Test]
         public void InheritedClassIsNew() {
             using (Py.GIL()) {
-                PyObject a = CustomBaseTypeAttribute.BaseClass;
+                PyObject a = CustomBaseTypeProvider.BaseClass;
                 var inherited = new Inherited();
                 dynamic getClass = PythonEngine.Eval("lambda o: o.__class__");
                 PyObject inheritedClass = getClass(inherited);
@@ -64,7 +67,7 @@ namespace Python.EmbeddingTest {
                 scope.Exec($"class B({nameof(Inherited)}): pass");
                 PyObject b = scope.Eval("B");
                 PyObject bInst = ((dynamic)b)(scope);
-                bool properlyInherited = PyIsInstance(bInst, CustomBaseTypeAttribute.BaseClass);
+                bool properlyInherited = PyIsInstance(bInst, CustomBaseTypeProvider.BaseClass);
                 Assert.IsTrue(properlyInherited);
             }
         }
@@ -103,26 +106,24 @@ namespace Python.EmbeddingTest {
         }
     }
 
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-    class CustomBaseTypeAttribute : BaseTypeAttributeBase {
+    class CustomBaseTypeProvider : IPythonBaseTypeProvider {
         internal static PyObject BaseClass;
-        public override PyTuple BaseTypes(Type type)
+        public IEnumerable<PyObject> GetBaseTypes(Type type, IList<PyObject> existingBases)
             => type != typeof(InheritanceTestBaseClassWrapper)
-                ? base.BaseTypes(type)
-                : new PyTuple(new []{ PyType.Get(type.BaseType), BaseClass });
+                ? existingBases
+                : new []{ PyType.Get(type.BaseType), BaseClass };
     }
 
-    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false, Inherited = true)]
-    class DefaultBaseTypeAttribute : BaseTypeAttributeBase {
-
+    class NoEffectBaseTypeProvider : IPythonBaseTypeProvider
+    {
+        public IEnumerable<PyObject> GetBaseTypes(Type type, IList<PyObject> existingBases)
+            => existingBases;
     }
 
-    [DefaultBaseType]
     public class PythonWrapperBase {
         public string WrapperBaseMethod() => nameof(WrapperBaseMethod);
     }
 
-    [CustomBaseType]
     public class InheritanceTestBaseClassWrapper : PythonWrapperBase {
         public const string ClassName = "InheritanceTestBaseClass";
         public const string ClassSourceCode = "class " + ClassName +

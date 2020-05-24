@@ -12,7 +12,9 @@ namespace Python.EmbeddingTest {
             using (Py.GIL()) {
                 var locals = new PyDict();
                 PythonEngine.Exec(InheritanceTestBaseClassWrapper.ClassSourceCode, locals: locals.Handle);
-                CustomBaseTypeAttribute.BaseClass = locals[InheritanceTestBaseClassWrapper.ClassName];
+                CustomBaseTypeProvider.BaseClass = locals[InheritanceTestBaseClassWrapper.ClassName];
+                var baseTypeProviders = PythonEngine.InteropConfiguration.PythonBaseTypeProviders;
+                baseTypeProviders.Add(new CustomBaseTypeProvider());
             }
         }
 
