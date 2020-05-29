@@ -101,6 +101,10 @@ namespace Python.Runtime
         /// to assist control flow checks.
         /// </summary>
         internal static Exception ThrowLastAsClrException() {
+            // prevent potential interop errors in this method
+            // from crashing process with undebuggable StackOverflowException
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             IntPtr gs = PythonEngine.AcquireLock();
             try {
                 Runtime.PyErr_Fetch(out var pyTypeHandle, out var pyValueHandle, out var pyTracebackHandle);
@@ -135,36 +139,49 @@ namespace Python.Runtime
                 return e;
             }
 
-            if (!pyTypeHandle.IsNull && !pyValueHandle.IsNull)
+            var errorDict = new PyDict();
+            if (!pyTypeHandle.IsNull) errorDict["type"] = new PyObject(pyTypeHandle);
+            if (!pyValueHandle.IsNull) errorDict["value"] = new PyObject(pyValueHandle);
+            if (!pyTracebackHandle.IsNull) errorDict["traceback"] = new PyObject(pyTracebackHandle);
+
+            var pyErrType = Runtime.InteropModule.GetAttr("PyErr");
+            var pyErrInfo = pyErrType.Invoke(new PyTuple(), errorDict);
+            if (PyObjectConversions.TryDecode(pyErrInfo.Reference, pyErrType.Reference,
+                typeof(Exception), out object decoded) && decoded is Exception decodedPyErrInfo)
             {
-                if (PyObjectConversions.TryDecode(pyValueHandle, pyTypeHandle, typeof(Exception),
-                    out object decoded) && decoded is Exception decodedException) {
-                    return decodedException;
+                return decodedPyErrInfo;
+            }
+
+            if (!pyTypeHandle.IsNull)
+            {
+                if (!pyValueHandle.IsNull)
+                {
+                    if (PyObjectConversions.TryDecode(pyValueHandle, pyTypeHandle, typeof(Exception),
+                        out decoded) && decoded is Exception decodedException) {
+                        return decodedException;
+                    }
+
+                    using (var pyValue = new PyObject(pyValueHandle))
+                    {
+                        msg = pyValue.ToString();
+                        var cause = pyValue.GetAttr("__cause__", null);
+                        if (cause != null && cause.Handle != Runtime.PyNone) {
+                            using var innerTraceback = cause.GetAttr("__traceback__", null);
+                            inner = FromPyErr(
+                                pyTypeHandle: cause.GetPythonTypeHandle(),
+                                pyValueHandle: cause.Reference,
+                                pyTracebackHandle: innerTraceback is null ? new BorrowedReference() : innerTraceback.Reference);
+                        }
+                    }
                 }
 
-                string type;
-                string message;
                 using (var pyType = new PyObject(pyTypeHandle))
                 using (PyObject pyTypeName = pyType.GetAttr("__name__"))
                 {
-                    type = pyTypeName.ToString();
+                    pythonTypeName = pyTypeName.ToString();
                 }
 
-                pythonTypeName = type;
-
-                using (var pyValue = new PyObject(pyValueHandle))
-                {
-                    message = pyValue.ToString();
-                    var cause = pyValue.GetAttr("__cause__", null);
-                    if (cause != null && cause.Handle != Runtime.PyNone) {
-                        using var innerTraceback = cause.GetAttr("__traceback__", null);
-                        inner = FromPyErr(
-                            pyTypeHandle: cause.GetPythonTypeHandle(),
-                            pyValueHandle: cause.Reference,
-                            pyTracebackHandle: innerTraceback is null ? new BorrowedReference() : innerTraceback.Reference);
-                    }
-                }
-                msg = type + " : " + message;
+                msg = string.IsNullOrEmpty(msg) ? pythonTypeName : pythonTypeName + " : " + msg;
             }
             if (!pyTracebackHandle.IsNull)
             {

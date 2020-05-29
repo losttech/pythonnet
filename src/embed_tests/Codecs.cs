@@ -113,13 +113,24 @@ def call(func):
             Assert.AreEqual(TestExceptionMessage, error.Message);
         }
 
+        [Test]
+        public void ExceptionDecodedNoInstance() {
+            PyObjectConversions.RegisterDecoder(new InstancelessExceptionDecoder());
+            using var _ = Py.GIL();
+            using var scope = Py.CreateScope();
+            var error = Assert.Throws<ValueErrorWrapper>(() => PythonEngine.Exec(
+                $"[].__iter__().__next__()"));
+            Assert.AreEqual(TestExceptionMessage, error.Message);
+        }
+
         class ValueErrorWrapper : Exception {
             public ValueErrorWrapper(string message) : base(message) { }
         }
 
         class ValueErrorCodec : IPyObjectEncoder, IPyObjectDecoder {
             public bool CanDecode(PyObject objectType, Type targetType)
-                => this.CanEncode(targetType) && objectType.Equals(PythonEngine.Eval("ValueError"));
+                => this.CanEncode(targetType)
+                   && PythonReferenceComparer.Instance.Equals(objectType, PythonEngine.Eval("ValueError"));
 
             public bool CanEncode(Type type) => type == typeof(ValueErrorWrapper)
                                                 || typeof(ValueErrorWrapper).IsSubclassOf(type);
@@ -133,6 +144,26 @@ def call(func):
             public PyObject TryEncode(object value) {
                 var error = (ValueErrorWrapper)value;
                 return PythonEngine.Eval("ValueError").Invoke(error.Message.ToPython());
+            }
+        }
+
+        class InstancelessExceptionDecoder : IPyObjectDecoder
+        {
+            readonly PyObject PyErr = Py.Import("clr.interop").GetAttr("PyErr");
+
+            public bool CanDecode(PyObject objectType, Type targetType)
+                => PythonReferenceComparer.Instance.Equals(PyErr, objectType);
+
+            public bool TryDecode<T>(PyObject pyObj, out T value)
+            {
+                if (pyObj.HasAttr("value"))
+                {
+                    value = default;
+                    return false;
+                }
+
+                value = (T)(object)new ValueErrorWrapper(TestExceptionMessage);
+                return true;
             }
         }
     }

@@ -234,6 +234,8 @@ namespace Python.Runtime
 
                     LoadMixins(module_globals);
 
+                    LoadSubmodule(module_globals, "clr.interop", "interop.py");
+
                     // add the imported module to the clr module, and copy the API functions
                     // and decorators into the main clr module.
                     Runtime.PyDict_SetItemString(clr_dict, "_extras", module);

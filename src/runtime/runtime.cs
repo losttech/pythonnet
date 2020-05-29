@@ -354,7 +354,8 @@ namespace Python.Runtime
             XDecref(item);
             AssemblyManager.UpdatePath();
 
-            inspect = GetInspectModuleLazy();
+            inspect = GetModuleLazy("inspect");
+            clrInterop = GetModuleLazy("clr.interop");
         }
 
         /// <summary>
@@ -416,8 +417,10 @@ namespace Python.Runtime
             Py_Finalize();
         }
 
-        private static Lazy<PyObject> GetInspectModuleLazy()
-            => new Lazy<PyObject>(() => PythonEngine.ImportModule("inspect"), isThreadSafe: false);
+        private static Lazy<PyObject> GetModuleLazy(string moduleName)
+            => moduleName is null
+                ? throw new ArgumentNullException(nameof(moduleName))
+                : new Lazy<PyObject>(() => PythonEngine.ImportModule(moduleName), isThreadSafe: false);
 
         // called *without* the GIL acquired by clr._AtExit
         internal static int AtExit()
@@ -487,6 +490,8 @@ namespace Python.Runtime
 
         private static Lazy<PyObject> inspect;
         internal static PyObject InspectModule => inspect.Value;
+        private static Lazy<PyObject> clrInterop;
+        internal static PyObject InteropModule => clrInterop.Value;
 
         /// <summary>
         /// Check if any Python Exceptions occurred.
