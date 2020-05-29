@@ -6,7 +6,7 @@ using System.Text;
 
 namespace Python.Runtime
 {
-    public sealed class PyBuffer : IDisposable
+    public sealed class PyBuffer : IPyDisposable
     {
         private PyObject _exporter;
         private Py_buffer _view;
@@ -197,7 +197,12 @@ namespace Python.Runtime
 
         private void Dispose(bool disposing)
         {
-            if (!disposedValue) {
+            if (!disposedValue)
+            {
+                if (Runtime.Py_IsInitialized() == 0)
+                    throw new InvalidOperationException("Python runtime must be initialized");
+
+                // this also decrements ref count for _view->obj
                 Runtime.PyBuffer_Release(ref _view);
 
                 _exporter = null;
@@ -211,7 +216,11 @@ namespace Python.Runtime
 
         ~PyBuffer()
         {
-            Dispose(false);
+            if (disposedValue)
+            {
+                return;
+            }
+            Finalizer.Instance.AddFinalizedObject(this);
         }
 
         /// <summary>
@@ -222,6 +231,11 @@ namespace Python.Runtime
         {
             Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        public IntPtr[] GetTrackedHandles()
+        {
+            return new IntPtr[] { _view.obj };
         }
     }
 }
