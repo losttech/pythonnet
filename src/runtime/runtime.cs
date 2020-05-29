@@ -515,7 +515,7 @@ namespace Python.Runtime
         }
 
         private static Lazy<PyObject> inspect;
-        public static PyObject InspectModule => inspect.Value;
+        internal static PyObject InspectModule => inspect.Value;
 
         /// <summary>
         /// Check if any Python Exceptions occurred.
