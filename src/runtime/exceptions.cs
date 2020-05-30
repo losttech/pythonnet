@@ -200,6 +200,8 @@ namespace Python.Runtime
 
             return pointer;
         }
+        internal static BorrowedReference ErrorCheck(BorrowedReference reference)
+            => reference.IsNull ? throw PythonException.ThrowLastAsClrException() : reference;
 
         /// <summary>
         /// Shortcut for (pointer == NULL or ErrorOccurred()) -&gt; throw PythonException

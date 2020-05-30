@@ -697,12 +697,12 @@ namespace Python.Runtime
         /// to the Python expression "iter(object)". A PythonException will be
         /// raised if the object cannot be iterated.
         /// </remarks>
-        public PyObject GetIterator()
+        public PyIter GetIterator()
         {
             DebugUtil.EnsureGIL();
-            IntPtr r = Runtime.PyObject_GetIter(obj);
+            using var r = Runtime.PyObject_GetIter(Reference);
             Exceptions.ErrorCheck(r);
-            return new PyObject(r);
+            return new PyIter(r);
         }
 
         /// <summary>
@@ -713,10 +713,7 @@ namespace Python.Runtime
         /// python object to be iterated over in C#. A PythonException will be
         /// raised if the object is not iterable.
         /// </remarks>
-        public IEnumerator GetEnumerator()
-        {
-            return new PyIter(this);
-        }
+        public IEnumerator GetEnumerator() => this.GetIterator();
 
 
         /// <summary>
@@ -989,7 +986,7 @@ namespace Python.Runtime
         public bool IsIterable()
         {
             DebugUtil.EnsureGIL();
-            return Runtime.PyObject_IsIterable(obj);
+            return Runtime.PyObject_IsIterable(Reference);
         }
 
 

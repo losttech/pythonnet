@@ -941,9 +941,9 @@ namespace Python.Runtime
         /// <summary>
         /// Test whether the Python object is an iterable.
         /// </summary>
-        internal static bool PyObject_IsIterable(IntPtr pointer)
+        internal static bool PyObject_IsIterable(BorrowedReference pointer)
         {
-            var ob_type = Marshal.ReadIntPtr(pointer, ObjectOffset.ob_type);
+            var ob_type = Marshal.ReadIntPtr(pointer.DangerousGetAddress(), ObjectOffset.ob_type);
             IntPtr tp_iter = Marshal.ReadIntPtr(ob_type, TypeOffset.tp_iter);
             return tp_iter != IntPtr.Zero;
         }
@@ -976,7 +976,7 @@ namespace Python.Runtime
         internal static int PyObject_DelItem(IntPtr pointer, IntPtr key) => Delegates.PyObject_DelItem(pointer, key);
 
         
-        internal static IntPtr PyObject_GetIter(IntPtr op) => Delegates.PyObject_GetIter(op);
+        internal static NewReference PyObject_GetIter(BorrowedReference op) => Delegates.PyObject_GetIter(op);
 
         
         internal static IntPtr PyObject_Call(IntPtr pointer, IntPtr args, IntPtr kw) => Delegates.PyObject_Call(pointer, args, kw);
@@ -1659,15 +1659,15 @@ namespace Python.Runtime
         // Python iterator API
         //====================================================================
 
-        internal static bool PyIter_Check(IntPtr pointer)
+        internal static bool PyIter_Check(BorrowedReference pointer)
         {
-            var ob_type = Marshal.ReadIntPtr(pointer, ObjectOffset.ob_type);
+            var ob_type = Marshal.ReadIntPtr(pointer.DangerousGetAddress(), ObjectOffset.ob_type);
             IntPtr tp_iternext = Marshal.ReadIntPtr(ob_type, TypeOffset.tp_iternext);
             return tp_iternext != IntPtr.Zero && tp_iternext != _PyObject_NextNotImplemented;
         }
 
         
-        internal static IntPtr PyIter_Next(IntPtr pointer) => Delegates.PyIter_Next(pointer);
+        internal static NewReference PyIter_Next(BorrowedReference pointer) => Delegates.PyIter_Next(pointer);
 
 
         //====================================================================
@@ -2400,7 +2400,7 @@ namespace Python.Runtime
             internal static PyObject_GetIterDelegate PyObject_GetIter { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyObject_GetIterDelegate(IntPtr op);
+            internal delegate NewReference PyObject_GetIterDelegate(BorrowedReference op);
 
             internal static PyObject_CallDelegate PyObject_Call { get; }
 
@@ -3017,7 +3017,7 @@ namespace Python.Runtime
             internal static PyIter_NextDelegate PyIter_Next { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate IntPtr PyIter_NextDelegate(IntPtr pointer);
+            internal delegate NewReference PyIter_NextDelegate(BorrowedReference pointer);
 
             internal static PyModule_NewDelegate PyModule_New { get; }
 

@@ -777,9 +777,9 @@ namespace Python.Runtime
             bool IsSeqObj = Runtime.PySequence_Check(value);
             var len = IsSeqObj ? Runtime.PySequence_Size(value) : -1;
 
-            IntPtr IterObject = Runtime.PyObject_GetIter(value);
+            var IterObject = Runtime.PyObject_GetIter(new BorrowedReference(value));
 
-            if(IterObject==IntPtr.Zero) {
+            if(IterObject.IsNull()) {
                 if (setError)
                 {
                     SetConversionError(value, obType);
@@ -793,22 +793,24 @@ namespace Python.Runtime
             var constructedListType = listType.MakeGenericType(elementType);
             IList list = IsSeqObj ? (IList) Activator.CreateInstance(constructedListType, new Object[] {(int) len}) : 
                                         (IList) Activator.CreateInstance(constructedListType);
-            IntPtr item;
+            NewReference item;
 
-            while ((item = Runtime.PyIter_Next(IterObject)) != IntPtr.Zero)
+            while (!(item = Runtime.PyIter_Next(IterObject)).IsNull())
             {
-                object obj = null;
-
-                if (!Converter.ToManaged(item, elementType, out obj, true))
+                try
                 {
-                    Runtime.XDecref(item);
-                    return false;
-                }
+                    if (!ToManaged(item.DangerousGetAddress(), elementType, out object obj, true))
+                    {
+                        return false;
+                    }
 
-                list.Add(obj);
-                Runtime.XDecref(item);
+                    list.Add(obj);
+                } finally
+                {
+                    item.Dispose();
+                }
             }
-            Runtime.XDecref(IterObject);
+            IterObject.Dispose();
 
             items = Array.CreateInstance(elementType, list.Count);
             list.CopyTo(items, 0);

@@ -86,7 +86,7 @@ namespace Python.EmbeddingTest
             Runtime.Runtime.Py_Initialize();
 
             // Tests that a python list is an iterable, but not an iterator
-            var pyList = Runtime.Runtime.PyList_New(0);
+            var pyList = NewReference.DangerousFromPointer(Runtime.Runtime.PyList_New(0));
             Assert.IsFalse(Runtime.Runtime.PyIter_Check(pyList));
             Assert.IsTrue(Runtime.Runtime.PyObject_IsIterable(pyList));
 
@@ -96,7 +96,7 @@ namespace Python.EmbeddingTest
             Assert.IsTrue(Runtime.Runtime.PyIter_Check(pyListIter));
 
             // Tests that a python float is neither an iterable nor an iterator
-            var pyFloat = Runtime.Runtime.PyFloat_FromDouble(2.73);
+            var pyFloat = NewReference.DangerousFromPointer(Runtime.Runtime.PyFloat_FromDouble(2.73));
             Assert.IsFalse(Runtime.Runtime.PyObject_IsIterable(pyFloat));
             Assert.IsFalse(Runtime.Runtime.PyIter_Check(pyFloat));
 
@@ -118,7 +118,7 @@ namespace Python.EmbeddingTest
             if (lockType == IntPtr.Zero)
                 throw new KeyNotFoundException("class 'Lock' was not found in 'threading'");
 
-            var lockInstance = Runtime.Runtime.PyObject_CallObject(lockType, Runtime.Runtime.PyTuple_New(0));
+            var lockInstance = NewReference.DangerousFromPointer(Runtime.Runtime.PyObject_CallObject(lockType, Runtime.Runtime.PyTuple_New(0)));
             Exceptions.ErrorCheck(lockInstance);
 
             Assert.IsFalse(Runtime.Runtime.PyObject_IsIterable(lockInstance));

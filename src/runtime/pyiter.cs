@@ -24,51 +24,31 @@ namespace Python.Runtime
         public PyIter(IntPtr ptr) : base(ptr)
         {
         }
-
-        /// <summary>
-        /// PyIter Constructor
-        /// </summary>
-        /// <remarks>
-        /// Creates a Python iterator from an iterable. Like doing "iter(iterable)" in python.
-        /// </remarks>
-        public PyIter(PyObject iterable)
-        {
-            obj = Runtime.PyObject_GetIter(iterable.obj);
-            Exceptions.ErrorCheck(obj);
-        }
+        internal PyIter(BorrowedReference reference) : base(reference) { }
 
         protected override void Dispose(bool disposing)
         {
-            if (null != _current)
-            {
-                _current.Dispose();
-                _current = null;
-            }
+            _current = null;
             base.Dispose(disposing);
         }
 
         public bool MoveNext()
         {
-            // dispose of the previous object, if there was one
-            if (null != _current)
+            var next = Runtime.PyIter_Next(Reference);
+            if (next.IsNull())
             {
-                _current.Dispose();
+                // dispose of the previous object, if there was one
                 _current = null;
-            }
-
-            IntPtr next = Runtime.PyIter_Next(obj);
-            if (next == IntPtr.Zero)
-            {
                 return false;
             }
 
-            _current = new PyObject(next);
+            _current = next.MoveToPyObject();
             return true;
         }
 
         public void Reset()
         {
-            //Not supported in python.
+            throw new NotSupportedException();
         }
 
         public object Current
