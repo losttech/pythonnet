@@ -1341,10 +1341,13 @@ namespace Python.Runtime
             return (t == PyStringType) || (t == PyUnicodeType);
         }
 
+        [Obsolete(Util.UseOverloadWithReferenceTypes)]
         internal static bool PyString_Check(IntPtr ob)
         {
             return PyObject_TYPE(ob) == PyStringType;
         }
+        internal static bool PyString_Check(BorrowedReference ob)
+            => PyObject_TYPE(ob) == PyStringType;
 
         internal static IntPtr PyString_FromString(string value)
         {

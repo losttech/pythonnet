@@ -156,8 +156,16 @@ namespace Python.Runtime
             {
                 if (!pyValueHandle.IsNull)
                 {
-                    if (PyObjectConversions.TryDecode(pyValueHandle, pyTypeHandle, typeof(Exception),
-                        out decoded) && decoded is Exception decodedException) {
+                    if (Runtime.PyString_Check(pyValueHandle) && pyTypeHandle != Runtime.PyStringType) {
+                        using var type = new PyObject(pyTypeHandle);
+                        using var message = new PyObject(pyValueHandle);
+                        var instance = type.Invoke(message);
+                        if (PyObjectConversions.TryDecode(instance.Reference, pyTypeHandle, typeof(Exception),
+                            out decoded) && decoded is Exception decodedExceptionInstance) {
+                            return decodedExceptionInstance;
+                        }
+                    } else if (PyObjectConversions.TryDecode(pyValueHandle, pyTypeHandle, typeof(Exception),
+                                   out decoded) && decoded is Exception decodedException) {
                         return decodedException;
                     }
 

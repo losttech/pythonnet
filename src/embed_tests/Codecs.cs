@@ -123,6 +123,15 @@ def call(func):
             Assert.AreEqual(TestExceptionMessage, error.Message);
         }
 
+        [Test]
+        public void ExceptionStringValue() {
+            PyObjectConversions.RegisterDecoder(new AttributeErrorDecoder());
+            using var _ = Py.GIL();
+            using var scope = Py.CreateScope();
+            var error = Assert.Throws<AttributeErrorWrapper>(() => "hi".ToPython().GetAttr("blah"));
+            StringAssert.Contains("blah", error.Message);
+        }
+
         class ValueErrorWrapper : Exception {
             public ValueErrorWrapper(string message) : base(message) { }
         }
@@ -144,6 +153,25 @@ def call(func):
             public PyObject TryEncode(object value) {
                 var error = (ValueErrorWrapper)value;
                 return PythonEngine.Eval("ValueError").Invoke(error.Message.ToPython());
+            }
+        }
+
+        class AttributeErrorWrapper : Exception {
+            public AttributeErrorWrapper(string message) : base(message) { }
+        }
+
+        class AttributeErrorDecoder : IPyObjectDecoder {
+            public bool CanDecode(PyObject objectType, Type targetType)
+                => this.SupportsTargetType(targetType)
+                   && PythonReferenceComparer.Instance.Equals(objectType, PythonEngine.Eval("AttributeError"));
+
+            bool SupportsTargetType(Type type) => type == typeof(AttributeErrorWrapper)
+                                               || typeof(AttributeErrorWrapper).IsSubclassOf(type);
+
+            public bool TryDecode<T>(PyObject pyObj, out T value) {
+                var message = pyObj.GetAttr("args")[0].As<string>();
+                value = (T)(object)new AttributeErrorWrapper(message);
+                return true;
             }
         }
 
