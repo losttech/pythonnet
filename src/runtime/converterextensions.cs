@@ -117,7 +117,13 @@ namespace Python.Runtime
             var decoder = pythonToClr.GetOrAdd(new TypePair(objType.DangerousGetAddress(), targetType), pair => GetDecoder(pair.PyType, pair.ClrType));
             result = null;
             if (decoder == null) return false;
-            return decoder.Invoke(obj, out result);
+            try
+            {
+                return decoder.Invoke(obj, out result);
+            } catch (TargetInvocationException invocationException)
+            {
+                throw invocationException.InnerException.Rethrow();
+            }
         }
 
         static Converter.TryConvertFromPythonDelegate GetDecoder(IntPtr sourceType, Type targetType)
@@ -136,7 +142,15 @@ namespace Python.Runtime
             {
                 var pyObj = new PyObject(pyHandle);
                 var @params = new object[] { pyObj, null };
-                bool success = (bool)decode.Invoke(decoder, @params);
+                bool success = false;
+                try
+                {
+                    success = (bool)decode.Invoke(decoder, @params);
+                } catch (TargetInvocationException invocationException)
+                {
+                    throw invocationException.InnerException.Rethrow();
+                }
+
                 if (!success)
                 {
                     pyObj.Dispose();
