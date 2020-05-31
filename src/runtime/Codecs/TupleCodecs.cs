@@ -74,6 +74,11 @@ namespace Python.Runtime.Codecs
                 value = (T)EmptyTuple;
                 return true;
             }
+            if (itemCount >= tupleCreate.Length)
+            {
+                value = default;
+                return false;
+            }
 
             var elements = new object[itemCount];
             for (int itemIndex = 0; itemIndex < itemTypes.Length; itemIndex++)
@@ -97,6 +102,11 @@ namespace Python.Runtime.Codecs
             {
                 value = EmptyTuple;
                 return true;
+            }
+            if (itemCount >= tupleCreate.Length)
+            {
+                value = default;
+                return false;
             }
             var elements = new object[itemCount];
             var itemTypes = new Type[itemCount];
