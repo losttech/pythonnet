@@ -5,8 +5,11 @@ pythonnet - Python for .NET
 
 |github test shield|
 
-|license shield| |nuget version|
+|nuget version|
 |stackexchange shield|
+
+This fork is part of `Gradient <https://losttech.software/gradient.html>`_ and has a `different
+license <https://github.com/losttech/pythonnet/blob/losttech/master/LICENSE>`_.
 
 Python for .NET is a package that gives Python programmers nearly
 seamless integration with the .NET Common Language Runtime (CLR) and

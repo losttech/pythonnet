@@ -5,6 +5,8 @@
     <RootNamespace>Python.Runtime</RootNamespace>
     <AssemblyName>Python.Runtime</AssemblyName>
     <PackageId>Python.Runtime.UnofficialNetStandard</PackageId>
+    <PackageLicenseUrl>https://raw.githubusercontent.com/losttech/Gradient/master/LICENSE-TECH-PREVIEW.txt</PackageLicenseUrl>
+    <Description>This software is part of Gradient: https://losttech.software/gradient.html</Description>
     <VersionPrefix>3.0.0</VersionPrefix>
     <DebugSymbols>true</DebugSymbols>
     <IncludeSymbols>true</IncludeSymbols>
