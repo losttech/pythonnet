@@ -134,7 +134,7 @@ namespace Python.Runtime
                 return result;
             }
 
-            if (Type.GetTypeCode(type) == TypeCode.Object && value.GetType() != typeof(object)) {
+            if (!type.IsPrimitive && value.GetType() != typeof(object)) {
                 var encoded = PyObjectConversions.TryEncode(value, type);
                 if (encoded != null) {
                     result = encoded.Handle;
@@ -402,8 +402,7 @@ namespace Python.Runtime
                 return false;
             }
 
-            TypeCode typeCode = Type.GetTypeCode(obType);
-            if (typeCode == TypeCode.Object)
+            if (!obType.IsPrimitive)
             {
                 var pyType = new BorrowedReference(Runtime.PyObject_TYPE(value));
                 if (PyObjectConversions.TryDecode(new BorrowedReference(value), pyType, obType, out result))

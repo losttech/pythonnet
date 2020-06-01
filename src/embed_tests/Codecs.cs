@@ -83,6 +83,22 @@ namespace Python.EmbeddingTest {
             }
         }
 
+        [Test]
+        public void EnumEncoded() {
+            var enumEncoder = new FakeEncoder<ConsoleModifiers>();
+            PyObjectConversions.RegisterEncoder(enumEncoder);
+            ConsoleModifiers.Alt.ToPython();
+            Assert.AreEqual(ConsoleModifiers.Alt, enumEncoder.LastObject);
+        }
+
+        [Test]
+        public void EnumDecoded() {
+            var enumDecoder = new FakeDecoder<ConsoleModifiers>(PythonEngine.Eval("list"), ConsoleModifiers.Alt);
+            PyObjectConversions.RegisterDecoder(enumDecoder);
+            var decoded = PythonEngine.Eval("[]").As<ConsoleModifiers>();
+            Assert.AreEqual(ConsoleModifiers.Alt, decoded);
+        }
+
         const string TestExceptionMessage = "Hello World!";
         [Test]
         public void ExceptionEncoded() {
@@ -198,8 +214,13 @@ def call(func):
 
     class FakeEncoder<T> : IPyObjectEncoder
     {
+        public T LastObject { get; private set; }
         public bool CanEncode(Type type) => type == typeof(T);
-        public PyObject TryEncode(object value) => this.GetRawPythonProxy();
+        public PyObject TryEncode(object value)
+        {
+            this.LastObject = (T)value;
+            return this.GetRawPythonProxy();
+        }
     }
 
     class FakeDecoder<TTarget> : IPyObjectDecoder
