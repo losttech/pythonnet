@@ -5,6 +5,8 @@ namespace Python.Runtime
     using System.Collections.Generic;
     using System.Linq;
     using System.Reflection;
+    using System.Runtime.CompilerServices;
+
     using Python.Runtime.Codecs;
 
     /// <summary>
@@ -128,6 +130,8 @@ namespace Python.Runtime
 
         static Converter.TryConvertFromPythonDelegate GetDecoder(IntPtr sourceType, Type targetType)
         {
+            RuntimeHelpers.EnsureSufficientExecutionStack();
+
             IPyObjectDecoder decoder;
             var pyType = new PyObject(Runtime.SelfIncRef(sourceType));
             lock (decoders)

@@ -134,7 +134,7 @@ namespace Python.Runtime
                 return result;
             }
 
-            if (!type.IsPrimitive && value.GetType() != typeof(object)) {
+            if (EncodersAllowed(type)) {
                 var encoded = PyObjectConversions.TryEncode(value, type);
                 if (encoded != null) {
                     result = encoded.Handle;
@@ -402,7 +402,7 @@ namespace Python.Runtime
                 return false;
             }
 
-            if (!obType.IsPrimitive)
+            if (EncodersAllowed(obType))
             {
                 var pyType = new BorrowedReference(Runtime.PyObject_TYPE(value));
                 if (PyObjectConversions.TryDecode(new BorrowedReference(value), pyType, obType, out result))
@@ -418,6 +418,8 @@ namespace Python.Runtime
 
             return ToPrimitive(value, obType, out result, setError);
         }
+
+        static bool EncodersAllowed(Type type) => !type.IsPrimitive && type != typeof(string);
 
         internal delegate bool TryConvertFromPythonDelegate(BorrowedReference pyObj, out object result);
 
