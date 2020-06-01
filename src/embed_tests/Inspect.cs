@@ -6,12 +6,12 @@ using Python.Runtime;
 
 namespace Python.EmbeddingTest {
     public class Inspect {
-        [SetUp]
+        [OneTimeSetUp]
         public void SetUp() {
             PythonEngine.Initialize();
         }
 
-        [TearDown]
+        [OneTimeTearDown]
         public void Dispose() {
             PythonEngine.Shutdown();
         }
