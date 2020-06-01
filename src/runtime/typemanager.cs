@@ -130,6 +130,10 @@ namespace Python.Runtime
             Marshal.WriteIntPtr(type, TypeOffset.ob_type, Runtime.PyCLRMetaType);
             Runtime.XIncref(Runtime.PyCLRMetaType);
 
+            // Hide the gchandle of the implementation in a magic type slot.
+            GCHandle gc = GCHandle.Alloc(impl);
+            Marshal.WriteIntPtr(type, TypeOffset.magic(), (IntPtr)gc);
+
             // add a __len__ slot for inheritors of ICollection and ICollection<>
             if (typeof(System.Collections.ICollection).IsAssignableFrom(clrType) || clrType.GetInterfaces().Any(x => x.IsGenericType && x.GetGenericTypeDefinition() == typeof(ICollection<>)))
             {
@@ -198,6 +202,7 @@ namespace Python.Runtime
 
             if (Runtime.PyType_Ready(type) != 0)
             {
+                gc.Free();
                 return IntPtr.Zero;
             }
 
@@ -205,10 +210,6 @@ namespace Python.Runtime
             string mn = clrType.Namespace ?? "";
             IntPtr mod = Runtime.PyString_FromString(mn);
             Runtime.PyDict_SetItemString(dict, "__module__", mod);
-
-            // Hide the gchandle of the implementation in a magic type slot.
-            GCHandle gc = GCHandle.Alloc(impl);
-            Marshal.WriteIntPtr(type, TypeOffset.magic(), (IntPtr)gc);
 
             // Set the handle attributes on the implementing instance.
             impl.tpHandle = Runtime.PyCLRMetaType;

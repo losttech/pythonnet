@@ -388,7 +388,10 @@ namespace Python.Runtime
 
         public static void InitializeSlots(IntPtr type, ISet<string> initialized)
         {
-            if (initialized.Add(nameof(TypeOffset.tp_as_buffer)))
+            var gcHandle = (GCHandle)Marshal.ReadIntPtr(type, TypeOffset.magic());
+            var self = (ArrayObject)gcHandle.Target;
+            if (ItemFormats.ContainsKey(self.type.GetElementType())
+                && initialized.Add(nameof(TypeOffset.tp_as_buffer)))
             {
                 // TODO: only for unmanaged arrays
                 TypeManager.InitializeSlot(type, BufferProcsAddress, nameof(TypeOffset.tp_as_buffer));

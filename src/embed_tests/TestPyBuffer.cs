@@ -81,5 +81,14 @@ namespace Python.EmbeddingTest {
             Assert.AreEqual(1, mem[(0, 0).ToPython()].As<int>());
             Assert.AreEqual(array[1,0], mem[(1, 0).ToPython()].As<int>());
         }
+
+        [Test]
+        public void ReferenceTypeArrayHasNoBuffer()
+        {
+            var array = new[] {new object()};
+            var memoryView = PythonEngine.Eval("memoryview");
+            var error = Assert.Throws<PythonException>(() => memoryView.Invoke(array.ToPython()));
+            Assert.AreEqual("TypeError", error.PythonTypeName);
+        }
     }
 }
