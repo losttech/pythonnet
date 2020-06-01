@@ -1,4 +1,13 @@
-MIT License
+This software is "code-available" to assist with Gradient debugging.
+You must have a license for the matching version of Gradient (see
+https://github.com/losttech/Gradient/) to access this source. Only
+Gradient debugging is permitted.
+
+If you wish to obtain a version of this sofware with a more liberal
+license, refer to https://github.com/pythonnet/pythonnet.
+
+This fork contains substantial parts of the original project, which are
+distributed under the following MIT License:
 
 Copyright (c) 2006-2019 the contributors of the "Python for .NET" project
 
