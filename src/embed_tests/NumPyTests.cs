@@ -2,15 +2,17 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 using Python.Runtime;
+using Python.Runtime.Codecs;
 
 namespace Python.EmbeddingTest
 {
-    public class TestExample
+    public class NumPyTests
     {
         [OneTimeSetUp]
         public void SetUp()
         {
             PythonEngine.Initialize();
+            TupleCodec<ValueTuple>.Register();
         }
 
         [OneTimeTearDown]
@@ -48,6 +50,24 @@ namespace Python.EmbeddingTest
             Assert.AreEqual("int32", b.dtype.ToString());
 
             Assert.AreEqual("[ 6. 10. 12.]", (a * b).ToString().Replace("  ", " "));
+        }
+
+        [Test]
+        public void MultidimensionalNumPyArray()
+        {
+            PyObject np;
+            try {
+                np = Py.Import("numpy");
+            } catch (PythonException) {
+                Assert.Inconclusive("Numpy or dependency not installed");
+                return;
+            }
+
+            var array = new[,] { { 1, 2 }, { 3, 4 } };
+            var ndarray = np.InvokeMethod("asarray", array.ToPython());
+            Assert.AreEqual((2,2), ndarray.GetAttr("shape").As<(int,int)>());
+            Assert.AreEqual(1, ndarray[(0, 0).ToPython()].As<int>());
+            Assert.AreEqual(array[1, 0], ndarray[(1, 0).ToPython()].As<int>());
         }
     }
 }

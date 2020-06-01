@@ -771,6 +771,9 @@ namespace Python.Runtime
                     seen.Add(name);
                 }
 
+                var initSlot = impl.GetMethod("InitializeSlots", BindingFlags.Static | BindingFlags.Public);
+                initSlot?.Invoke(null, parameters: new object[] {type, seen});
+
                 impl = impl.BaseType;
             }
 
@@ -818,7 +821,7 @@ namespace Python.Runtime
         /// <param name="type">Type being initialized.</param>
         /// <param name="slot">Function pointer.</param>
         /// <param name="name">Name of the method.</param>
-        static void InitializeSlot(IntPtr type, IntPtr slot, string name)
+        internal static void InitializeSlot(IntPtr type, IntPtr slot, string name)
         {
             Type typeOffset = typeof(TypeOffset);
             FieldInfo fi = typeOffset.GetField(name);

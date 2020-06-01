@@ -111,6 +111,8 @@ namespace Python.Runtime
         public IntPtr Release;
     }
 
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     delegate int GetBufferProc(BorrowedReference obj, out Py_buffer buffer, PyBUF flags);
+    [UnmanagedFunctionPointer(CallingConvention.Cdecl)]
     delegate void ReleaseBufferProc(BorrowedReference obj, ref Py_buffer buffer);
 }

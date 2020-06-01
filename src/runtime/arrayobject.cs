@@ -1,5 +1,7 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
+using System.Runtime.InteropServices;
 
 namespace Python.Runtime
 {
@@ -243,6 +245,154 @@ namespace Python.Runtime
             }
 
             return 0;
+        }
+
+        #region Buffer protocol
+        static int GetBuffer(BorrowedReference obj, out Py_buffer buffer, PyBUF flags)
+        {
+            buffer = default;
+
+            if (flags == PyBUF.SIMPLE)
+            {
+                Exceptions.SetError(Exceptions.BufferError, "SIMPLE not implemented");
+                return -1;
+            }
+            if ((flags & PyBUF.F_CONTIGUOUS) == PyBUF.F_CONTIGUOUS)
+            {
+                Exceptions.SetError(Exceptions.BufferError, "only C-contiguous supported");
+                return -1;
+            }
+            var self = (Array)((CLRObject)GetManagedObject(obj)).inst;
+            Type itemType = self.GetType().GetElementType();
+
+            bool formatRequested = (flags & PyBUF.FORMATS) != 0;
+            string format = formatRequested ? GetFormat(itemType) : null;
+            if (formatRequested && format is null)
+            {
+                Exceptions.SetError(Exceptions.BufferError, "unsupported element type: " + itemType.Name);
+                return -1;
+            }
+            var gcHandle = GCHandle.Alloc(self, GCHandleType.Pinned);
+
+            int itemSize = Marshal.SizeOf(itemType);
+            IntPtr[] shape = GetShape(self);
+            IntPtr[] strides = GetStrides(shape, itemSize);
+            buffer = new Py_buffer
+            {
+                buf = gcHandle.AddrOfPinnedObject(),
+                obj = Runtime.SelfIncRef(obj.DangerousGetAddress()),
+                len = (IntPtr)(self.LongLength*itemSize),
+                itemsize = (IntPtr)itemSize,
+                _readonly = false,
+                ndim = self.Rank,
+                format = format,
+                shape = ToUnmanaged(shape),
+                strides = (flags & PyBUF.STRIDES) == PyBUF.STRIDES ? ToUnmanaged(strides) : IntPtr.Zero,
+                suboffsets = IntPtr.Zero,
+                _internal = (IntPtr)gcHandle,
+            };
+
+            return 0;
+        }
+        static void ReleaseBuffer(BorrowedReference obj, ref Py_buffer buffer)
+        {
+            if (buffer._internal == IntPtr.Zero) return;
+
+            UnmanagedFree(ref buffer.shape);
+            UnmanagedFree(ref buffer.strides);
+            UnmanagedFree(ref buffer.suboffsets);
+
+            var gcHandle = (GCHandle)buffer._internal;
+            gcHandle.Free();
+            buffer._internal = IntPtr.Zero;
+        }
+
+        static IntPtr[] GetStrides(IntPtr[] shape, long itemSize)
+        {
+            var result = new IntPtr[shape.Length];
+            result[shape.Length - 1] = new IntPtr(itemSize);
+            for (int dim = shape.Length - 2; dim >= 0; dim--)
+            {
+                itemSize *= shape[dim + 1].ToInt64();
+                result[dim] = new IntPtr(itemSize);
+            }
+            return result;
+        }
+        static IntPtr[] GetShape(Array array)
+        {
+            var result = new IntPtr[array.Rank];
+            for (int i = 0; i < result.Length; i++)
+                result[i] = (IntPtr)array.GetLongLength(i);
+            return result;
+        }
+
+        static void UnmanagedFree(ref IntPtr address)
+        {
+            if (address == IntPtr.Zero) return;
+
+            Marshal.FreeHGlobal(address);
+            address = IntPtr.Zero;
+        }
+        static unsafe IntPtr ToUnmanaged<T>(T[] array) where T : unmanaged
+        {
+            IntPtr result = Marshal.AllocHGlobal(checked(Marshal.SizeOf(typeof(T)) * array.Length));
+            fixed (T* ptr = array)
+            {
+                var @out = (T*)result;
+                for (int i = 0; i < array.Length; i++)
+                    @out[i] = ptr[i];
+            }
+            return result;
+        }
+
+        static readonly Dictionary<Type, string> ItemFormats = new Dictionary<Type, string>
+        {
+            [typeof(byte)] = "B",
+            [typeof(sbyte)] = "b",
+
+            [typeof(bool)] = "?",
+
+            [typeof(short)] = "h",
+            [typeof(ushort)] = "H",
+            [typeof(int)] = "i",
+            [typeof(uint)] = "I",
+            [typeof(long)] = "q",
+            [typeof(ulong)] = "Q",
+
+            [typeof(IntPtr)] = "n",
+            [typeof(UIntPtr)] = "N",
+
+            // TODO: half = "e"
+            [typeof(float)] = "f",
+            [typeof(double)] = "d",
+        };
+
+        static string GetFormat(Type elementType)
+            => ItemFormats.TryGetValue(elementType, out string result) ? result : null;
+
+        static readonly GetBufferProc getBufferProc = GetBuffer;
+        static readonly ReleaseBufferProc releaseBufferProc = ReleaseBuffer;
+        static readonly IntPtr BufferProcsAddress = AllocateBufferProcs();
+        static IntPtr AllocateBufferProcs()
+        {
+            var procs = new PyBufferProcs
+            {
+                Get = Marshal.GetFunctionPointerForDelegate(getBufferProc),
+                Release = Marshal.GetFunctionPointerForDelegate(releaseBufferProc),
+            };
+            IntPtr result = Marshal.AllocHGlobal(Marshal.SizeOf(typeof(PyBufferProcs)));
+            Marshal.StructureToPtr(procs, result, fDeleteOld: false);
+            return result;
+        }
+        #endregion
+
+        public static void InitializeSlots(IntPtr type, ISet<string> initialized)
+        {
+            if (initialized.Add(nameof(TypeOffset.tp_as_buffer)))
+            {
+                // TODO: only for unmanaged arrays
+                TypeManager.InitializeSlot(type, BufferProcsAddress, nameof(TypeOffset.tp_as_buffer));
+            }
         }
     }
 }
