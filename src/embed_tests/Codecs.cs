@@ -5,6 +5,7 @@ namespace Python.EmbeddingTest {
     using NUnit.Framework;
     using Python.Runtime;
     using Python.Runtime.Codecs;
+    using static Python.Runtime.PyObjectConversions;
 
     public class Codecs {
         [SetUp]
@@ -86,15 +87,17 @@ namespace Python.EmbeddingTest {
         [Test]
         public void EnumEncoded() {
             var enumEncoder = new FakeEncoder<ConsoleModifiers>();
-            PyObjectConversions.RegisterEncoder(enumEncoder);
+            RegisterEncoder(enumEncoder);
             ConsoleModifiers.Alt.ToPython();
             Assert.AreEqual(ConsoleModifiers.Alt, enumEncoder.LastObject);
         }
 
         [Test]
         public void EnumDecoded() {
-            var enumDecoder = new FakeDecoder<ConsoleModifiers>(PythonEngine.Eval("list"), ConsoleModifiers.Alt);
-            PyObjectConversions.RegisterDecoder(enumDecoder);
+            var enumDecoder = new DecoderReturningPredefinedValue<ConsoleModifiers>(
+                objectType: PythonEngine.Eval("list"),
+                decodeResult: ConsoleModifiers.Alt);
+            RegisterDecoder(enumDecoder);
             var decoded = PythonEngine.Eval("[]").As<ConsoleModifiers>();
             Assert.AreEqual(ConsoleModifiers.Alt, decoded);
         }
@@ -102,7 +105,7 @@ namespace Python.EmbeddingTest {
         const string TestExceptionMessage = "Hello World!";
         [Test]
         public void ExceptionEncoded() {
-            PyObjectConversions.RegisterEncoder(new ValueErrorCodec());
+            RegisterEncoder(new ValueErrorCodec());
             void CallMe() => throw new ValueErrorWrapper(TestExceptionMessage);
             var callMeAction = new Action(CallMe);
             using var _ = Py.GIL();
@@ -121,7 +124,7 @@ def call(func):
 
         [Test]
         public void ExceptionDecoded() {
-            PyObjectConversions.RegisterDecoder(new ValueErrorCodec());
+            RegisterDecoder(new ValueErrorCodec());
             using var _ = Py.GIL();
             using var scope = Py.CreateScope();
             var error = Assert.Throws<ValueErrorWrapper>(() => PythonEngine.Exec(
@@ -131,7 +134,7 @@ def call(func):
 
         [Test]
         public void ExceptionDecodedNoInstance() {
-            PyObjectConversions.RegisterDecoder(new InstancelessExceptionDecoder());
+            RegisterDecoder(new InstancelessExceptionDecoder());
             using var _ = Py.GIL();
             using var scope = Py.CreateScope();
             var error = Assert.Throws<ValueErrorWrapper>(() => PythonEngine.Exec(
@@ -141,7 +144,7 @@ def call(func):
 
         [Test]
         public void ExceptionStringValue() {
-            PyObjectConversions.RegisterDecoder(new AttributeErrorDecoder());
+            RegisterDecoder(new AttributeErrorDecoder());
             using var _ = Py.GIL();
             using var scope = Py.CreateScope();
             var error = Assert.Throws<AttributeErrorWrapper>(() => "hi".ToPython().GetAttr("blah"));
@@ -223,29 +226,6 @@ def call(func):
         }
     }
 
-    class FakeDecoder<TTarget> : IPyObjectDecoder
-    {
-        public PyObject TheOnlySupportedSourceType { get; }
-        public TTarget DecodeResult { get; }
-
-        public FakeDecoder(PyObject objectType, TTarget decodeResult)
-        {
-            this.TheOnlySupportedSourceType = objectType;
-            this.DecodeResult = decodeResult;
-        }
-
-        public bool CanDecode(PyObject objectType, Type targetType)
-            => objectType.Handle == TheOnlySupportedSourceType.Handle
-               && targetType == typeof(TTarget);
-        public bool TryDecode<T>(PyObject pyObj, out T value)
-        {
-            if (typeof(T) != typeof(TTarget))
-                throw new ArgumentException(nameof(T));
-            value = (T)(object)DecodeResult;
-            return true;
-        }
-    }
-
     /// <summary>
     /// "Decodes" only objects of exact type <typeparamref name="T"/>.
     /// Result is just a raw Python object proxy.
@@ -256,25 +236,40 @@ def call(func):
         public PyObject TryEncode(object value) => this.GetRawPythonProxy();
     }
 
+    abstract class SingleTypeDecoder : IPyObjectDecoder
+    {
+        public PyObject LastSourceType { get; private set; }
+        public PyObject TheOnlySupportedSourceType { get; }
+
+        public virtual bool CanDecode(PyObject objectType, Type targetType)
+        {
+            this.LastSourceType = objectType;
+            return objectType.Handle == this.TheOnlySupportedSourceType.Handle;
+        }
+
+        public abstract bool TryDecode<T>(PyObject pyObj, out T value);
+
+        protected SingleTypeDecoder(PyObject objectType) {
+            this.TheOnlySupportedSourceType = objectType;
+        }
+    }
+
     /// <summary>
     /// Decodes object of specified Python type to the predefined value <see cref="DecodeResult"/>
     /// </summary>
     /// <typeparam name="TTarget">Type of the <see cref="DecodeResult"/></typeparam>
-    class DecoderReturningPredefinedValue<TTarget> : IPyObjectDecoder
+    class DecoderReturningPredefinedValue<TTarget> : SingleTypeDecoder
     {
-        public PyObject TheOnlySupportedSourceType { get; }
         public TTarget DecodeResult { get; }
 
-        public DecoderReturningPredefinedValue(PyObject objectType, TTarget decodeResult)
+        public DecoderReturningPredefinedValue(PyObject objectType, TTarget decodeResult) : base(objectType)
         {
-            this.TheOnlySupportedSourceType = objectType;
             this.DecodeResult = decodeResult;
         }
 
-        public bool CanDecode(PyObject objectType, Type targetType)
-            => objectType.Handle == TheOnlySupportedSourceType.Handle
-               && targetType == typeof(TTarget);
-        public bool TryDecode<T>(PyObject pyObj, out T value)
+        public override bool CanDecode(PyObject objectType, Type targetType)
+            => base.CanDecode(objectType, targetType) && targetType == typeof(TTarget);
+        public override bool TryDecode<T>(PyObject pyObj, out T value)
         {
             if (typeof(T) != typeof(TTarget))
                 throw new ArgumentException(nameof(T));
