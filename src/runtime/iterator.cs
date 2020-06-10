@@ -33,10 +33,6 @@ namespace Python.Runtime
             }
             catch (Exception e)
             {
-                if (e.InnerException != null)
-                {
-                    e = e.InnerException;
-                }
                 Exceptions.SetError(e);
                 return IntPtr.Zero;
             }
