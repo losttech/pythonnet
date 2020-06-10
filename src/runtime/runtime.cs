@@ -598,6 +598,12 @@ namespace Python.Runtime
         }
 
         /// <summary>
+        /// Raise an exception when a refcount of Python object exceeds this limit.
+        /// Only affects debug builds.
+        /// </summary>
+        public static long RefCountSanityLimit { get; set; } = Int32.MaxValue;
+
+        /// <summary>
         /// Managed exports of the Python C API. Where appropriate, we do
         /// some optimization to avoid managed &lt;--&gt; unmanaged transitions
         /// (mostly for heavily used methods).
@@ -605,11 +611,11 @@ namespace Python.Runtime
         internal static unsafe void XIncref(IntPtr op)
         {
             DebugUtil.EnsureGIL();
-#if DEBUG
             if (op == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(op));
+#if DEBUG
             long refcount = Refcount(op);
-            if (refcount < 0 || refcount > 100000)
+            if (refcount < 0 || refcount > RefCountSanityLimit)
                 throw new ArgumentOutOfRangeException(
                     message: "Reference count is insane",
                     paramName: nameof(op),
@@ -651,7 +657,7 @@ namespace Python.Runtime
             if (op == IntPtr.Zero)
                 throw new ArgumentNullException(nameof(op));
             long refcount = Refcount(op);
-            if (refcount <= 0 || refcount > 100000)
+            if (refcount <= 0 || refcount > RefCountSanityLimit)
                 throw new ArgumentOutOfRangeException(
                     paramName: nameof(refcount),
                     actualValue: refcount,
