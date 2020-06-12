@@ -1,12 +1,19 @@
 namespace Python.EmbeddingTest {
     using System;
     using System.Collections.Generic;
-
+    using System.Linq;
     using NUnit.Framework;
 
     using Python.Runtime;
 
     public class CollectionsMixins {
+        [Test]
+        public void Enumerables_Iterable() {
+            var iterable = Enumerable.Repeat(42, 5).ToPython();
+            var iterator = iterable.InvokeMethod("__iter__");
+            int first = iterator.InvokeMethod("__next__").As<int>();
+            Assert.AreEqual(42, first);
+        }
         [Test]
         public void Dict_Items_Iterable() {
             var pyDict = this.dict.ToPython();
