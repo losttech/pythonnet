@@ -234,27 +234,31 @@ namespace Python.Runtime
             {
                 string fullName = clrType.GetGenericTypeDefinition().FullName;
                 int argCountIndex = fullName.LastIndexOf('`');
-                string nonGenericFullName = fullName.Substring(0, argCountIndex);
-                string nonGenericName = CleanupFullName(nonGenericFullName);
-                target.Append(nonGenericName);
-
-                var arguments = clrType.GetGenericArguments();
-                target.Append('<');
-                for (int argIndex = 0; argIndex < arguments.Length; argIndex++)
+                if (argCountIndex >= 0)
                 {
-                    if (argIndex != 0)
+                    string nonGenericFullName = fullName.Substring(0, argCountIndex);
+                    string nonGenericName = CleanupFullName(nonGenericFullName);
+                    target.Append(nonGenericName);
+
+                    var arguments = clrType.GetGenericArguments();
+                    target.Append('<');
+                    for (int argIndex = 0; argIndex < arguments.Length; argIndex++)
                     {
-                        target.Append(',');
+                        if (argIndex != 0)
+                        {
+                            target.Append(',');
+                        }
+
+                        GetPythonTypeName(arguments[argIndex], target);
                     }
-                    GetPythonTypeName(arguments[argIndex], target);
+
+                    target.Append('>');
+                    return;
                 }
-                target.Append('>');
             }
-            else
-            {
-                string name = CleanupFullName(clrType.FullName);
-                target.Append(name);
-            }
+
+            string name = CleanupFullName(clrType.FullName);
+            target.Append(name);
         }
 
         static string CleanupFullName(string fullTypeName)
