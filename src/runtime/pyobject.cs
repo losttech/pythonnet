@@ -1387,6 +1387,7 @@ namespace Python.Runtime
                     result = null;
                     return false;
             }
+            Exceptions.ErrorCheck(res);
             result = CheckNone(new PyObject(res));
             return true;
         }
@@ -1440,6 +1441,7 @@ namespace Python.Runtime
                     result = null;
                     return false;
             }
+            Exceptions.ErrorCheck(res);
             result = CheckNone(new PyObject(res));
             return true;
         }
