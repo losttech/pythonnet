@@ -400,10 +400,11 @@ class BuildExtPythonnet(build_ext.build_ext):
         mono_cflags = _check_output("pkg-config --cflags mono-2", shell=True)
         cflags = mono_cflags.strip()
         libs = mono_libs.strip()
-        
+
         # build the clr python module
         clr_ext = Extension(
             "clr",
+            language="c++",
             sources=["src/monoclr/pynetinit.c", "src/monoclr/clrmod.c"],
             extra_compile_args=cflags.split(" "),
             extra_link_args=libs.split(" "),
@@ -617,10 +618,6 @@ setupdir = os.path.dirname(__file__)
 if setupdir:
     os.chdir(setupdir)
 
-setup_requires = []
-if not os.path.exists(_get_interop_filename()):
-    setup_requires.append("pycparser")
-
 cmdclass={
     "install": InstallPythonnet,
     "build_ext": BuildExtPythonnet,
@@ -632,13 +629,13 @@ if bdist_wheel:
 
 setup(
     name="pythonnet",
-    version="2.4.1-dev",
+    version="2.5.0",
     description=".Net and Mono integration for Python",
     url="https://pythonnet.github.io/",
     license="MIT",
-    author="The Python for .Net developers",
-    author_email="pythondotnet@python.org",
-    setup_requires=setup_requires,
+    author="The Contributors of the Python.NET Project",
+    author_email="pythonnet@python.org",
+    install_requires=["pycparser"],
     long_description=_get_long_description(),
     ext_modules=[Extension("clr", sources=list(_get_source_files()))],
     data_files=[("{install_platlib}", ["{build_lib}/Python.Runtime.dll"])],
@@ -654,6 +651,7 @@ setup(
         "Programming Language :: Python :: 3.5",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
         "Operating System :: Microsoft :: Windows",
         "Operating System :: POSIX :: Linux",
         "Operating System :: MacOS :: MacOS X",

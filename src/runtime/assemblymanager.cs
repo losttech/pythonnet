@@ -351,7 +351,8 @@ namespace Python.Runtime
         /// </summary>
         internal static void ScanAssembly(Assembly assembly)
         {
-            if (assembly.GetCustomAttribute<PyExportAttribute>()?.Export == false) {
+            if (assembly.GetCustomAttribute<PyExportAttribute>()?.Export == false)
+            {
                 return;
             }
             // A couple of things we want to do here: first, we want to
@@ -466,7 +467,7 @@ namespace Python.Runtime
             foreach (Assembly assembly in assemblies)
             {
                 Type type = assembly.GetType(qname);
-                if (type != null)
+                if (type != null && IsExported(type))
                 {
                     return type;
                 }
@@ -480,7 +481,7 @@ namespace Python.Runtime
         /// type.
         /// </summary>
         public static IEnumerable<Type> LookupTypes(string qualifiedName)
-            => assemblies.Select(assembly => assembly.GetType(qualifiedName)).Where(type => type != null);
+            => assemblies.Select(assembly => assembly.GetType(qualifiedName)).Where(type => type != null && IsExported(type));
 
         internal static Type[] GetTypes(Assembly a)
         {

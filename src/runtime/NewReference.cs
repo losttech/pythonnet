@@ -59,6 +59,14 @@ namespace Python.Runtime
         [Pure]
         internal static bool IsNull(in NewReference reference)
             => reference.pointer == IntPtr.Zero;
+
+        // TODO: return some static type
+        internal IntPtr Steal()
+        {
+            var result = this.pointer;
+            this.pointer = IntPtr.Zero;
+            return result;
+        }
     }
 
     /// <summary>

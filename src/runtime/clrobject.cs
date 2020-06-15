@@ -14,11 +14,11 @@ namespace Python.Runtime
             var flags = (TypeFlags)Util.ReadCLong(tp, TypeOffset.tp_flags);
             if ((flags & TypeFlags.Subclass) != 0)
             {
-                IntPtr dict = Marshal.ReadIntPtr(py, ObjectOffset.DictOffset(tp));
+                IntPtr dict = Marshal.ReadIntPtr(py, ObjectOffset.TypeDictOffset(tp));
                 if (dict == IntPtr.Zero)
                 {
                     dict = Runtime.PyDict_New();
-                    Marshal.WriteIntPtr(py, ObjectOffset.DictOffset(tp), dict);
+                    Marshal.WriteIntPtr(py, ObjectOffset.TypeDictOffset(tp), dict);
                 }
             }
 
@@ -36,13 +36,13 @@ namespace Python.Runtime
         }
 
 
-        internal static CLRObject GetInstance(object ob, IntPtr pyType)
+        static CLRObject GetInstance(object ob, IntPtr pyType)
         {
             return new CLRObject(ob, pyType);
         }
 
 
-        internal static CLRObject GetInstance(object ob)
+        static CLRObject GetInstance(object ob)
         {
             ClassBase cc = ClassManager.GetClass(ob.GetType());
             return GetInstance(ob, cc.tpHandle);

@@ -1,4 +1,4 @@
-pythonnet - Python for .NET
+pythonnet - Python.NET
 ===========================
 
 |Join the chat at https://gitter.im/pythonnet/pythonnet|
@@ -20,8 +20,7 @@ embed Python into a .NET application.
 Calling .NET code from Python
 -----------------------------
 
-Python for .NET allows CLR namespaces to be treated essentially as
-Python packages.
+Python.NET allows CLR namespaces to be treated essentially as Python packages.
 
 .. code-block::
 
@@ -93,18 +92,24 @@ Output:
    int32
    [  6.  10.  12.]
 
+
+
+Resources
+---------
+
 Information on installation, FAQ, troubleshooting, debugging, and
 projects using pythonnet can be found in the Wiki:
 
 https://github.com/pythonnet/pythonnet/wiki
 
-Python 3.8.0 support
---------------------
+Mailing list
+    https://mail.python.org/mailman/listinfo/pythondotnet
+Chat
+    https://gitter.im/pythonnet/pythonnet
 
-Some features are disabled in Python 3.8.0 because of
-`this bug in Python <https://bugs.python.org/issue37633>`_. The error is
-``System.EntryPointNotFoundException : Unable to find an entry point named
-'Py_CompileString' in DLL 'python38'``. This will be fixed in Python 3.8.1.
+.NET Foundation
+---------------
+This project is supported by the `.NET Foundation <https://dotnetfoundation.org>`_.
 
 .. |Join the chat at https://gitter.im/pythonnet/pythonnet| image:: https://badges.gitter.im/pythonnet/pythonnet.svg
    :target: https://gitter.im/pythonnet/pythonnet?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge
@@ -127,8 +132,3 @@ Some features are disabled in Python 3.8.0 because of
 .. |github test shield| image:: https://github.com/losttech/pythonnet/workflows/Build%20%2B%20Test/badge.svg
 .. |nuget version| image:: https://img.shields.io/nuget/vpre/LostTech.Python.Runtime
    :target: https://www.nuget.org/packages/LostTech.Python.Runtime/
-
-Resources
----------
-Mailing list: https://mail.python.org/mailman/listinfo/pythondotnet
-Chat: https://gitter.im/pythonnet/pythonnet

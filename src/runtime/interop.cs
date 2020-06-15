@@ -6,8 +6,7 @@ using System.Reflection;
 using System.Text;
 using System.Collections.Generic;
 
-namespace Python.Runtime
-{
+namespace Python.Runtime {
     /// <summary>
     /// This file defines objects to support binary interop with the Python
     /// runtime. Generally, the definitions here need to be kept up to date
@@ -15,15 +14,12 @@ namespace Python.Runtime
     /// </summary>
     [Serializable]
     [AttributeUsage(AttributeTargets.All)]
-    public class DocStringAttribute : Attribute
-    {
-        public DocStringAttribute(string docStr)
-        {
+    public class DocStringAttribute : Attribute {
+        public DocStringAttribute(string docStr) {
             DocString = docStr;
         }
 
-        public string DocString
-        {
+        public string DocString {
             get { return docStr; }
             set { docStr = value; }
         }
@@ -33,47 +29,39 @@ namespace Python.Runtime
 
     [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Delegate)]
-    internal class PythonMethodAttribute : Attribute
-    {
-        public PythonMethodAttribute()
-        {
+    internal class PythonMethodAttribute : Attribute {
+        public PythonMethodAttribute() {
         }
     }
 
     [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Delegate)]
-    internal class ModuleFunctionAttribute : Attribute
-    {
-        public ModuleFunctionAttribute()
-        {
+    internal class ModuleFunctionAttribute : Attribute {
+        public ModuleFunctionAttribute() {
         }
     }
 
     [Serializable]
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Delegate)]
-    internal class ForbidPythonThreadsAttribute : Attribute
-    {
-        public ForbidPythonThreadsAttribute()
-        {
+    internal class ForbidPythonThreadsAttribute : Attribute {
+        public ForbidPythonThreadsAttribute() {
         }
     }
 
 
     [Serializable]
     [AttributeUsage(AttributeTargets.Property)]
-    internal class ModulePropertyAttribute : Attribute
-    {
-        public ModulePropertyAttribute()
-        {
+    internal class ModulePropertyAttribute : Attribute {
+        public ModulePropertyAttribute() {
         }
     }
 
 
+    // TODO: refactor + incorporate https://github.com/pythonnet/pythonnet/commit/4a92d80a4b8daa9d16f85ce9c5ccaaa6c812fab8
+
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal static class ObjectOffset
-    {
-        static ObjectOffset()
-        {
+    internal static class ObjectOffset {
+        static ObjectOffset() {
             int size = IntPtr.Size;
             var n = 0; // Py_TRACE_REFS add two pointers to PyObject_HEAD
 #if PYTHON_WITH_PYDEBUG
@@ -92,8 +80,7 @@ namespace Python.Runtime
         /// <summary>
         /// Gets GC handle offset in the instances of the specified type
         /// </summary>
-        public static int InstanceGCHandle(BorrowedReference type)
-        {
+        public static int InstanceGCHandle(BorrowedReference type) {
 #if DEBUG
             Debug.Assert(ManagedType.IsManagedType(type));
             var meta = Runtime.PyObject_TYPE(type);
@@ -110,8 +97,7 @@ namespace Python.Runtime
         /// <summary>
         /// Gets GC handle offset in the instance
         /// </summary>
-        public static int ReflectedObjectGCHandle(BorrowedReference reflectedManagedObject)
-        {
+        public static int ReflectedObjectGCHandle(BorrowedReference reflectedManagedObject) {
             var type = Runtime.PyObject_TYPE(reflectedManagedObject);
             return InstanceGCHandle(type);
         }
@@ -120,31 +106,28 @@ namespace Python.Runtime
         static void AssertIsClrType(IntPtr tp) => Debug.Assert(Runtime.PyObject_TYPE(tp) == Runtime.PyCLRMetaType);
         [Conditional("DEBUG")]
         internal static void ClrGcHandleOffsetAssertSanity(int offset)
-            => Debug.Assert(offset > 0 && offset < 1024*4, "GC handle offset is insane");
+            => Debug.Assert(offset > 0 && offset < 1024 * 4, "GC handle offset is insane");
 
-        public static int DictOffset(IntPtr ob)
-        {
-            if ((Runtime.PyObject_TypeCheck(ob, Exceptions.BaseException) ||
-                 (Runtime.PyType_Check(ob) && Runtime.PyType_IsSubtype(ob, Exceptions.BaseException))))
-            {
-                return ExceptionOffset.ob_dict;
-            }
-            return ob_dict;
+        /// <summary>
+        /// Returns dict offset in instances of the specified <paramref name="type"/>
+        /// </summary>
+        public static int TypeDictOffset(IntPtr type) {
+            Debug.Assert(Runtime.PyType_Check(type));
+            return Runtime.PyType_IsSubtype(type, Exceptions.BaseException)
+                ? ExceptionOffset.ob_dict
+                : ob_dict;
         }
 
-        public static int Size(IntPtr ob)
-        {
+        public static int Size(IntPtr ob) {
             if ((Runtime.PyObject_TypeCheck(ob, Exceptions.BaseException) ||
-                 (Runtime.PyType_Check(ob) && Runtime.PyType_IsSubtype(ob, Exceptions.BaseException))))
-            {
+                 (Runtime.PyType_Check(ob) && Runtime.PyType_IsSubtype(ob, Exceptions.BaseException)))) {
                 return ExceptionOffset.Size();
             }
 
             return PyObject_HEAD_Size();
         }
 
-        public static int PyObject_HEAD_Size()
-        {
+        public static int PyObject_HEAD_Size() {
 #if PYTHON_WITH_PYDEBUG
             return 6 * IntPtr.Size;
 #else
@@ -163,21 +146,17 @@ namespace Python.Runtime
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class ExceptionOffset
-    {
-        static ExceptionOffset()
-        {
+    internal class ExceptionOffset {
+        static ExceptionOffset() {
             Type type = typeof(ExceptionOffset);
             FieldInfo[] fi = type.GetFields();
             int size = IntPtr.Size;
-            for (int i = 0; i < fi.Length; i++)
-            {
+            for (int i = 0; i < fi.Length; i++) {
                 fi[i].SetValue(null, (i * size) + ObjectOffset.ob_type + size);
             }
         }
 
-        public static int Size()
-        {
+        public static int Size() {
             return ob_data + IntPtr.Size;
         }
 
@@ -197,15 +176,12 @@ namespace Python.Runtime
 
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class BytesOffset
-    {
-        static BytesOffset()
-        {
+    internal class BytesOffset {
+        static BytesOffset() {
             Type type = typeof(BytesOffset);
             FieldInfo[] fi = type.GetFields();
             int size = IntPtr.Size;
-            for (int i = 0; i < fi.Length; i++)
-            {
+            for (int i = 0; i < fi.Length; i++) {
                 fi[i].SetValue(null, i * size);
             }
         }
@@ -236,21 +212,17 @@ namespace Python.Runtime
     }
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class ModuleDefOffset
-    {
-        static ModuleDefOffset()
-        {
+    internal class ModuleDefOffset {
+        static ModuleDefOffset() {
             Type type = typeof(ModuleDefOffset);
             FieldInfo[] fi = type.GetFields();
             int size = IntPtr.Size;
-            for (int i = 0; i < fi.Length; i++)
-            {
+            for (int i = 0; i < fi.Length; i++) {
                 fi[i].SetValue(null, (i * size) + TypeOffset.ob_size);
             }
         }
 
-        public static IntPtr AllocModuleDef(string modulename)
-        {
+        public static IntPtr AllocModuleDef(string modulename) {
             byte[] ascii = Encoding.ASCII.GetBytes(modulename);
             int size = name + ascii.Length + 1;
             IntPtr ptr = Marshal.AllocHGlobal(size);
@@ -262,8 +234,7 @@ namespace Python.Runtime
             return ptr;
         }
 
-        public static void FreeModuleDef(IntPtr ptr)
-        {
+        public static void FreeModuleDef(IntPtr ptr) {
             Marshal.FreeHGlobal(ptr);
         }
 
@@ -294,8 +265,7 @@ namespace Python.Runtime
     /// to good use as PythonNet specific flags (Managed and Subclass)
     /// </summary>
     [Flags]
-    enum TypeFlags: int
-    {
+    enum TypeFlags : int {
         HeapType = (1 << 9),
         /// <summary>
         /// Unless this flag is set, the type can't be inherited from (equivalent to C# sealed)
@@ -338,21 +308,18 @@ namespace Python.Runtime
     // based lookup of the correct prototype for a particular Python type
     // slot and utilities for generating method thunks for managed methods.
 
-    internal class Interop
-    {
+    internal class Interop {
         private static List<ThunkInfo> keepAlive;
         private static Hashtable pmap;
 
-        static Interop()
-        {
+        static Interop() {
             // Here we build a mapping of PyTypeObject slot names to the
             // appropriate prototype (delegate) type to use for the slot.
 
             Type[] items = typeof(Interop).GetNestedTypes();
             Hashtable p = new Hashtable();
 
-            for (int i = 0; i < items.Length; i++)
-            {
+            for (int i = 0; i < items.Length; i++) {
                 Type item = items[i];
                 p[item.Name] = item;
             }
@@ -443,21 +410,18 @@ namespace Python.Runtime
             pmap["bf_getcharbuffer"] = p["IntObjArgFunc"];
         }
 
-        internal static Type GetPrototype(string name)
-        {
+        internal static Type GetPrototype(string name) {
             return pmap[name] as Type;
         }
 
-        internal static ThunkInfo GetThunk(MethodInfo method, string funcType = null)
-        {
+        internal static ThunkInfo GetThunk(MethodInfo method, string funcType = null) {
             Type dt;
             if (funcType != null)
                 dt = typeof(Interop).GetNestedType(funcType) as Type;
             else
                 dt = GetPrototype(method.Name);
 
-            if (dt == null)
-            {
+            if (dt == null) {
                 return ThunkInfo.Empty;
             }
             Delegate d = Delegate.CreateDelegate(dt, method);
@@ -509,27 +473,22 @@ namespace Python.Runtime
 
 
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal struct Thunk
-    {
+    internal struct Thunk {
         public Delegate fn;
 
-        public Thunk(Delegate d)
-        {
+        public Thunk(Delegate d) {
             fn = d;
         }
     }
 
-    internal class ThunkInfo
-    {
+    internal class ThunkInfo {
         public readonly Delegate Target;
         public readonly IntPtr Address;
 
         public static readonly ThunkInfo Empty = new ThunkInfo(null);
 
-        public ThunkInfo(Delegate target)
-        {
-            if (target == null)
-            {
+        public ThunkInfo(Delegate target) {
+            if (target == null) {
                 return;
             }
             Target = target;

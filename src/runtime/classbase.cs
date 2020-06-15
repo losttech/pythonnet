@@ -292,7 +292,7 @@ namespace Python.Runtime
         {
             var reference = new BorrowedReference(ob);
             var self = GetManagedObject(reference, ObjectOffset.ReflectedObjectGCHandle(reference));
-            IntPtr dict = Marshal.ReadIntPtr(ob, ObjectOffset.DictOffset(ob));
+            IntPtr dict = Marshal.ReadIntPtr(ob, ObjectOffset.TypeDictOffset(self.tpHandle));
             if (dict != IntPtr.Zero)
             {
                 Runtime.XDecref(dict);

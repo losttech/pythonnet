@@ -29,6 +29,7 @@ namespace Python.Runtime
         public bool Enable { get; set; }
 
         private ConcurrentQueue<IPyDisposable> _objQueue = new ConcurrentQueue<IPyDisposable>();
+        private int _throttled;
 
         #region FINALIZER_CHECK
 
@@ -77,7 +78,6 @@ namespace Python.Runtime
         public void Collect(bool forceDispose) => this.DisposeAll();
         public void Collect() => this.DisposeAll();
 
-        int _throttled;
         internal void ThrottledCollect()
         {
             _throttled = unchecked(this._throttled + 1);
@@ -93,7 +93,14 @@ namespace Python.Runtime
 
         internal void AddFinalizedObject(IPyDisposable obj)
         {
-            if (Enable)
+            if (!Enable)
+            {
+                return;
+            }
+
+#if FINALIZER_CHECK
+            lock (_queueLock)
+#endif
             {
                 this._objQueue.Enqueue(obj);
             }

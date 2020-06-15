@@ -88,7 +88,7 @@ namespace Python.Runtime
             // Set tp_basicsize to the size of our managed instance objects.
             Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
 
-            var offset = (IntPtr)ObjectOffset.DictOffset(type);
+            var offset = (IntPtr)ObjectOffset.TypeDictOffset(type);
             Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, offset);
 
             InitializeSlots(type, impl);
@@ -115,14 +115,14 @@ namespace Python.Runtime
             string name = GetPythonTypeName(clrType);
 
             int ob_size;
-            int tp_dictoffset = ObjectOffset.DictOffset(Runtime.PyTypeType);
+            int tp_dictoffset = ObjectOffset.TypeDictOffset(Runtime.PyTypeType);
 
             // XXX Hack, use a different base class for System.Exception
             // Python 2.5+ allows new style class exceptions but they *must*
             // subclass BaseException (or better Exception).
             if (typeof(Exception).IsAssignableFrom(clrType))
             {
-                tp_dictoffset = ObjectOffset.DictOffset(Exceptions.Exception);
+                tp_dictoffset = ObjectOffset.TypeDictOffset(Exceptions.Exception);
             }
 
             IntPtr type = AllocateTypeObject(name, typeType: Runtime.PyCLRMetaType);
@@ -373,6 +373,14 @@ namespace Python.Runtime
                 // derived class we want the python overrides in there instead if they exist.
                 IntPtr cls_dict = Marshal.ReadIntPtr(py_type, TypeOffset.tp_dict);
                 Runtime.PyDict_Update(cls_dict, py_dict);
+
+                // Update the __classcell__ if it exists
+                var cell = new BorrowedReference(Runtime.PyDict_GetItemString(cls_dict, "__classcell__"));
+                if (!cell.IsNull)
+                {
+                    Runtime.PyCell_Set(cell, py_type);
+                    Runtime.PyDict_DelItemString(cls_dict, "__classcell__");
+                }
 
                 return py_type;
             }
@@ -675,7 +683,9 @@ namespace Python.Runtime
                         case OperatingSystemType.Linux:
                             return 0x20;
                         default:
-                            throw new NotImplementedException($"mmap is not supported on {Runtime.OperatingSystemName}");
+                            throw new NotImplementedException(
+                                $"mmap is not supported on {Runtime.OperatingSystem}"
+                            );
                     }
                 }
             }
@@ -709,7 +719,9 @@ namespace Python.Runtime
                 case OperatingSystemType.Windows:
                     return new WindowsMemoryMapper();
                 default:
-                    throw new NotImplementedException($"No support for {Runtime.OperatingSystemName}");
+                    throw new NotImplementedException(
+                        $"No support for {Runtime.OperatingSystem}"
+                    );
             }
         }
 

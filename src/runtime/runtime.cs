@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Diagnostics.Contracts;
 using System.IO;
 using System.Runtime.InteropServices;
 using System.Security;
@@ -130,7 +131,7 @@ namespace Python.Runtime
         internal static object IsFinalizingLock = new object();
         internal static bool IsFinalizing;
 
-        internal static readonly bool Is32Bit = IntPtr.Size == 4;
+        internal static bool Is32Bit => IntPtr.Size == 4;
 
         [Obsolete("Use IsWindowsPlatform")]
         internal static readonly bool IsWindows = Environment.OSVersion.Platform == PlatformID.Win32NT;
@@ -142,16 +143,16 @@ namespace Python.Runtime
             { "Linux", OperatingSystemType.Linux },
         };
 
+        [Obsolete]
+        public static string OperatingSystemName => OperatingSystem.ToString();
+
+        [Obsolete]
+        public static string MachineName => Machine.ToString();
+
         /// <summary>
         /// Gets the operating system as reported by python's platform.system().
         /// </summary>
         public static OperatingSystemType OperatingSystem { get; private set; }
-
-        /// <summary>
-        /// Gets the operating system as reported by python's platform.system().
-        /// </summary>
-        public static string OperatingSystemName { get; private set; }
-
 
         /// <summary>
         /// Map lower-case version of the python machine name to the processor
@@ -177,11 +178,6 @@ namespace Python.Runtime
         /// Gets the machine architecture as reported by python's platform.machine().
         /// </summary>
         public static MachineType Machine { get; private set; }/* set in Initialize using python's platform.machine */
-
-        /// <summary>
-        /// Gets the machine architecture as reported by python's platform.machine().
-        /// </summary>
-        public static string MachineName { get; private set; }
 
         public static int MainManagedThreadId { get; private set; }
 
@@ -368,6 +364,7 @@ namespace Python.Runtime
         /// </summary>
         private static void InitializePlatformData()
         {
+#if !NETSTANDARD
             IntPtr op;
             IntPtr fn;
             IntPtr platformModule = PyImport_ImportModule("platform");
@@ -375,13 +372,13 @@ namespace Python.Runtime
 
             fn = PyObject_GetAttrString(platformModule, "system");
             op = PyObject_Call(fn, emptyTuple, IntPtr.Zero);
-            OperatingSystemName = GetManagedString(op);
+            string operatingSystemName = GetManagedString(op);
             XDecref(op);
             XDecref(fn);
 
             fn = PyObject_GetAttrString(platformModule, "machine");
             op = PyObject_Call(fn, emptyTuple, IntPtr.Zero);
-            MachineName = GetManagedString(op);
+            string machineName = GetManagedString(op);
             XDecref(op);
             XDecref(fn);
 
@@ -391,18 +388,47 @@ namespace Python.Runtime
             // Now convert the strings into enum values so we can do switch
             // statements rather than constant parsing.
             OperatingSystemType OSType;
-            if (!OperatingSystemTypeMapping.TryGetValue(OperatingSystemName, out OSType))
+            if (!OperatingSystemTypeMapping.TryGetValue(operatingSystemName, out OSType))
             {
                 OSType = OperatingSystemType.Other;
             }
             OperatingSystem = OSType;
 
             MachineType MType;
-            if (!MachineTypeMapping.TryGetValue(MachineName.ToLower(), out MType))
+            if (!MachineTypeMapping.TryGetValue(machineName.ToLower(), out MType))
             {
                 MType = MachineType.Other;
             }
             Machine = MType;
+#else
+            if (RuntimeInformation.IsOSPlatform(OSPlatform.Linux))
+                OperatingSystem = OperatingSystemType.Linux;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.OSX))
+                OperatingSystem = OperatingSystemType.Darwin;
+            else if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+                OperatingSystem = OperatingSystemType.Windows;
+            else
+                OperatingSystem = OperatingSystemType.Other;
+
+            switch (RuntimeInformation.ProcessArchitecture)
+            {
+                case Architecture.X86:
+                    Machine = MachineType.i386;
+                    break;
+                case Architecture.X64:
+                    Machine = MachineType.x86_64;
+                    break;
+                case Architecture.Arm:
+                    Machine = MachineType.armv7l;
+                    break;
+                case Architecture.Arm64:
+                    Machine = MachineType.aarch64;
+                    break;
+                default:
+                    Machine = MachineType.Other;
+                    break;
+            }
+#endif
         }
 
         internal static void Shutdown()
@@ -487,6 +513,16 @@ namespace Python.Runtime
         internal static IntPtr PyFalse;
         internal static IntPtr PyNone;
         internal static IntPtr Error;
+
+        public static PyObject None
+        {
+            get
+            {
+                var none = Runtime.PyNone;
+                Runtime.XIncref(none);
+                return new PyObject(none);
+            }
+        }
 
         private static Lazy<PyObject> inspect;
         internal static PyObject InspectModule => inspect.Value;
@@ -699,10 +735,12 @@ namespace Python.Runtime
 #endif
         }
 
-        internal static void XDecrefIgnoreNull(IntPtr op) {
+        internal static void XDecrefIgnoreNull(IntPtr op)
+        {
             if (op != IntPtr.Zero) { XDecref(op); }
         }
 
+        [Pure]
         internal static unsafe long Refcount(IntPtr op)
         {
             var p = (void*)op;
@@ -1777,6 +1815,11 @@ namespace Python.Runtime
             return (t == tp) || PyType_IsSubtype(t, tp);
         }
 
+        internal static bool PyType_IsSameAsOrSubtype(IntPtr type, IntPtr ofType)
+        {
+            return (type == ofType) || PyType_IsSubtype(type, ofType);
+        }
+
         internal static IntPtr PyType_GenericNew(IntPtr type, IntPtr args, IntPtr kw) => Delegates.PyType_GenericNew(type, args, kw);
 
         internal static IntPtr PyType_GenericAlloc(IntPtr type, long n)
@@ -1850,6 +1893,13 @@ namespace Python.Runtime
         internal static void PyErr_Clear() => Delegates.PyErr_Clear();
 
         internal static void PyErr_Print() => Delegates.PyErr_Print();
+
+        //====================================================================
+        // Cell API
+        //====================================================================
+
+        internal static NewReference PyCell_Get(BorrowedReference cell) => Delegates.PyCell_Get(cell);
+        internal static int PyCell_Set(BorrowedReference cell, IntPtr value) => Delegates.PyCell_Set(cell, value);
 
         //====================================================================
         // Miscellaneous
@@ -2114,6 +2164,8 @@ namespace Python.Runtime
                 PyErr_Restore = GetDelegateForFunctionPointer<PyErr_RestoreDelegate>(GetFunctionByName(nameof(PyErr_Restore), GetUnmanagedDll(PythonDLL)));
                 PyErr_Clear = GetDelegateForFunctionPointer<PyErr_ClearDelegate>(GetFunctionByName(nameof(PyErr_Clear), GetUnmanagedDll(PythonDLL)));
                 PyErr_Print = GetDelegateForFunctionPointer<PyErr_PrintDelegate>(GetFunctionByName(nameof(PyErr_Print), GetUnmanagedDll(PythonDLL)));
+                PyCell_Get = GetDelegateForFunctionPointer<PyCell_GetDelegate>(GetFunctionByName(nameof(PyCell_Get), GetUnmanagedDll(PythonDLL)));
+                PyCell_Set = GetDelegateForFunctionPointer<PyCell_SetDelegate>(GetFunctionByName(nameof(PyCell_Set), GetUnmanagedDll(PythonDLL)));
                 PyMethod_Self = GetDelegateForFunctionPointer<PyMethod_SelfDelegate>(GetFunctionByName(nameof(PyMethod_Self), GetUnmanagedDll(PythonDLL)));
                 PyMethod_Function = GetDelegateForFunctionPointer<PyMethod_FunctionDelegate>(GetFunctionByName(nameof(PyMethod_Function), GetUnmanagedDll(PythonDLL)));
                 PyMethod_New = GetDelegateForFunctionPointer<PyMethod_NewDelegate>(GetFunctionByName(nameof(PyMethod_New), GetUnmanagedDll(PythonDLL)));
@@ -2376,7 +2428,7 @@ namespace Python.Runtime
             internal static PyRun_StringDelegate PyRun_String { get; }
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate NewReference PyRun_StringDelegate(string code, IntPtr st, IntPtr globals, IntPtr locals);
+            internal delegate NewReference PyRun_StringDelegate([MarshalAs(UnmanagedType.CustomMarshaler, MarshalTypeRef = typeof(Utf8Marshaler))] string code, IntPtr st, IntPtr globals, IntPtr locals);
 
             internal static PyEval_EvalCodeDelegate PyEval_EvalCode { get; }
 
@@ -3278,6 +3330,17 @@ namespace Python.Runtime
 
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
             internal delegate void PyErr_PrintDelegate();
+
+            //====================================================================
+            // Cell API
+            //====================================================================
+            internal static PyCell_GetDelegate PyCell_Get { get; }
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate NewReference PyCell_GetDelegate(BorrowedReference cell);
+
+            internal static PyCell_SetDelegate PyCell_Set { get; }
+            [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
+            internal delegate int PyCell_SetDelegate(BorrowedReference cell, IntPtr value);
 
             internal static PyMethod_SelfDelegate PyMethod_Self { get; }
 
