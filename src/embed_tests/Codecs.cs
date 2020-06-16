@@ -134,8 +134,8 @@ def call(func):
 
         [Test]
         public void ExceptionDecodedNoInstance() {
-            RegisterDecoder(new InstancelessExceptionDecoder());
             using var _ = Py.GIL();
+            RegisterDecoder(new InstancelessExceptionDecoder());
             using var scope = Py.CreateScope();
             var error = Assert.Throws<ValueErrorWrapper>(() => PythonEngine.Exec(
                 $"[].__iter__().__next__()"));
