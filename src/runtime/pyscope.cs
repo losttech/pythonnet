@@ -22,23 +22,15 @@ namespace Python.Runtime
     }
 
     [PyGIL]
-    public class PyScope : DynamicObject, IPyDisposable
+    public class PyScope : PyObject, IPyDisposable
     {
-        public readonly string Name;
-
-        /// <summary>
-        /// the python Module object the scope associated with.
-        /// </summary>
-        internal readonly IntPtr obj;
+        public string Name { get; }
 
         /// <summary>
         /// the variable dict of the scope.
         /// </summary>
-        internal readonly IntPtr variables;
+        internal IntPtr variables;
         internal BorrowedReference VarsReference => new BorrowedReference(variables);
-
-        private bool _isDisposed;
-        private bool _finalized = false;
 
         /// <summary>
         /// The Manager this scope associated with.
@@ -57,16 +49,19 @@ namespace Python.Runtime
         /// <remarks>
         /// Create a scope based on a Python Module.
         /// </remarks>
-        internal PyScope(IntPtr ptr, PyScopeManager manager)
+        internal PyScope(IntPtr ptr, PyScopeManager manager): base(ptr)
         {
             if (!Runtime.PyType_IsSubtype(Runtime.PyObject_TYPE(ptr), Runtime.PyModuleType))
             {
                 throw new PyScopeException("object is not a module");
             }
             Manager = manager ?? PyScopeManager.Global;
-            obj = ptr;
             //Refcount of the variables not increase
             variables = Runtime.PyModule_GetDict(obj);
+            if (variables == IntPtr.Zero)
+            {
+                throw new ArgumentException(message: "Scope does not have '__dict__'");
+            }
             Runtime.CheckExceptionOccurred();
 
             Runtime.PyDict_SetItemString(
@@ -82,6 +77,8 @@ namespace Python.Runtime
         /// <returns></returns>
         public PyDict Variables()
         {
+            this.EnsureNotDisposed();
+
             Runtime.XIncref(variables);
             return new PyDict(variables);
         }
@@ -92,6 +89,8 @@ namespace Python.Runtime
         /// <returns></returns>
         public PyScope NewScope()
         {
+            this.EnsureNotDisposed();
+
             var scope = Manager.Create();
             scope.ImportAll(this);
             return scope;
@@ -106,7 +105,9 @@ namespace Python.Runtime
         /// </remarks>
         public dynamic Import(string name, string asname = null)
         {
-            Check();
+            if (name is null) throw new ArgumentNullException(nameof(name));
+            this.EnsureNotDisposed();
+
             if (String.IsNullOrEmpty(asname))
             {
                 asname = name;
@@ -134,7 +135,9 @@ namespace Python.Runtime
         /// </remarks>
         public void Import(PyScope scope, string asname)
         {
-            this.Set(asname, scope.obj);
+            if (scope is null) throw new ArgumentNullException(nameof(scope));
+
+            this.SetInternal(asname, scope.Reference);
         }
 
         /// <summary>
@@ -146,6 +149,8 @@ namespace Python.Runtime
         /// </remarks>
         public void Import(PyObject module, string asname = null)
         {
+            if (module is null) throw new ArgumentNullException(nameof(module));
+
             if (String.IsNullOrEmpty(asname))
             {
                 asname = module.GetAttr("__name__").As<string>();
@@ -162,6 +167,8 @@ namespace Python.Runtime
         /// </remarks>
         public void ImportAll(string name)
         {
+            if (name is null) throw new ArgumentNullException(nameof(name));
+
             PyScope scope;
             Manager.TryGet(name, out scope);
             if (scope != null)
@@ -184,6 +191,9 @@ namespace Python.Runtime
         /// </remarks>
         public void ImportAll(PyScope scope)
         {
+            if (scope is null) throw new ArgumentNullException(nameof(scope));
+            this.EnsureNotDisposed();
+
             int result = Runtime.PyDict_Update(variables, scope.variables);
             if (result < 0)
             {
@@ -199,10 +209,13 @@ namespace Python.Runtime
         /// </remarks>
         public void ImportAll(PyObject module)
         {
+            if (module is null) throw new ArgumentNullException(nameof(module));
+            this.EnsureNotDisposed();
             if (Runtime.PyObject_Type(module.obj) != Runtime.PyModuleType)
             {
                 throw new PyScopeException("object is not a module");
             }
+
             var module_dict = Runtime.PyModule_GetDict(module.obj);
             int result = Runtime.PyDict_Update(variables, module_dict);
             if (result < 0)
@@ -219,6 +232,9 @@ namespace Python.Runtime
         /// </remarks>
         public void ImportAll(PyDict dict)
         {
+            if (dict is null) throw new ArgumentNullException(nameof(dict));
+            this.EnsureNotDisposed();
+
             int result = Runtime.PyDict_Update(variables, dict.obj);
             if (result < 0)
             {
@@ -235,7 +251,9 @@ namespace Python.Runtime
         /// </remarks>
         public PyObject Execute(PyObject script, PyDict locals = null)
         {
-            Check();
+            if (script is null) throw new ArgumentNullException(nameof(script));
+            this.EnsureNotDisposed();
+
             IntPtr _locals = locals == null ? variables : locals.obj;
             IntPtr ptr = Runtime.PyEval_EvalCode(script.Handle, variables, _locals);
             Runtime.CheckExceptionOccurred();
@@ -257,14 +275,12 @@ namespace Python.Runtime
         /// </remarks>
         public T Execute<T>(PyObject script, PyDict locals = null)
         {
-            Check();
             PyObject pyObj = Execute(script, locals);
             if (pyObj == null)
             {
                 return default(T);
             }
-            var obj = pyObj.As<T>();
-            return obj;
+            return pyObj.As<T>();
         }
 
         /// <summary>
@@ -276,7 +292,8 @@ namespace Python.Runtime
         /// </remarks>
         public PyObject Eval(string code, PyDict locals = null)
         {
-            Check();
+            this.EnsureNotDisposed();
+
             IntPtr _locals = locals == null ? variables : locals.obj;
             var flag = (IntPtr)Runtime.Py_eval_input;
 
@@ -303,10 +320,8 @@ namespace Python.Runtime
         /// </remarks>
         public T Eval<T>(string code, PyDict locals = null)
         {
-            Check();
             PyObject pyObj = Eval(code, locals);
-            var obj = pyObj.As<T>();
-            return obj;
+            return pyObj.As<T>();
         }
 
         /// <summary>
@@ -317,13 +332,14 @@ namespace Python.Runtime
         /// </remarks>
         public void Exec(string code, PyDict locals = null)
         {
-            Check();
             IntPtr _locals = locals == null ? variables : locals.obj;
             Exec(code, variables, _locals);
         }
 
         private void Exec(string code, IntPtr _globals, IntPtr _locals)
         {
+            this.EnsureNotDisposed();
+
             var flag = (IntPtr)Runtime.Py_file_input;
             NewReference reference = Runtime.PyRun_String(
                 code, flag, _globals, _locals
@@ -352,17 +368,25 @@ namespace Python.Runtime
         /// </remarks>
         public void Set(string name, object value)
         {
+            this.EnsureNotDisposed();
+
             IntPtr _value = Converter.ToPython(value, value?.GetType());
-            Set(name, _value);
-            Runtime.XDecref(_value);
+            try
+            {
+                this.SetInternal(name, new BorrowedReference(_value));
+            }
+            finally
+            {
+                Runtime.XDecref(_value);
+            }
         }
 
-        private void Set(string name, IntPtr value)
+        private void SetInternal(string name, BorrowedReference value)
         {
-            Check();
+            this.EnsureNotDisposed();
             using (var pyKey = new PyString(name))
             {
-                int r = Runtime.PyObject_SetItem(variables, pyKey.obj, value);
+                int r = Runtime.PyObject_SetItem(variables, pyKey.obj, value.DangerousGetAddress());
                 if (r < 0)
                 {
                     throw PythonException.ThrowLastAsClrException();
@@ -378,7 +402,8 @@ namespace Python.Runtime
         /// </remarks>
         public void Remove(string name)
         {
-            Check();
+            this.EnsureNotDisposed();
+
             using (var pyKey = new PyString(name))
             {
                 int r = Runtime.PyObject_DelItem(variables, pyKey.obj);
@@ -397,7 +422,8 @@ namespace Python.Runtime
         /// </remarks>
         public bool Contains(string name)
         {
-            Check();
+            this.EnsureNotDisposed();
+
             using (var pyKey = new PyString(name))
             {
                 return Runtime.PyMapping_HasKey(variables, pyKey.obj) != 0;
@@ -431,7 +457,8 @@ namespace Python.Runtime
         /// </remarks>
         public bool TryGet(string name, out PyObject value)
         {
-            Check();
+            this.EnsureNotDisposed();
+
             using (var pyKey = new PyString(name))
             {
                 if (Runtime.PyMapping_HasKey(variables, pyKey.obj) != 0)
@@ -467,7 +494,8 @@ namespace Python.Runtime
         /// </remarks>
         public T Get<T>(string name)
         {
-            Check();
+            this.EnsureNotDisposed();
+
             PyObject pyObj = Get(name);
             if (pyObj == null)
             {
@@ -486,7 +514,8 @@ namespace Python.Runtime
         /// </remarks>
         public bool TryGet<T>(string name, out T value)
         {
-            Check();
+            this.EnsureNotDisposed();
+
             PyObject pyObj;
             var result = TryGet(name, out pyObj);
             if (!result)
@@ -522,38 +551,24 @@ namespace Python.Runtime
             return true;
         }
 
-        private void Check()
+        private void EnsureNotDisposed()
         {
-            if (_isDisposed)
+            if (this.obj == IntPtr.Zero)
             {
-                throw new PyScopeException($"The scope of name '{Name}' object has been disposed");
+                throw new ObjectDisposedException(
+                    objectName: this.Name,
+                    message: $"The scope object has been disposed");
             }
         }
 
-        public void Dispose()
+        protected override void Dispose(bool disposing)
         {
-            if (_isDisposed)
+            this.variables = IntPtr.Zero;
+            if (disposing)
             {
-                return;
+                this.OnDispose?.Invoke(this);
             }
-            _isDisposed = true;
-            Runtime.XDecref(obj);
-            this.OnDispose?.Invoke(this);
-        }
-
-        public IntPtr[] GetTrackedHandles()
-        {
-            return new IntPtr[] { obj };
-        }
-
-        ~PyScope()
-        {
-            if (_finalized || _isDisposed)
-            {
-                return;
-            }
-            _finalized = true;
-            Finalizer.Instance.AddFinalizedObject(this);
+            base.Dispose(disposing);
         }
     }
 
