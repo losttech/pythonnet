@@ -47,7 +47,6 @@ namespace Python.Runtime
     /// This class allows to register additional marshalling codecs.
     /// <para>Python.NET will pick suitable encoder/decoder registered first</para>
     /// </summary>
-    [Obsolete(Util.UnstableApiMessage)]
     public static class PyObjectConversions
     {
         static readonly DecoderGroup decoders = new DecoderGroup();
