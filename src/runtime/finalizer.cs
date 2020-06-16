@@ -24,9 +24,7 @@ namespace Python.Runtime
         public event EventHandler<CollectArgs> CollectOnce;
         public event EventHandler<ErrorArgs> ErrorHandler;
 
-        public int Threshold { get; set; }
-        [Obsolete("Finalizer will always be enabled in the future")]
-        public bool Enable { get; set; }
+        public int Threshold { get; set; } = 200;
 
         private ConcurrentQueue<IPyDisposable> _objQueue = new ConcurrentQueue<IPyDisposable>();
         private int _throttled;
@@ -68,11 +66,7 @@ namespace Python.Runtime
 
         #endregion
 
-        private Finalizer()
-        {
-            Enable = true;
-            Threshold = 200;
-        }
+        private Finalizer() { }
 
         [Obsolete("forceDispose parameter is unused. All objects are disposed regardless.")]
         public void Collect(bool forceDispose) => this.DisposeAll();
@@ -81,7 +75,7 @@ namespace Python.Runtime
         internal void ThrottledCollect()
         {
             _throttled = unchecked(this._throttled + 1);
-            if (!Enable || _throttled < Threshold) return;
+            if (_throttled < Threshold) return;
             _throttled = 0;
             this.Collect();
         }
@@ -93,11 +87,6 @@ namespace Python.Runtime
 
         internal void AddFinalizedObject(IPyDisposable obj)
         {
-            if (!Enable)
-            {
-                return;
-            }
-
 #if FINALIZER_CHECK
             lock (_queueLock)
 #endif

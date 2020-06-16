@@ -34,8 +34,6 @@ namespace Python.EmbeddingTest
         [Test]
         public void CollectBasicObject()
         {
-            Assert.IsTrue(Finalizer.Instance.Enable);
-
             Finalizer.Instance.Threshold = 1;
             bool called = false;
             var objectCount = 0;
@@ -93,64 +91,6 @@ namespace Python.EmbeddingTest
             shortWeak = new WeakReference(obj);
             longWeak = new WeakReference(obj, true);
             obj = null;
-        }
-
-        private static long CompareWithFinalizerOn(PyObject pyCollect, bool enbale)
-        {
-            // Must larger than 512 bytes make sure Python use
-            string str = new string('1', 1024);
-            Finalizer.Instance.Enable = true;
-            FullGCCollect();
-            FullGCCollect();
-            pyCollect.Invoke();
-            Finalizer.Instance.Collect();
-            Finalizer.Instance.Enable = enbale;
-
-            // Estimate unmanaged memory size
-            long before = Environment.WorkingSet - GC.GetTotalMemory(true);
-            for (int i = 0; i < 10000; i++)
-            {
-                // Memory will leak when disable Finalizer
-                new PyString(str);
-            }
-            FullGCCollect();
-            FullGCCollect();
-            pyCollect.Invoke();
-            if (enbale)
-            {
-                Finalizer.Instance.Collect();
-            }
-
-            FullGCCollect();
-            FullGCCollect();
-            long after = Environment.WorkingSet - GC.GetTotalMemory(true);
-            return after - before;
-
-        }
-
-        /// <summary>
-        /// Because of two vms both have their memory manager,
-        /// this test only prove the finalizer has take effect.
-        /// </summary>
-        [Test]
-        [Ignore("Too many uncertainties, only manual on when debugging")]
-        public void SimpleTestMemory()
-        {
-            bool oldState = Finalizer.Instance.Enable;
-            try
-            {
-                using (PyObject gcModule = PythonEngine.ImportModule("gc"))
-                using (PyObject pyCollect = gcModule.GetAttr("collect"))
-                {
-                    long span1 = CompareWithFinalizerOn(pyCollect, false);
-                    long span2 = CompareWithFinalizerOn(pyCollect, true);
-                    Assert.Less(span2, span1);
-                }
-            }
-            finally
-            {
-                Finalizer.Instance.Enable = oldState;
-            }
         }
 
         class MyPyObject : PyObject
