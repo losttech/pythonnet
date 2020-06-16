@@ -17,6 +17,12 @@ namespace Python.EmbeddingTest
         {
             if (Path.IsPathFullyQualified(Runtime.PythonDLL)) return;
 
+            string pyDll = Environment.GetEnvironmentVariable("PYTHON_DLL_PATH");
+            if (!string.IsNullOrEmpty(pyDll))
+            {
+                Runtime.PythonDLL = pyDll;
+            }
+
             string pyVer = Environment.GetEnvironmentVariable("PYTHON_VERSION");
             if (!string.IsNullOrEmpty(pyVer))
             {
@@ -26,7 +32,7 @@ namespace Python.EmbeddingTest
             string pyHome = Environment.GetEnvironmentVariable("PYTHON_HOME")
                 // defined in GitHub action setup-python
                 ?? Environment.GetEnvironmentVariable("pythonLocation");
-            if (!string.IsNullOrEmpty(pyHome))
+            if (!string.IsNullOrEmpty(pyHome) && !Path.IsPathFullyQualified(Runtime.PythonDLL))
             {
                 string dll = RuntimeInformation.IsOSPlatform(OSPlatform.Windows)
                     ? Path.Combine(pyHome, Runtime.PythonDLL)
