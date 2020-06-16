@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Reflection;
 
@@ -22,7 +23,11 @@ namespace Python.Runtime
             for (int i = 0; i < fi.Length; i++)
             {
                 fi[i].SetValue(null, i * size);
-                typeOffset.GetField(fi[i].Name).SetValue(null, i * size);
+                var field = typeOffset.GetField(fi[i].Name);
+                if (field is null)
+                    Debug.WriteLine("ignoring field " + fi[i].Name);
+                else
+                    field.SetValue(null, i * size);
             }
         }
 
