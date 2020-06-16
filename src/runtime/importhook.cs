@@ -112,12 +112,11 @@ namespace Python.Runtime
             bool shouldFreeDef = Runtime.Refcount(py_clr_module) == 1;
             Runtime.XDecref(py_clr_module);
             py_clr_module = IntPtr.Zero;
-#if PYTHON3
+
             if (shouldFreeDef)
             {
                 ReleaseModuleDef();
             }
-#endif
 
             Runtime.XDecref(root.pyHandle);
             root = null;

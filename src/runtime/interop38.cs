@@ -3,7 +3,6 @@
 // DO NOT MODIFY BY HAND.
 
 
-#if PYTHON38
 using System;
 using System.Collections;
 using System.Collections.Specialized;
@@ -14,24 +13,8 @@ using System.Text;
 namespace Python.Runtime
 {
     [StructLayout(LayoutKind.Sequential, CharSet = CharSet.Ansi)]
-    internal class TypeOffset
+    internal static class TypeOffset38
     {
-        static TypeOffset()
-        {
-            Type type = typeof(TypeOffset);
-            FieldInfo[] fi = type.GetFields();
-            int size = IntPtr.Size;
-            for (int i = 0; i < fi.Length; i++)
-            {
-                fi[i].SetValue(null, i * size);
-            }
-        }
-
-        public static int magic()
-        {
-            return ob_size;
-        }
-
         // Auto-generated from PyHeapTypeObject in Python.h
         public static int ob_refcnt = 0;
         public static int ob_type = 0;
@@ -148,5 +131,3 @@ namespace Python.Runtime
         public static int members = 0;
     }
 }
-
-#endif
