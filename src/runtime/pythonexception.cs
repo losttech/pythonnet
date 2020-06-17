@@ -17,8 +17,6 @@ namespace Python.Runtime
         private string _traceback = "";
         private string _message = "";
         private string _pythonTypeName = "";
-        private bool disposed = false;
-        private bool _finalized = false;
 
         [Obsolete("Please, use FromPyErr instead")]
         public PythonException()
@@ -225,11 +223,10 @@ namespace Python.Runtime
 
         ~PythonException()
         {
-            if (_finalized || disposed)
+            if (this.IsDisposed)
             {
                 return;
             }
-            _finalized = true;
             Finalizer.Instance.AddFinalizedObject(this);
         }
 
@@ -361,40 +358,43 @@ namespace Python.Runtime
         /// </remarks>
         public void Dispose()
         {
-            if (!disposed)
+            if (this.IsDisposed)
+                return;
+
+            if (Runtime.Py_IsInitialized() == 0)
+                throw new InvalidOperationException("Python runtime must be initialized");
+
+            if (!Runtime.IsFinalizing)
             {
-                if (Runtime.Py_IsInitialized() > 0 && !Runtime.IsFinalizing)
+                if (_pyType != IntPtr.Zero)
                 {
-                    IntPtr gs = PythonEngine.AcquireLock();
-                    if (_pyType != IntPtr.Zero)
-                    {
-                        Runtime.XDecref(_pyType);
-                        _pyType= IntPtr.Zero;
-                    }
-
-                    if (_pyValue != IntPtr.Zero)
-                    {
-                        Runtime.XDecref(_pyValue);
-                        _pyValue = IntPtr.Zero;
-                    }
-
-                    // XXX Do we ever get TraceBack? //
-                    if (_pyTB != IntPtr.Zero)
-                    {
-                        Runtime.XDecref(_pyTB);
-                        _pyTB = IntPtr.Zero;
-                    }
-                    PythonEngine.ReleaseLock(gs);
+                    Runtime.XDecref(_pyType);
+                    _pyType= IntPtr.Zero;
                 }
-                GC.SuppressFinalize(this);
-                disposed = true;
+
+                if (_pyValue != IntPtr.Zero)
+                {
+                    Runtime.XDecref(_pyValue);
+                    _pyValue = IntPtr.Zero;
+                }
+
+                // XXX Do we ever get TraceBack? //
+                if (_pyTB != IntPtr.Zero)
+                {
+                    Runtime.XDecref(_pyTB);
+                    _pyTB = IntPtr.Zero;
+                }
             }
+
+            GC.SuppressFinalize(this);
         }
 
         public IntPtr[] GetTrackedHandles()
         {
             return new IntPtr[] { _pyType, _pyValue, _pyTB };
         }
+
+        bool IsDisposed => _pyType == IntPtr.Zero && _pyValue == IntPtr.Zero && _pyTB == IntPtr.Zero;
 
         /// <summary>
         /// Matches Method
