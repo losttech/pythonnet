@@ -54,7 +54,7 @@ namespace Python.Runtime
             Runtime.XDecref(pyfilename);
             Runtime.XDecref(pydocstring);
 
-            Marshal.WriteIntPtr(pyHandle, ObjectOffset.TypeDictOffset(tpHandle), dict);
+            Marshal.WriteIntPtr(pyHandle, ObjectOffset.TypeDictOffset(Type), dict);
 
             InitializeModuleMembers();
         }

@@ -130,5 +130,23 @@ namespace Python.EmbeddingTest
 
             Runtime.Runtime.Py_Finalize();
         }
+
+        [Test]
+        public static void PyType_Check_Sanity()
+        {
+            Runtime.Runtime.Py_Initialize();
+            var builtins = Runtime.Runtime.GetBuiltins();
+            var obj = Runtime.Runtime.PyObject_GetAttrString(builtins, "object");
+            var t = Runtime.Runtime.PyObject_GetAttrString(builtins, "True");
+            var none = Runtime.Runtime.PyObject_GetAttrString(builtins, "None");
+            var noneType = Runtime.Runtime.PyObject_TYPE(none);
+            var type = Runtime.Runtime.PyObject_TYPE(noneType);
+
+            Assert.IsTrue(Runtime.Runtime.PyType_Check(new BorrowedReference(obj)));
+            Assert.IsTrue(Runtime.Runtime.PyType_Check(new BorrowedReference(type)));
+            Assert.IsFalse(Runtime.Runtime.PyType_Check(new BorrowedReference(t)));
+
+            Runtime.Runtime.Py_Finalize();
+        }
     }
 }

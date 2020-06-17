@@ -111,22 +111,31 @@ namespace Python.Runtime {
         /// <summary>
         /// Returns dict offset in instances of the specified <paramref name="type"/>
         /// </summary>
-        public static int TypeDictOffset(BorrowedReference type)
-            => TypeDictOffset(type.DangerousGetAddress());
-        public static int TypeDictOffset(IntPtr type) {
-            Debug.Assert(Runtime.PyType_Check(type));
-            return Runtime.PyType_IsSubtype(type, Exceptions.BaseException)
+        public static int TypeDictOffset(BorrowedReference type) {
+            if (!Runtime.PyType_Check(type))
+                throw new ArgumentException("Bad object type");
+
+            return IsExceptionSubtype(type)
                 ? ExceptionOffset.ob_dict
                 : ob_dict;
         }
+        public static int TypeDictOffset(IntPtr type)
+            => TypeDictOffset(new BorrowedReference(type));
 
         public static int Size(IntPtr ob) {
             if ((Runtime.PyObject_TypeCheck(ob, Exceptions.BaseException) ||
-                 (Runtime.PyType_Check(ob) && Runtime.PyType_IsSubtype(ob, Exceptions.BaseException)))) {
+                 (Runtime.PyType_Check(new BorrowedReference(ob)) && IsExceptionSubtype(new BorrowedReference(ob))))) {
                 return ExceptionOffset.Size();
             }
 
             return PyObject_HEAD_Size();
+        }
+
+        static bool IsExceptionSubtype(BorrowedReference type)
+        {
+            bool isException = Runtime.PyType_FastSubclass(type, TypeFlags.BaseExceptionSubclass);
+            Debug.Assert(Runtime.PyType_IsSubtype(type.DangerousGetAddress(), Exceptions.BaseException) == isException);
+            return isException;
         }
 
         public static int PyObject_HEAD_Size() {

@@ -595,7 +595,7 @@ namespace Python.Runtime
 
             for (var i = 0; i < n; i++)
             {
-                IntPtr op = PyTuple_GetItem(args, i);
+                var op = new BorrowedReference(PyTuple_GetItem(args, i));
                 if (mangleObjects && (!PyType_Check(op)))
                 {
                     op = PyObject_TYPE(op);
@@ -1802,9 +1802,18 @@ namespace Python.Runtime
         // Python type object API
         //====================================================================
 
-        internal static bool PyType_Check(IntPtr ob)
+        internal static bool PyType_Check(BorrowedReference ob)
         {
-            return PyObject_TypeCheck(ob, PyTypeType);
+            // fast path using raw memory access
+            BorrowedReference type = PyObject_TYPE(ob);
+            if (type == PyTypeType) return true;
+            return PyType_FastSubclass(type, TypeFlags.TypeSubclass);
+        }
+
+        internal static bool PyType_FastSubclass(BorrowedReference type, TypeFlags baseType)
+        {
+            var flags = (TypeFlags)Util.ReadCLong(type.DangerousGetAddress(), TypeOffset.tp_flags);
+            return (flags & baseType) != 0;
         }
 
         internal static void PyType_Modified(IntPtr type) => Delegates.PyType_Modified(type);

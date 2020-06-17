@@ -34,7 +34,7 @@ namespace Python.Runtime {
                 throw new ArgumentNullException(nameof(obj));
             }
 
-            return Runtime.PyType_Check(obj.Handle);
+            return Runtime.PyType_Check(obj.Reference);
         }
 
         /// <summary>
@@ -45,7 +45,7 @@ namespace Python.Runtime {
                 throw new ArgumentNullException(nameof(typeHandle));
             }
 
-            return Runtime.PyType_Check(typeHandle);
+            return Runtime.PyType_Check(new BorrowedReference(typeHandle));
         }
 
         /// <summary>
