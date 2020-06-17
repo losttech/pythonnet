@@ -1536,9 +1536,10 @@ namespace Python.Runtime
             if (type == PyUnicodeType)
             {
                 IntPtr p = PyUnicode_AsUnicode(op);
-                int length = (int)PyUnicode_GetSize(op);
+                Exceptions.ErrorCheck(p);
+                int length = checked((int)PyUnicode_GetSize(op));
 
-                int size = length * UCS;
+                int size = checked(length * UCS);
                 var buffer = new byte[size];
                 Marshal.Copy(p, buffer, 0, size);
                 return PyEncoding.GetString(buffer, 0, size);

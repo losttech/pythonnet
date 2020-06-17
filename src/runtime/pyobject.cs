@@ -165,6 +165,8 @@ namespace Python.Runtime
         /// </remarks>
         protected virtual void Dispose(bool disposing)
         {
+            DebugUtil.EnsureGIL();
+
             if (this.obj == IntPtr.Zero)
             {
                 return;
