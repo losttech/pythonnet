@@ -1,8 +1,10 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Python.Runtime
 {
+    [DebuggerDisplay("clrO: {inst}")]
     internal class CLRObject : ManagedType
     {
         internal object inst;
