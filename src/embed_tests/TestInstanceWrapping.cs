@@ -57,8 +57,8 @@ namespace Python.EmbeddingTest {
             using (Py.GIL()) {
                 var o = overloaded.ToPython();
 
-                dynamic callWithInts = PythonEngine.Eval($"lambda o: o.{nameof(Overloaded.ArgPlusParams)}(42, 43)");
-                callWithInts(o);
+                var callWithInts = PythonEngine.Eval($"lambda o: o.{nameof(Overloaded.ArgPlusParams)}(42, 43)");
+                callWithInts.Invoke(o);
                 Assert.AreEqual(42, overloaded.Value);
             }
         }
@@ -69,8 +69,8 @@ namespace Python.EmbeddingTest {
             using (Py.GIL()) {
                 var o = overloaded.ToPython();
 
-                dynamic callWithIntAndStr = PythonEngine.Eval($"lambda o: o.{nameof(Overloaded.ArgPlusParams)}(42, object())");
-                var error = Assert.Throws<PythonException>(() => callWithIntAndStr(o), "Should have thrown PythonException");
+                var callWithIntAndStr = PythonEngine.Eval($"lambda o: o.{nameof(Overloaded.ArgPlusParams)}(42, object())");
+                var error = Assert.Throws<PythonException>(() => callWithIntAndStr.Invoke(o), "Should have thrown PythonException");
                 Assert.AreEqual(expected: Exceptions.TypeError, actual: error.PyType, "Should have thrown TypeError");
             }
         }
