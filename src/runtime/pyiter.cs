@@ -9,7 +9,7 @@ namespace Python.Runtime
     /// PY3: https://docs.python.org/3/c-api/iterator.html
     /// for details.
     /// </summary>
-    public class PyIter : PyObject, IEnumerator<object>
+    public class PyIter : PyObject, IEnumerator<PyObject>
     {
         private PyObject _current;
 
@@ -34,7 +34,7 @@ namespace Python.Runtime
 
         public bool MoveNext()
         {
-            var next = Runtime.PyIter_Next(Reference);
+            using var next = Runtime.PyIter_Next(Reference);
             if (next.IsNull())
             {
                 // dispose of the previous object, if there was one
@@ -51,9 +51,7 @@ namespace Python.Runtime
             throw new NotSupportedException();
         }
 
-        public object Current
-        {
-            get { return _current; }
-        }
+        public PyObject Current => _current;
+        object System.Collections.IEnumerator.Current => this.Current;
     }
 }
