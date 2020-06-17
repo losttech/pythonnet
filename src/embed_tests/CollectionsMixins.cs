@@ -16,20 +16,32 @@ namespace Python.EmbeddingTest {
         }
         [Test]
         public void Dict_Items_Iterable() {
-            var pyDict = this.dict.ToPython();
+            var pyDict = MakeDict().ToPython();
             var items = pyDict.InvokeMethod("items");
             using var scope = Py.CreateScope();
             scope.Set("iterator", this.Iter.Invoke(items));
             scope.Set("s", "");
             scope.Exec("for i in iterator: s += str(i)");
+            scope.Get<string>("s");
         }
 
-        readonly Dictionary<object, object> dict = new Dictionary<object, object> {
+        [Test]
+        public void Dict()
+        {
+            var dict = MakeDict();
+            var pyDict = dict.ToPython();
+            Assert.IsTrue(pyDict.InvokeMethod("__contains__", "42".ToPython()).As<bool>());
+            Assert.IsFalse(pyDict.InvokeMethod("__contains__", "21".ToPython()).As<bool>());
+            Assert.AreEqual("12", pyDict.InvokeMethod("get", "21".ToPython(), "12".ToPython()).As<string>());
+            Assert.AreEqual(null, pyDict.InvokeMethod("get", "21".ToPython()).As<string>());
+            Assert.AreEqual("1", pyDict.InvokeMethod("pop", "10".ToPython(), "1".ToPython()).As<string>());
+        }
+
+        static Dictionary<object, object> MakeDict() => new Dictionary<object, object> {
             ["42"] = new object(),
             [new object()] = "21",
         };
-        readonly Lazy<PyObject> iter = new Lazy<PyObject>(() => PythonEngine.Eval("iter"));
-        PyObject Iter => this.iter.Value;
+        PyObject Iter => PythonEngine.Eval("iter");
 
         [OneTimeSetUp]
         public void SetUp() {
