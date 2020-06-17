@@ -35,15 +35,14 @@ namespace Python.Runtime
         {
         }
 
-        static IntPtr FromPyObject(PyObject o)
+        static BorrowedReference FromPyObject(PyObject o)
         {
             if (o == null) throw new ArgumentNullException(nameof(o));
 
             if (!IsTupleType(o)) {
                 throw new ArgumentException("object is not a tuple");
             }
-            Runtime.XIncref(o.obj);
-            return o.obj;
+            return o.Reference;
         }
 
 
@@ -77,6 +76,7 @@ namespace Python.Runtime
 
             int count = items.Length;
             IntPtr obj = Runtime.PyTuple_New(count);
+            Exceptions.ErrorCheck(obj);
             try {
                 for (var i = 0; i < count; i++) {
                     if (items[i] == null) throw new ArgumentNullException();
