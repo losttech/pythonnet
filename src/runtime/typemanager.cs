@@ -508,7 +508,7 @@ namespace Python.Runtime
             IntPtr raw = Runtime.PyUnicode_AsUTF8(temp);
             Marshal.WriteIntPtr(type, TypeOffset.tp_name, raw);
             Marshal.WriteIntPtr(type, TypeOffset.name, temp);
-
+            Runtime.XIncref(temp);
             Marshal.WriteIntPtr(type, TypeOffset.qualname, temp);
 
             long ptr = type.ToInt64(); // 64-bit safe
