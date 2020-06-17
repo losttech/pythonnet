@@ -185,11 +185,10 @@ namespace Python.Runtime
     {
         public IntPtr target;
         public Type dtype;
-        private bool _disposed = false;
-        private bool _finalized = false;
 
         public Dispatcher(IntPtr target, Type dtype)
         {
+            if (target == IntPtr.Zero) throw new ArgumentNullException(nameof(target));
             Runtime.XIncref(target);
             this.target = target;
             this.dtype = dtype;
@@ -197,21 +196,20 @@ namespace Python.Runtime
 
         ~Dispatcher()
         {
-            if (_finalized || _disposed)
+            if (this.target == IntPtr.Zero)
             {
                 return;
             }
-            _finalized = true;
             Finalizer.Instance.AddFinalizedObject(this);
         }
 
         public void Dispose()
         {
-            if (_disposed)
+            DebugUtil.EnsureGIL();
+            if (this.target == IntPtr.Zero)
             {
                 return;
             }
-            _disposed = true;
             Runtime.XDecref(target);
             target = IntPtr.Zero;
             dtype = null;
