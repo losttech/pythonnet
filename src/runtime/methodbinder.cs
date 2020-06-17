@@ -460,7 +460,7 @@ namespace Python.Runtime
                 }
 
                 bool isOut;
-                if (!TryConvertArgument(op, parameter.ParameterType, needsResolution, out margs[paramIndex], out isOut)) {
+                if (!TryConvertArgument(new BorrowedReference(op), parameter.ParameterType, needsResolution, out margs[paramIndex], out isOut)) {
                     return null;
                 }
 
@@ -481,7 +481,7 @@ namespace Python.Runtime
             return margs;
         }
 
-        static bool TryConvertArgument(IntPtr op, Type parameterType, bool needsResolution,
+        static bool TryConvertArgument(BorrowedReference op, Type parameterType, bool needsResolution,
                                        out object arg, out bool isOut)
         {
             arg = null;
@@ -502,31 +502,29 @@ namespace Python.Runtime
             return true;
         }
 
-        static Type TryComputeClrArgumentType(Type parameterType, IntPtr argument, bool needsResolution)
+        static Type TryComputeClrArgumentType(Type parameterType, BorrowedReference argument, bool needsResolution)
         {
             // this logic below handles cases when multiple overloading methods
             // are ambiguous, hence comparison between Python and CLR types
             // is necessary
             Type clrtype = null;
-            IntPtr pyoptype;
             if (needsResolution)
             {
                 // HACK: each overload should be weighted in some way instead
-                pyoptype = Runtime.PyObject_Type(argument);
+                BorrowedReference pyoptype = Runtime.PyObject_TYPE(argument);
                 Exceptions.Clear();
-                if (pyoptype != IntPtr.Zero)
+                if (!pyoptype.IsNull)
                 {
                     clrtype = Converter.GetTypeByAlias(pyoptype);
                 }
-                Runtime.XDecref(pyoptype);
             }
 
             if (clrtype != null)
             {
                 if ((parameterType != typeof(object)) && (parameterType != clrtype))
                 {
-                    IntPtr pytype = Converter.GetPythonTypeByAlias(parameterType);
-                    pyoptype = Runtime.PyObject_Type(argument);
+                    BorrowedReference pytype = Converter.GetPythonTypeByAlias(parameterType);
+                    BorrowedReference pyoptype = Runtime.PyObject_TYPE(argument);
                     Exceptions.Clear();
 
                     bool typematch = false;
@@ -546,7 +544,6 @@ namespace Python.Runtime
                             clrtype = parameterType;
                         }
                     }
-                    Runtime.XDecref(pyoptype);
                     if (!typematch)
                     {
                         return null;

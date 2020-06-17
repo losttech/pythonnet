@@ -53,6 +53,11 @@ namespace Python.Runtime
         /// <summary>
         /// Given a builtin Python type, return the corresponding CLR type.
         /// </summary>
+        internal static Type GetTypeByAlias(BorrowedReference type)
+            => GetTypeByAlias(type.DangerousGetAddress());
+        /// <summary>
+        /// Given a builtin Python type, return the corresponding CLR type.
+        /// </summary>
         internal static Type GetTypeByAlias(IntPtr op)
         {
             if (op == Runtime.PyStringType)
@@ -76,7 +81,9 @@ namespace Python.Runtime
             return null;
         }
 
-        internal static IntPtr GetPythonTypeByAlias(Type op)
+        internal static BorrowedReference GetPythonTypeByAlias(Type type)
+            => new BorrowedReference(GetPythonTypeByAliasUnsafe(type));
+        static IntPtr GetPythonTypeByAliasUnsafe(Type op)
         {
             if (op == stringType)
                 return Runtime.PyUnicodeType;
@@ -246,6 +253,12 @@ namespace Python.Runtime
         }
 
 
+        /// <summary>
+        /// Return a managed object for the given Python object, taking funny
+        /// byref types into account.
+        /// </summary>
+        internal static bool ToManaged(BorrowedReference value, Type type, out object result, bool setError)
+            => ToManaged(value.DangerousGetAddress(), type: type, out result, setError: setError);
         /// <summary>
         /// Return a managed object for the given Python object, taking funny
         /// byref types into account.
