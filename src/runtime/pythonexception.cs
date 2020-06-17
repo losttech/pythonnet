@@ -144,12 +144,16 @@ namespace Python.Runtime
             if (!pyValueHandle.IsNull) errorDict["value"] = new PyObject(pyValueHandle);
             if (!pyTracebackHandle.IsNull) errorDict["traceback"] = new PyObject(pyTracebackHandle);
 
+            object decoded;
+
             var pyErrType = Runtime.InteropModule.GetAttr("PyErr");
-            var pyErrInfo = pyErrType.Invoke(new PyTuple(), errorDict);
-            if (PyObjectConversions.TryDecode(pyErrInfo.Reference, pyErrType.Reference,
-                typeof(Exception), out object decoded) && decoded is Exception decodedPyErrInfo)
+            using (PyObject pyErrInfo = pyErrType.Invoke(new PyTuple(), errorDict))
             {
-                return decodedPyErrInfo;
+                if (PyObjectConversions.TryDecode(pyErrInfo.Reference, pyErrType.Reference,
+                    typeof(Exception), out decoded) && decoded is Exception decodedPyErrInfo)
+                {
+                    return decodedPyErrInfo;
+                }
             }
 
             if (!pyTypeHandle.IsNull)
