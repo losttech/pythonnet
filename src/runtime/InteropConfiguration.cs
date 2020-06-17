@@ -10,7 +10,7 @@ namespace Python.Runtime
             = new PythonBaseTypeProviderGroup();
         public IList<IPythonBaseTypeProvider> PythonBaseTypeProviders => this.pythonBaseTypeProviders;
 
-        public static InteropConfiguration Default => new InteropConfiguration
+        public static InteropConfiguration MakeDefault() => new InteropConfiguration
         {
             PythonBaseTypeProviders =
             {

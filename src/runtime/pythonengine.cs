@@ -18,7 +18,7 @@ namespace Python.Runtime
         private static IntPtr _pythonHome = IntPtr.Zero;
         private static IntPtr _programName = IntPtr.Zero;
         private static IntPtr _pythonPath = IntPtr.Zero;
-        private static InteropConfiguration interopConfiguration = InteropConfiguration.Default;
+        private static InteropConfiguration interopConfiguration = InteropConfiguration.MakeDefault();
 
         public PythonEngine()
         {
@@ -373,7 +373,7 @@ namespace Python.Runtime
 
                 initialized = false;
 
-                InteropConfiguration = InteropConfiguration.Default;
+                InteropConfiguration = InteropConfiguration.MakeDefault();
             }
         }
 
