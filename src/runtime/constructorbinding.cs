@@ -26,11 +26,10 @@ namespace Python.Runtime
         private ConstructorBinder ctorBinder;
         private IntPtr repr;
 
-        public ConstructorBinding(Type type, IntPtr pyTypeHndl, ConstructorBinder ctorBinder)
+        public ConstructorBinding(Type type, BorrowedReference pyTypeHndl, ConstructorBinder ctorBinder)
         {
             this.type = type;
-            Runtime.XIncref(pyTypeHndl);
-            this.pyTypeHndl = pyTypeHndl;
+            this.pyTypeHndl = pyTypeHndl.DangerousIncRefOrNull();
             this.ctorBinder = ctorBinder;
             repr = IntPtr.Zero;
         }

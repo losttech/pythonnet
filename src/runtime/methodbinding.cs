@@ -16,6 +16,7 @@ namespace Python.Runtime
         internal MethodObject m;
         internal IntPtr target;
         internal IntPtr targetType;
+        internal BorrowedReference TargetReference => new BorrowedReference(this.target);
 
         public MethodBinding(MethodObject m, IntPtr target, IntPtr targetType)
         {
@@ -115,7 +116,9 @@ namespace Python.Runtime
         }
 
         static MethodBinding GetInstance(IntPtr ob)
-            => GetManagedObject<MethodBinding>(new BorrowedReference(ob));
+            => GetInstance(new BorrowedReference(ob));
+        static MethodBinding GetInstance(BorrowedReference ob)
+            => GetManagedObject<MethodBinding>(ob);
 
         /// <summary>
         /// MethodBinding __getattribute__ implementation.
@@ -225,15 +228,14 @@ namespace Python.Runtime
                         if (baseType != null)
                         {
                             string baseMethodName = "_" + baseType.type.Name + "__" + self.m.name;
-                            IntPtr baseMethod = Runtime.PyObject_GetAttrString(target, baseMethodName);
-                            if (baseMethod != IntPtr.Zero)
+                            using var baseMethod = Runtime.PyObject_GetAttrString(self.TargetReference, baseMethodName);
+                            if (!baseMethod.IsNull())
                             {
-                                IntPtr baseMethodType = Runtime.PyObject_TYPE(baseMethod);
-                                IntPtr methodBindingTypeHandle = TypeManager.GetTypeHandle(typeof(MethodBinding));
+                                BorrowedReference baseMethodType = Runtime.PyObject_TYPE(baseMethod);
+                                BorrowedReference methodBindingTypeHandle = TypeManager.GetTypeHandle(typeof(MethodBinding));
                                 if (baseMethodType == methodBindingTypeHandle)
                                 {
                                     self = GetInstance(baseMethod);
-                                    Runtime.XDecref(baseMethod);
                                 }
                             }
                             else

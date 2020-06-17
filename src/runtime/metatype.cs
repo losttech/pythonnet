@@ -87,7 +87,7 @@ namespace Python.Runtime
                 {
                     if (clsDict.HasKey("__assembly__") || clsDict.HasKey("__namespace__"))
                     {
-                        return TypeManager.CreateSubType(name, base_type, dict);
+                        return TypeManager.CreateSubType(name, base_type, dict).DangerousIncRefOrNull();
                     }
                 }
             }

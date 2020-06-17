@@ -37,7 +37,7 @@ namespace Python.Runtime
         /// object. These Python type instances are used to implement internal
         /// descriptor and utility types like ModuleObject, PropertyObject, etc.
         /// </summary>
-        internal static IntPtr GetTypeHandle(Type type)
+        internal static BorrowedReference GetTypeHandle(Type type)
         {
             // Note that these types are cached with a refcount of 1, so they
             // effectively exist until the CPython runtime is finalized.
@@ -45,11 +45,11 @@ namespace Python.Runtime
             cache.TryGetValue(type, out handle);
             if (handle != IntPtr.Zero)
             {
-                return handle;
+                return new BorrowedReference(handle);
             }
             handle = CreateType(type);
             cache[type] = handle;
-            return handle;
+            return new BorrowedReference(handle);
         }
 
 
@@ -58,17 +58,17 @@ namespace Python.Runtime
         /// The given ManagedType instance is a managed object that implements
         /// the appropriate semantics in Python for the reflected managed type.
         /// </summary>
-        internal static IntPtr GetTypeHandle(ManagedType obj, Type type)
+        internal static BorrowedReference GetTypeHandle(ManagedType obj, Type type)
         {
             IntPtr handle;
             cache.TryGetValue(type, out handle);
             if (handle != IntPtr.Zero)
             {
-                return handle;
+                return new BorrowedReference(handle);
             }
             handle = CreateType(obj, type);
             cache[type] = handle;
-            return handle;
+            return new BorrowedReference(handle);
         }
 
 
@@ -298,7 +298,7 @@ namespace Python.Runtime
             return new PyTuple(bases);
         }
 
-        internal static IntPtr CreateSubType(IntPtr py_name, IntPtr py_base_type, IntPtr py_dict)
+        internal static BorrowedReference CreateSubType(IntPtr py_name, IntPtr py_base_type, IntPtr py_dict)
         {
             // Utility to create a subtype of a managed type with the ability for the
             // a python subtype able to override the managed implementation
@@ -350,7 +350,7 @@ namespace Python.Runtime
             var baseClass = ManagedType.GetManagedObject(py_base_type) as ClassBase;
             if (null == baseClass)
             {
-                return Exceptions.RaiseTypeError("invalid base class, expected CLR class type");
+                return new BorrowedReference(Exceptions.RaiseTypeError("invalid base class, expected CLR class type"));
             }
 
             try
@@ -363,30 +363,32 @@ namespace Python.Runtime
 
                 // create the new ManagedType and python type
                 ClassBase subClass = ClassManager.GetClass(subType);
-                IntPtr py_type = GetTypeHandle(subClass, subType);
-                if (py_type == IntPtr.Zero)
+                BorrowedReference py_type = GetTypeHandle(subClass, subType);
+                if (py_type.IsNull)
                 {
-                    return IntPtr.Zero;
+                    return new BorrowedReference();
                 }
 
                 // by default the class dict will have all the C# methods in it, but as this is a
                 // derived class we want the python overrides in there instead if they exist.
-                IntPtr cls_dict = Marshal.ReadIntPtr(py_type, TypeOffset.tp_dict);
+                IntPtr cls_dict = Marshal.ReadIntPtr(py_type.DangerousGetAddress(), TypeOffset.tp_dict);
                 Runtime.PyDict_Update(cls_dict, py_dict);
 
                 // Update the __classcell__ if it exists
                 var cell = new BorrowedReference(Runtime.PyDict_GetItemString(cls_dict, "__classcell__"));
                 if (!cell.IsNull)
                 {
-                    Runtime.PyCell_Set(cell, py_type);
-                    Runtime.PyDict_DelItemString(cls_dict, "__classcell__");
+                    int r = Runtime.PyCell_Set(cell, py_type);
+                    if (r == 0) return new BorrowedReference();
+                    r = Runtime.PyDict_DelItemString(cls_dict, "__classcell__");
+                    if (r == 0) return new BorrowedReference();
                 }
 
                 return py_type;
             }
             catch (Exception e)
             {
-                return Exceptions.RaiseTypeError(e.Message);
+                return new BorrowedReference(Exceptions.RaiseTypeError(e.Message));
             }
         }
 

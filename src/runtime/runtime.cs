@@ -995,7 +995,8 @@ namespace Python.Runtime
         
         internal static int PyObject_HasAttrString(IntPtr pointer, string name) => Delegates.PyObject_HasAttrString(pointer, name);
 
-        
+        internal static NewReference PyObject_GetAttrString(BorrowedReference pointer, string name)
+            => NewReference.DangerousFromPointer(PyObject_GetAttrString(pointer.DangerousGetAddress(), name));
         internal static IntPtr PyObject_GetAttrString(IntPtr pointer, string name) => Delegates.PyObject_GetAttrString(pointer, name);
 
         
@@ -1826,6 +1827,8 @@ namespace Python.Runtime
         {
             return PyType_GenericAlloc(type, new IntPtr(n));
         }
+        internal static NewReference PyType_GenericAlloc(BorrowedReference type, long n)
+            => NewReference.DangerousFromPointer(PyType_GenericAlloc(type.DangerousGetAddress(), n));
 
         private static IntPtr PyType_GenericAlloc(IntPtr type, IntPtr n) => Delegates.PyType_GenericAlloc(type, n);
 
@@ -1899,7 +1902,7 @@ namespace Python.Runtime
         //====================================================================
 
         internal static NewReference PyCell_Get(BorrowedReference cell) => Delegates.PyCell_Get(cell);
-        internal static int PyCell_Set(BorrowedReference cell, IntPtr value) => Delegates.PyCell_Set(cell, value);
+        internal static int PyCell_Set(BorrowedReference cell, BorrowedReference value) => Delegates.PyCell_Set(cell, value);
 
         //====================================================================
         // Miscellaneous
@@ -3340,7 +3343,7 @@ namespace Python.Runtime
 
             internal static PyCell_SetDelegate PyCell_Set { get; }
             [global::System.Runtime.InteropServices.UnmanagedFunctionPointerAttribute(CallingConvention.Cdecl)]
-            internal delegate int PyCell_SetDelegate(BorrowedReference cell, IntPtr value);
+            internal delegate int PyCell_SetDelegate(BorrowedReference cell, BorrowedReference value);
 
             internal static PyMethod_SelfDelegate PyMethod_Self { get; }
 

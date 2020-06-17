@@ -7,38 +7,39 @@ namespace Python.Runtime
     {
         internal object inst;
 
-        internal CLRObject(object ob, IntPtr tp)
+        internal CLRObject(object ob, BorrowedReference tp)
         {
-            IntPtr py = Runtime.PyType_GenericAlloc(tp, 0);
+            NewReference py = Runtime.PyType_GenericAlloc(tp, 0);
 
-            var flags = (TypeFlags)Util.ReadCLong(tp, TypeOffset.tp_flags);
+            var flags = (TypeFlags)Util.ReadCLong(tp.DangerousGetAddress(), TypeOffset.tp_flags);
             if ((flags & TypeFlags.Subclass) != 0)
             {
-                IntPtr dict = Marshal.ReadIntPtr(py, ObjectOffset.TypeDictOffset(tp));
+                IntPtr dict = Marshal.ReadIntPtr(py.DangerousGetAddress(), ObjectOffset.TypeDictOffset(tp));
                 if (dict == IntPtr.Zero)
                 {
                     dict = Runtime.PyDict_New();
-                    Marshal.WriteIntPtr(py, ObjectOffset.TypeDictOffset(tp), dict);
+                    Marshal.WriteIntPtr(py.DangerousGetAddress(), ObjectOffset.TypeDictOffset(tp), dict);
                 }
             }
 
-            tpHandle = tp;
-            pyHandle = py;
+            // it is safe to "borrow" type pointer, because we also own a reference to an instance
+            tpHandle = tp.DangerousGetAddress();
+            pyHandle = py.DangerousMoveToPointer();
             GCHandle gc = GCHandle.Alloc(this);
             int gcHandleOffset = ObjectOffset.ReflectedObjectGCHandle(this.Instance);
-            Marshal.WriteIntPtr(py, gcHandleOffset, (IntPtr)gc);
+            Marshal.WriteIntPtr(pyHandle, gcHandleOffset, (IntPtr)gc);
             gcHandle = gc;
             inst = ob;
 
             // Fix the BaseException args (and __cause__ in case of Python 3)
             // slot if wrapping a CLR exception
-            Exceptions.SetArgsAndCause(py);
+            Exceptions.SetArgsAndCause(pyHandle);
         }
 
 
         static CLRObject GetInstance(object ob, IntPtr pyType)
         {
-            return new CLRObject(ob, pyType);
+            return new CLRObject(ob, new BorrowedReference(pyType));
         }
 
 

@@ -45,11 +45,11 @@ namespace Python.Runtime
             IntPtr pyname = Runtime.PyString_FromString(moduleName);
             IntPtr pyfilename = Runtime.PyString_FromString(filename);
             IntPtr pydocstring = Runtime.PyString_FromString(docstring);
-            IntPtr pycls = TypeManager.GetTypeHandle(GetType());
+            BorrowedReference pycls = TypeManager.GetTypeHandle(GetType());
             Runtime.PyDict_SetItemString(dict, "__name__", pyname);
             Runtime.PyDict_SetItemString(dict, "__file__", pyfilename);
             Runtime.PyDict_SetItemString(dict, "__doc__", pydocstring);
-            Runtime.PyDict_SetItemString(dict, "__class__", pycls);
+            Runtime.PyDict_SetItemString(dict, "__class__", pycls.DangerousGetAddress());
             Runtime.XDecref(pyname);
             Runtime.XDecref(pyfilename);
             Runtime.XDecref(pydocstring);

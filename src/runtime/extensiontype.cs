@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 
 namespace Python.Runtime
@@ -17,7 +18,7 @@ namespace Python.Runtime
             // The Python instance object is related to an instance of a
             // particular concrete subclass with a hidden CLR gchandle.
 
-            IntPtr tp = TypeManager.GetTypeHandle(GetType());
+            BorrowedReference tp = TypeManager.GetTypeHandle(GetType());
 
             //int rc = (int)Marshal.ReadIntPtr(tp, TypeOffset.ob_refcnt);
             //if (rc > 1050)
@@ -26,22 +27,22 @@ namespace Python.Runtime
             //    DebugUtil.DumpType(tp);
             //}
 
-            IntPtr py = Runtime.PyType_GenericAlloc(tp, 0);
+            using var py = Runtime.PyType_GenericAlloc(tp, 0);
 
             GCHandle gc = GCHandle.Alloc(this);
-            Marshal.WriteIntPtr(py, ObjectOffset.GetDefaultGCHandleOffset(), (IntPtr)gc);
+            Marshal.WriteIntPtr(py.DangerousGetAddress(), ObjectOffset.GetDefaultGCHandleOffset(), (IntPtr)gc);
+
+            // It is safe to store the reference to the type without incref,
+            // because we also hold an instance of that type.
+            tpHandle = tp.DangerousGetAddress();
+            pyHandle = py.DangerousMoveToPointer();
+            gcHandle = gc;
 
             // We have to support gc because the type machinery makes it very
             // hard not to - but we really don't have a need for it in most
             // concrete extension types, so untrack the object to save calls
             // from Python into the managed runtime that are pure overhead.
-
-            Runtime.PyObject_GC_UnTrack(py);
-
-            // Steals a ref to tpHandle.
-            tpHandle = tp;
-            pyHandle = py;
-            gcHandle = gc;
+            Runtime.PyObject_GC_UnTrack(pyHandle);
         }
 
 
@@ -50,8 +51,12 @@ namespace Python.Runtime
         /// </summary>
         public static void FinalizeObject(ExtensionType self)
         {
+            Debug.Assert(self.pyHandle != IntPtr.Zero);
             Runtime.PyObject_GC_Del(self.pyHandle);
-            // Not necessary for decref of `tpHandle`.
+            self.pyHandle = IntPtr.Zero;
+
+            self.tpHandle = IntPtr.Zero;
+
             self.gcHandle.Free();
         }
 

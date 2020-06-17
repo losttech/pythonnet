@@ -111,6 +111,8 @@ namespace Python.Runtime {
         /// <summary>
         /// Returns dict offset in instances of the specified <paramref name="type"/>
         /// </summary>
+        public static int TypeDictOffset(BorrowedReference type)
+            => TypeDictOffset(type.DangerousGetAddress());
         public static int TypeDictOffset(IntPtr type) {
             Debug.Assert(Runtime.PyType_Check(type));
             return Runtime.PyType_IsSubtype(type, Exceptions.BaseException)
