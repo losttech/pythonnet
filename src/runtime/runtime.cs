@@ -51,7 +51,6 @@ namespace Python.Runtime
         // binary substitution of different Python.Runtime.dll builds in a target application.
 
         public static int UCS { get; } = RuntimeInformation.IsOSPlatform(OSPlatform.Windows) ? 2 : 4;
-        public static string PyUnicodeEntryPoint { get; } = UCS == 2 ? "PyUnicodeUCS2_" : "PyUnicodeUCS4_";
 
         // C# compiler copies constants to the assemblies that references this library.
         // We needs to replace all public constants to static readonly fields to allow
