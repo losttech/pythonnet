@@ -54,9 +54,8 @@ build_script:
   - coverage run setup.py bdist_wheel %BUILD_OPTS%
 
 test_script:
-  - pip install --no-index --find-links=.\dist\ pythonnet
+  - pip install --find-links=.\dist\ pythonnet
   - ps: .\ci\appveyor_run_tests.ps1
-  - ps: .\ci\appveyor_build_recipe.ps1
 
 on_finish:
   # Temporary disable multiple upload due to codecov limit of 20 per commit.

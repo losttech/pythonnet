@@ -20,8 +20,6 @@ namespace Python.EmbeddingTest {
 
         [Test]
         public void BoundMethodsAreInspectable() {
-            if (Runtime.IsPython2)
-                Assert.Ignore("inspect.getfullargspec requires Python 3");
             var obj = new Class();
             using (var scope = Py.CreateScope()) {
                 scope.Import("inspect");
