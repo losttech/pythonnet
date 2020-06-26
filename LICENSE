@@ -1,7 +1,5 @@
-This software is "code-available" to assist with Gradient debugging.
-You must have a license for the matching version of Gradient (see
-https://github.com/losttech/Gradient/) to access this source. Only
-Gradient debugging is permitted.
+You must have a license for LostTech.TensorFlow
+(see https://losttech.software/gradient.html) to use this software.
 
 If you wish to obtain a version of this sofware with a more liberal
 license, refer to https://github.com/pythonnet/pythonnet.
