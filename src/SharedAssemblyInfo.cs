@@ -7,9 +7,9 @@ using System.Runtime.InteropServices;
 // set of attributes. Change these attribute values to modify the information
 // associated with an assembly.
 [assembly: AssemblyConfiguration("")]
-[assembly: AssemblyCompany("pythonnet")]
-[assembly: AssemblyProduct("Python.NET")]
-[assembly: AssemblyCopyright("Copyright (c) 2006-2020 the contributors of the Python.NET project")]
+[assembly: AssemblyCompany("Lost Tech LLC")]
+[assembly: AssemblyProduct("LostTech.Python.Runtime")]
+[assembly: AssemblyCopyright("Copyright (c) 2006-2020 Lost Tech and the contributors of the Python.NET project")]
 [assembly: AssemblyTrademark("")]
 
 [assembly: AssemblyCulture("")]
@@ -25,4 +25,4 @@ using System.Runtime.InteropServices;
 // Version Information. Keeping it simple. May need to revisit for Nuget
 // See: https://codingforsmarties.wordpress.com/2016/01/21/how-to-version-assemblies-destined-for-nuget/
 // AssemblyVersion can only be numeric
-[assembly: AssemblyVersion("2.5.0")]
+[assembly: AssemblyVersion("3.0.0")]
