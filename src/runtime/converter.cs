@@ -2,11 +2,10 @@ using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Security;
-using System.ComponentModel;
 
 namespace Python.Runtime
 {
@@ -123,6 +122,7 @@ namespace Python.Runtime
 
         internal static IntPtr ToPython(object value, Type type)
         {
+            Debug.Assert(type is null || !type.IsByRef);
             if (value is PyObject pyObject)
             {
                 IntPtr handle = pyObject.Handle;

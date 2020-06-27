@@ -151,6 +151,22 @@ def call(func):
             StringAssert.Contains("blah", error.Message);
         }
 
+        [Test]
+        public void OutParameterEncoded()
+        {
+            var enumEncoder = new FakeEncoder<ConsoleModifiers>();
+            RegisterEncoder(enumEncoder);
+
+            using var scope = Py.CreateScope();
+            scope.Set("func", new Codecs().ToPython().GetAttr(nameof(GetModifiers)));
+            scope.Set("dummy", PyObject.FromManagedObject(ConsoleModifiers.Shift));
+            var evalResult = scope.Eval("func(dummy)").As<object>();
+            Assert.AreSame(enumEncoder, evalResult);
+            Assert.AreEqual(ConsoleModifiers.Control, enumEncoder.LastObject);
+        }
+
+        public void GetModifiers(out ConsoleModifiers result) => result = ConsoleModifiers.Control;
+
         class ValueErrorWrapper : Exception {
             public ValueErrorWrapper(string message) : base(message) { }
         }
