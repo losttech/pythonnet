@@ -1849,7 +1849,7 @@ namespace Python.Runtime
         private static extern IntPtr PyType_GenericAlloc(IntPtr type, IntPtr n);
 
         /// <summary>
-        /// Finalize a type object. This should be called on all type objects to finish their initialization. This function is responsible for adding inherited slots from a type¡¯s base class. Return 0 on success, or return -1 and sets an exception on error.
+        /// Finalize a type object. This should be called on all type objects to finish their initialization. This function is responsible for adding inherited slots from a typeÂ¡Â¯s base class. Return 0 on success, or return -1 and sets an exception on error.
         /// </summary>
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         internal static extern int PyType_Ready(IntPtr type);
@@ -2042,7 +2042,7 @@ namespace Python.Runtime
         internal static void SetNoSiteFlag()
         {
             var loader = LibraryLoader.Get(NativeCodePageHelper.OperatingSystem);
-            IntPtr dllLocal;
+            IntPtr dllLocal = IntPtr.Zero;
             if (_PythonDll != "__Internal")
             {
                 dllLocal = loader.Load(_PythonDll);
