@@ -312,7 +312,7 @@ namespace Python.Runtime
             var disposeList = new List<PyObject>();
             try
             {
-                var assemblyKey = new PyObject(Converter.ToPython("__assembly__", typeof(string)));
+                var assemblyKey = new PyObject(Converter.ToPython("__assembly__"));
                 disposeList.Add(assemblyKey);
                 if (0 != Runtime.PyMapping_HasKey(py_dict, assemblyKey.Handle))
                 {
@@ -325,7 +325,7 @@ namespace Python.Runtime
                     }
                 }
 
-                var namespaceKey = new PyObject(Converter.ToPythonImplicit("__namespace__"));
+                var namespaceKey = new PyObject(Converter.ToPython("__namespace__"));
                 disposeList.Add(namespaceKey);
                 if (0 != Runtime.PyMapping_HasKey(py_dict, namespaceKey.Handle))
                 {

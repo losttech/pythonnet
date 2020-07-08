@@ -59,7 +59,7 @@ namespace Python.Runtime
 
             // return the pointer to the python object
             // (this indirectly calls ClassDerivedObject.ToPython)
-            return Converter.ToPython(obj, cls.GetType());
+            return Converter.ToPython(obj);
         }
 
         public new static void tp_dealloc(IntPtr ob)
@@ -660,7 +660,7 @@ namespace Python.Runtime
                             var pyargs = new PyObject[args.Length];
                             for (var i = 0; i < args.Length; ++i)
                             {
-                                pyargs[i] = new PyObject(Converter.ToPythonImplicit(args[i]));
+                                pyargs[i] = new PyObject(Converter.ToPython(args[i]));
                                 disposeList.Add(pyargs[i]);
                             }
 
@@ -722,7 +722,7 @@ namespace Python.Runtime
                             var pyargs = new PyObject[args.Length];
                             for (var i = 0; i < args.Length; ++i)
                             {
-                                pyargs[i] = new PyObject(Converter.ToPythonImplicit(args[i]));
+                                pyargs[i] = new PyObject(Converter.ToPython(args[i]));
                                 disposeList.Add(pyargs[i]);
                             }
 
@@ -795,7 +795,7 @@ namespace Python.Runtime
             {
                 Runtime.XIncref(self.pyHandle);
                 using (var pyself = new PyObject(self.pyHandle))
-                using (var pyvalue = new PyObject(Converter.ToPythonImplicit(value)))
+                using (var pyvalue = new PyObject(Converter.ToPython(value)))
                 {
                     pyself.SetAttr(propertyName, pyvalue);
                 }

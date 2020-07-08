@@ -370,7 +370,7 @@ namespace Python.Runtime
         {
             this.EnsureNotDisposed();
 
-            IntPtr _value = Converter.ToPython(value, value?.GetType());
+            IntPtr _value = Converter.ToPython(value);
             try
             {
                 this.SetInternal(name, new BorrowedReference(_value));

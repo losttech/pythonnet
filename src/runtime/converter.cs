@@ -108,21 +108,14 @@ namespace Python.Runtime
             return IntPtr.Zero;
         }
 
-
         /// <summary>
         /// Return a Python object for the given native object, converting
         /// basic types (string, int, etc.) into equivalent Python objects.
         /// This always returns a new reference. Note that the System.Decimal
         /// type has no Python equivalent and converts to a managed instance.
         /// </summary>
-        internal static IntPtr ToPython<T>(T value)
+        internal static IntPtr ToPython(object? value)
         {
-            return ToPython(value, typeof(T));
-        }
-
-        internal static IntPtr ToPython(object value, Type type)
-        {
-            Debug.Assert(type is null || !type.IsByRef);
             if (value is PyObject pyObject)
             {
                 IntPtr handle = pyObject.Handle;
@@ -141,6 +134,7 @@ namespace Python.Runtime
                 return result;
             }
 
+            var type = value.GetType();
             if (EncodersAllowed(type)) {
                 var encoded = PyObjectConversions.TryEncode(value, type);
                 if (encoded != null) {
@@ -165,12 +159,6 @@ namespace Python.Runtime
                 }
                 #endif
             }
-
-            // hmm - from Python, we almost never care what the declared
-            // type is. we'd rather have the object bound to the actual
-            // implementing class.
-
-            type = value.GetType();
 
             TypeCode tc = Type.GetTypeCode(type);
 
@@ -233,23 +221,6 @@ namespace Python.Runtime
                     result = CLRObject.GetInstHandle(value, type);
                     return result;
             }
-        }
-
-
-        /// <summary>
-        /// In a few situations, we don't have any advisory type information
-        /// when we want to convert an object to Python.
-        /// </summary>
-        internal static IntPtr ToPythonImplicit(object value)
-        {
-            if (value == null)
-            {
-                IntPtr result = Runtime.PyNone;
-                Runtime.XIncref(result);
-                return result;
-            }
-
-            return ToPython(value, objectType);
         }
 
 
@@ -872,7 +843,7 @@ namespace Python.Runtime
     {
         public static PyObject ToPython(this object o)
         {
-            return new PyObject(Converter.ToPython(o, o?.GetType()));
+            return new PyObject(Converter.ToPython(o));
         }
     }
 }

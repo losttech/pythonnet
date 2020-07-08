@@ -1161,7 +1161,7 @@ namespace Python.Runtime
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
             DebugUtil.EnsureGIL();
-            IntPtr ptr = Converter.ToPython(value, value?.GetType());
+            IntPtr ptr = Converter.ToPython(value);
             int r = Runtime.PyObject_SetAttrString(obj, binder.Name, ptr);
             if (r < 0)
             {
@@ -1254,7 +1254,7 @@ namespace Python.Runtime
             }
             else
             {
-                ptr = Converter.ToPython(target, target?.GetType());
+                ptr = Converter.ToPython(target);
             }
 
             return ptr;

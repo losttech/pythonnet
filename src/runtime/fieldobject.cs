@@ -43,7 +43,7 @@ namespace Python.Runtime
                 try
                 {
                     result = info.GetValue(null);
-                    return Converter.ToPython(result, info.FieldType);
+                    return Converter.ToPython(result);
                 }
                 catch (Exception e)
                 {
@@ -56,7 +56,7 @@ namespace Python.Runtime
             {
                 var co = (CLRObject)GetManagedObject(ob);
                 result = info.GetValue(co.inst);
-                return Converter.ToPython(result, info.FieldType);
+                return Converter.ToPython(result);
             }
             catch (Exception e)
             {

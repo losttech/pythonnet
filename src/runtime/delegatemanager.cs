@@ -241,7 +241,7 @@ namespace Python.Runtime
             {
                 // Here we own the reference to the Python value, and we
                 // give the ownership to the arg tuple.
-                IntPtr arg = Converter.ToPython(args[i], pi[i].ParameterType);
+                IntPtr arg = Converter.ToPython(args[i]);
                 Runtime.PyTuple_SetItem(pyargs, i, arg);
             }
 

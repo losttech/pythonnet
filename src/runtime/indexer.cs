@@ -109,7 +109,7 @@ namespace Python.Runtime
                 {
                     continue;
                 }
-                IntPtr arg = Converter.ToPython(pi[i + pynargs].DefaultValue, pi[i + pynargs].ParameterType);
+                IntPtr arg = Converter.ToPython(pi[i + pynargs].DefaultValue);
                 Runtime.PyTuple_SetItem(defaultArgs, i, arg);
             }
             return defaultArgs;

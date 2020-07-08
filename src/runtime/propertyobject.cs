@@ -52,7 +52,7 @@ namespace Python.Runtime
                 try
                 {
                     result = self.info.GetValue(null, null);
-                    return Converter.ToPython(result, self.info.PropertyType);
+                    return Converter.ToPython(result);
                 }
                 catch (Exception e)
                 {
@@ -69,7 +69,7 @@ namespace Python.Runtime
             try
             {
                 result = self.info.GetValue(co.inst, null);
-                return Converter.ToPython(result, self.info.PropertyType);
+                return Converter.ToPython(result);
             }
             catch (Exception e)
             {

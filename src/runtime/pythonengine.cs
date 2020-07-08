@@ -740,7 +740,7 @@ namespace Python.Runtime
                 }
                 else
                 {
-                    value = Converter.ToPython(kv[i + 1], kv[i + 1]?.GetType());
+                    value = Converter.ToPython(kv[i + 1]);
                 }
                 if (Runtime.PyDict_SetItemString(dict.Handle, (string)kv[i], value) != 0)
                 {

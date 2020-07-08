@@ -84,7 +84,7 @@ namespace Python.Runtime
                     return IntPtr.Zero;
                 }
 
-                return Converter.ToPython(value, itemType);
+                return Converter.ToPython(value);
             }
 
             // Multi-dimensional arrays can be indexed a la: list[1, 2, 3].
@@ -127,7 +127,7 @@ namespace Python.Runtime
                 return IntPtr.Zero;
             }
 
-            return Converter.ToPython(value, itemType);
+            return Converter.ToPython(value);
         }
 
 

@@ -37,7 +37,7 @@ namespace Python.Runtime
                 return IntPtr.Zero;
             }
             object item = self.iter.Current;
-            return Converter.ToPythonImplicit(item);
+            return Converter.ToPython(item);
         }
 
         public static IntPtr tp_iter(IntPtr ob)

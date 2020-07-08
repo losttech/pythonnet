@@ -736,7 +736,7 @@ namespace Python.Runtime
                 var n = 0;
 
                 IntPtr t = Runtime.PyTuple_New(binding.outs + 1);
-                IntPtr v = Converter.ToPython(result, mi.ReturnType);
+                IntPtr v = Converter.ToPython(result);
                 Runtime.PyTuple_SetItem(t, n, v);
                 n++;
 
@@ -745,7 +745,7 @@ namespace Python.Runtime
                     Type pt = pi[i].ParameterType;
                     if (pi[i].IsOut || pt.IsByRef)
                     {
-                        v = Converter.ToPython(binding.args[i], pt.GetElementType());
+                        v = Converter.ToPython(binding.args[i]);
                         Runtime.PyTuple_SetItem(t, n, v);
                         n++;
                     }
@@ -762,7 +762,7 @@ namespace Python.Runtime
                 return t;
             }
 
-            return Converter.ToPython(result, mi.ReturnType);
+            return Converter.ToPython(result);
         }
     }
 
