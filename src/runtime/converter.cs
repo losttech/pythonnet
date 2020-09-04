@@ -761,6 +761,11 @@ namespace Python.Runtime
 
             bool IsSeqObj = Runtime.PySequence_Check(value);
             var len = IsSeqObj ? Runtime.PySequence_Size(value) : -1;
+            if (IsSeqObj && len < 0)
+            {
+                // for the sequences, that explicitly deny calling __len__()
+                Exceptions.Clear();
+            }
 
             var IterObject = Runtime.PyObject_GetIter(new BorrowedReference(value));
 
@@ -776,8 +781,9 @@ namespace Python.Runtime
 
             var listType = typeof(List<>);
             var constructedListType = listType.MakeGenericType(elementType);
-            IList list = IsSeqObj ? (IList) Activator.CreateInstance(constructedListType, new Object[] {(int) len}) : 
-                                        (IList) Activator.CreateInstance(constructedListType);
+            IList list = IsSeqObj && len > 0
+                ? (IList) Activator.CreateInstance(constructedListType, args: (int)len)
+                : (IList) Activator.CreateInstance(constructedListType);
             NewReference item;
 
             while (!(item = Runtime.PyIter_Next(IterObject)).IsNull())
