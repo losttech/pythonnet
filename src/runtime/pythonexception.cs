@@ -236,10 +236,10 @@ namespace Python.Runtime
         public void Restore()
         {
             IntPtr gs = PythonEngine.AcquireLock();
-            Runtime.PyErr_Restore(_pyType, _pyValue, _pyTB);
-            _pyType = IntPtr.Zero;
-            _pyValue = IntPtr.Zero;
-            _pyTB = IntPtr.Zero;
+            Runtime.PyErr_Restore(
+                NewReference.DangerousMoveFromPointer(ref _pyType).Steal(),
+                NewReference.DangerousMoveFromPointer(ref _pyValue).Steal(),
+                NewReference.DangerousMoveFromPointer(ref _pyTB).Steal());
             PythonEngine.ReleaseLock(gs);
         }
 
@@ -255,6 +255,11 @@ namespace Python.Runtime
         }
 
         /// <summary>
+        /// Type of the exception (nullable).
+        /// </summary>
+        internal BorrowedReference PythonType => new BorrowedReference(_pyType);
+
+        /// <summary>
         /// PyValue Property
         /// </summary>
         /// <remarks>
@@ -266,6 +271,11 @@ namespace Python.Runtime
         }
 
         /// <summary>
+        /// Exception object value (nullable).
+        /// </summary>
+        internal BorrowedReference Value => new BorrowedReference(_pyValue);
+
+        /// <summary>
         /// PyTB Property
         /// </summary>
         /// <remarks>
@@ -275,6 +285,11 @@ namespace Python.Runtime
         {
             get { return _pyTB; }
         }
+
+        /// <summary>
+        /// Traceback (nullable).
+        /// </summary>
+        internal BorrowedReference Traceback => new BorrowedReference(_pyTB);
 
         /// <summary>
         /// Message Property

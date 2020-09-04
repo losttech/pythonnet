@@ -16,6 +16,20 @@ namespace Python.Runtime
             => new BorrowedReference(reference.pointer);
 
         /// <summary>
+        /// Creates <see cref="NewReference"/> from a nullable <see cref="BorrowedReference"/>.
+        /// Increments the reference count accordingly.
+        /// </summary>
+        [Pure]
+        public static NewReference FromNullable(BorrowedReference reference)
+        {
+            if (reference.IsNull) return default;
+
+            IntPtr address = reference.DangerousGetAddress();
+            Runtime.XIncref(address);
+            return DangerousFromPointer(address);
+        }
+
+        /// <summary>
         /// Returns <see cref="PyObject"/> wrapper around this reference, which now owns
         /// the pointer. Sets the original reference to <c>null</c>, as it no longer owns it.
         /// </summary>
@@ -44,6 +58,18 @@ namespace Python.Runtime
         public static NewReference DangerousFromPointer(IntPtr pointer)
             => new NewReference {pointer = pointer};
 
+        /// <summary>
+        /// Creates <see cref="NewReference"/> from a raw pointer
+        /// and writes <c>null</c> to the original location.
+        /// </summary>
+        [Pure]
+        public static NewReference DangerousMoveFromPointer(ref IntPtr pointer)
+        {
+            var pointerValue = pointer;
+            pointer = IntPtr.Zero;
+            return DangerousFromPointer(pointerValue);
+        }
+
         public IntPtr DangerousMoveToPointer()
         {
             if (this.IsNull()) throw new NullReferenceException();
@@ -61,11 +87,11 @@ namespace Python.Runtime
             => reference.pointer == IntPtr.Zero;
 
         // TODO: return some static type
-        internal IntPtr Steal()
+        internal StealingReference Steal()
         {
             var result = this.pointer;
             this.pointer = IntPtr.Zero;
-            return result;
+            return StealingReference.DangerousFromPointer(result);
         }
     }
 

@@ -1900,7 +1900,11 @@ namespace Python.Runtime
         internal static void PyErr_Fetch(out NewReference type, out NewReference value, out NewReference traceback)
             => Delegates.PyErr_Fetch(out type, out value, out traceback);
 
-        internal static void PyErr_Restore(IntPtr ob, IntPtr val, IntPtr tb) => Delegates.PyErr_Restore(ob, val, tb);
+        internal static void PyErr_Restore(StealingReference ob, StealingReference val, StealingReference tb)
+            => Delegates.PyErr_Restore(
+                ob.DangerousGetAddressOrNull(),
+                val.DangerousGetAddressOrNull(),
+                tb.DangerousGetAddressOrNull());
 
         internal static void PyErr_Clear() => Delegates.PyErr_Clear();
 
