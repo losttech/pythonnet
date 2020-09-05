@@ -141,9 +141,16 @@ namespace Python.Runtime
         [Conditional("DEBUG")]
         public static void EnsureGIL()
         {
-            if (Runtime.PythonVersion >= new Version(3,4)) {
-                Debug.Assert(Runtime.PyGILState_Check() == 1, "GIL must be acquired");
-            }
+            Debug.Assert(HaveInterpreterLock() != false, "GIL must be acquired");
+        }
+
+        public static bool? HaveInterpreterLock()
+        {
+            // not supported on older version
+            if (Runtime.PythonVersion < new Version(3, 4))
+                return null;
+
+            return Runtime.PyGILState_Check() == 1;
         }
 
         [Conditional("DEBUG")]

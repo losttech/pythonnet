@@ -20,6 +20,7 @@ namespace Python.Runtime
     /// PY3: https://docs.python.org/3/c-api/object.html
     /// for details.
     /// </summary>
+    [DebuggerDisplay("{" + nameof(DebuggerDisplay) + ",nq}")]
     public class PyObject : DynamicObject, IEnumerable, IPyDisposable
     {
 #if TRACE_ALLOC
@@ -1084,6 +1085,10 @@ namespace Python.Runtime
             Runtime.XDecref(strval);
             return result;
         }
+
+        string DebuggerDisplay => DebugUtil.HaveInterpreterLock() != false
+            ? this.ToString()
+            : $"pyobj at 0x{this.obj:X} (get Py.GIL to see more info)";
 
 
         /// <summary>
