@@ -229,7 +229,7 @@ namespace Python.Runtime
         /// </remarks>
         public long ToInt64()
         {
-            return Convert.ToInt64(ToInt32());
+            return Runtime.PyLong_AsLongLong(Reference);
         }
     }
 }

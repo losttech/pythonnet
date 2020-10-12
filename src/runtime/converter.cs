@@ -632,7 +632,7 @@ namespace Python.Runtime
 
                 case TypeCode.Int64:
                     {
-                        long num = (long)Runtime.PyLong_AsLongLong(value);
+                        long num = Runtime.PyLong_AsLongLong(value);
                         if (num == -1 && Exceptions.ErrorOccurred())
                         {
                             goto convert_error;

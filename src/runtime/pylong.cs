@@ -250,7 +250,7 @@ namespace Python.Runtime
         /// </remarks>
         public long ToInt64()
         {
-            return Runtime.PyLong_AsLongLong(obj);
+            return Runtime.PyLong_AsLongLong(Reference);
         }
     }
 }

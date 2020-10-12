@@ -1289,7 +1289,10 @@ namespace Python.Runtime
         }
 
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
+        [Obsolete(Util.UseReferenceOverload)]
         internal static extern long PyLong_AsLongLong(IntPtr value);
+        [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
+        internal static extern long PyLong_AsLongLong(BorrowedReference value);
 
         [DllImport(_PythonDll, CallingConvention = CallingConvention.Cdecl)]
         internal static extern ulong PyLong_AsUnsignedLongLong(IntPtr value);
