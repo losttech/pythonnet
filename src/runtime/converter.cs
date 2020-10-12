@@ -392,14 +392,11 @@ namespace Python.Runtime
                     return ToPrimitive(value, boolType, out result, setError);
                 }
 
-                if (Runtime.PyInt_Check(value))
+                if (Runtime.PyInt_Check(value) || Runtime.PyLong_Check(value))
                 {
-                    return ToPrimitive(value, int32Type, out result, setError);
-                }
-
-                if (Runtime.PyLong_Check(value))
-                {
-                    return ToPrimitive(value, int64Type, out result, setError);
+                    Runtime.XIncref(value);
+                    result = new PyInt(value);
+                    return true;
                 }
 
                 if (Runtime.PyFloat_Check(value))

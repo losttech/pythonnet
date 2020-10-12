@@ -94,7 +94,16 @@ namespace Python.EmbeddingTest
         [Test]
         public void TestCtorPyObject()
         {
-            var i = new PyInt(5);
+            PyObject i = new PyInt(5);
+            Runtime.Runtime.XIncref(i.Handle);
+            var a = new PyInt(i);
+            Assert.AreEqual(5, a.ToInt32());
+        }
+
+        [Test]
+        public void TestCtorPyInt()
+        {
+            PyInt i = new PyInt(5);
             Runtime.Runtime.XIncref(i.Handle);
             var a = new PyInt(i);
             Assert.AreEqual(5, a.ToInt32());

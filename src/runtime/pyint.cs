@@ -35,12 +35,21 @@ namespace Python.Runtime
         {
         }
 
+        /// <summary>Copy constructor</summary>
+        public PyInt(PyInt other) : base(FromPyInt(other)) { }
+
         private static IntPtr FromObject(PyObject o)
         {
             if (o == null || !IsIntType(o))
             {
                 throw new ArgumentException("object is not an int");
             }
+            Runtime.XIncref(o.obj);
+            return o.obj;
+        }
+
+        private static IntPtr FromPyInt(PyInt o)
+        {
             Runtime.XIncref(o.obj);
             return o.obj;
         }
@@ -231,5 +240,24 @@ namespace Python.Runtime
         {
             return Runtime.PyLong_AsLongLong(Reference);
         }
+
+        [CLSCompliant(false)]
+        public ulong ToUInt64() => Runtime.PyLong_AsUnsignedLong64(obj);
+
+        public static implicit operator long(PyInt pyInt) => pyInt.ToInt64();
+        public static implicit operator int(PyInt pyInt) => pyInt.ToInt32();
+        public static implicit operator short(PyInt pyInt) => pyInt.ToInt16();
+        [CLSCompliant(false)]
+        public static implicit operator sbyte(PyInt pyInt) => checked((sbyte)pyInt.ToInt32());
+
+        [CLSCompliant(false)]
+        public static implicit operator byte(PyInt pyInt) => checked((byte)pyInt.ToInt32());
+        [CLSCompliant(false)]
+        public static implicit operator ushort(PyInt pyInt) => checked((ushort)pyInt.ToInt32());
+        [CLSCompliant(false)]
+        public static implicit operator uint(PyInt pyInt) => checked((uint)pyInt.ToUInt64());
+        [CLSCompliant(false)]
+        public static implicit operator ulong(PyInt pyInt) => checked(pyInt.ToUInt64());
+
     }
 }

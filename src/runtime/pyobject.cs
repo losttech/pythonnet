@@ -490,7 +490,7 @@ namespace Python.Runtime
         {
             using (var key = new PyInt(index))
             {
-                return GetItem(key);
+                return GetItem((PyObject)key);
             }
         }
 
@@ -550,7 +550,7 @@ namespace Python.Runtime
 
             using (var pyindex = new PyInt(index))
             {
-                SetItem(pyindex, value);
+                SetItem((PyObject)pyindex, value);
             }
         }
 
@@ -606,7 +606,7 @@ namespace Python.Runtime
         {
             using (var pyindex = new PyInt(index))
             {
-                DelItem(pyindex);
+                DelItem((PyObject)pyindex);
             }
         }
 
