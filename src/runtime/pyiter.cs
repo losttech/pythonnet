@@ -37,6 +37,9 @@ namespace Python.Runtime
             using var next = Runtime.PyIter_Next(Reference);
             if (next.IsNull())
             {
+                if (Exceptions.ErrorOccurred())
+                    throw PythonException.ThrowLastAsClrException();
+
                 // dispose of the previous object, if there was one
                 _current = null;
                 return false;
