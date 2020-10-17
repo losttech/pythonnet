@@ -24,6 +24,19 @@ namespace Python.Runtime
         public PyIter(IntPtr ptr) : base(ptr)
         {
         }
+        /// <summary>
+        /// Creates new <see cref="PyIter"/> from an untyped reference to Python object.
+        /// </summary>
+        public PyIter(PyObject pyObject) : base(FromPyObject(pyObject)) { }
+        static BorrowedReference FromPyObject(PyObject pyObject) {
+            if (pyObject is null) throw new ArgumentNullException(nameof(pyObject));
+
+            if (!Runtime.PyIter_Check(pyObject.Reference))
+                throw new ArgumentException("Object does not support iterator protocol");
+
+            return pyObject.Reference;
+        }
+
         internal PyIter(BorrowedReference reference) : base(reference) { }
 
         protected override void Dispose(bool disposing)
