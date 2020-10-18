@@ -111,16 +111,18 @@ namespace Python.Runtime {
         /// <summary>
         /// Returns dict offset in instances of the specified <paramref name="type"/>
         /// </summary>
-        public static int TypeDictOffset(BorrowedReference type) {
+        public static unsafe int TypeDictOffset(BorrowedReference type) {
+#if DEBUG
             if (!Runtime.PyType_Check(type))
                 throw new ArgumentException("Bad object type");
+#endif
 
-            return IsExceptionSubtype(type)
-                ? ExceptionOffset.ob_dict
-                : ob_dict;
+            IntPtr dictoffset = type.DangerousGetAddress() + TypeOffset.tp_dictoffset;
+            int dict = *((int*)(dictoffset));
+            Debug.Assert(dict > 0 && dict < 100_000);
+            return dict;
         }
-        public static int TypeDictOffset(IntPtr type)
-            => TypeDictOffset(new BorrowedReference(type));
+        public static int TypeDictOffset() => ob_dict;
 
         public static int Size(IntPtr ob) {
             if ((Runtime.PyObject_TypeCheck(ob, Exceptions.BaseException) ||

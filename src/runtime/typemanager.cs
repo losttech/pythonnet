@@ -88,7 +88,7 @@ namespace Python.Runtime
             // Set tp_basicsize to the size of our managed instance objects.
             Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
 
-            var offset = (IntPtr)ObjectOffset.TypeDictOffset(type);
+            var offset = (IntPtr)ObjectOffset.TypeDictOffset();
             Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, offset);
 
             InitializeSlots(type, impl);
@@ -109,21 +109,11 @@ namespace Python.Runtime
             return type;
         }
 
-
         internal static IntPtr CreateType(ManagedType impl, Type clrType)
         {
             string name = GetPythonTypeName(clrType);
 
             int ob_size;
-            int tp_dictoffset = ObjectOffset.TypeDictOffset(Runtime.PyTypeType);
-
-            // XXX Hack, use a different base class for System.Exception
-            // Python 2.5+ allows new style class exceptions but they *must*
-            // subclass BaseException (or better Exception).
-            if (typeof(Exception).IsAssignableFrom(clrType))
-            {
-                tp_dictoffset = ObjectOffset.TypeDictOffset(Exceptions.Exception);
-            }
 
             IntPtr type = AllocateTypeObject(name, typeType: Runtime.PyCLRMetaType);
 
@@ -159,22 +149,29 @@ namespace Python.Runtime
                     Marshal.WriteIntPtr(type, TypeOffset.tp_bases, baseTuple.Reference.DangerousIncRefOrNull());
                 }
 
-                int baseSize = primaryBase == Runtime.PyBaseObjectType ? ObjectOffset.PyObject_HEAD_Size()
-                    : primaryBase == Exceptions.Exception ? ExceptionOffset.Size()
-                    : checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.tp_basicsize));
-                if (!ManagedType.IsManagedType(primaryBase))
-                {
+                ob_size = checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.tp_basicsize));
+                void InheritOrAllocate(int typeField) {
+                    int value = Marshal.ReadInt32(primaryBase, typeField);
+                    if (value == 0) {
+                        Marshal.WriteIntPtr(type, typeField, new IntPtr(ob_size));
+                        ob_size += IntPtr.Size;
+                    } else {
+                        Marshal.WriteIntPtr(type, typeField, new IntPtr(value));
+                    }
+                }
+
+                InheritOrAllocate(TypeOffset.tp_dictoffset);
+                InheritOrAllocate(TypeOffset.tp_weaklistoffset);
+
+                if (!ManagedType.IsManagedType(primaryBase)) {
                     // base type is a Python type, so we must allocate additional space for GC handle
-                    extraTypeDataOffset = baseSize;
+                    extraTypeDataOffset = ob_size;
                     ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
-                    ob_size = baseSize + MetaType.ExtraTypeDataSize;
-                } else
-                {
+                    ob_size += MetaType.ExtraTypeDataSize;
+                } else {
                     extraTypeDataOffset = checked((int)Marshal.ReadIntPtr(primaryBase, TypeOffset.clr_gchandle_offset));
                     ObjectOffset.ClrGcHandleOffsetAssertSanity(extraTypeDataOffset);
-                    ob_size = baseSize;
                 }
-                Debug.Assert(extraTypeDataOffset > tp_dictoffset);
             }
             catch (Exception error)
             {
@@ -186,7 +183,6 @@ namespace Python.Runtime
 
             Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)ob_size);
             Marshal.WriteIntPtr(type, TypeOffset.tp_itemsize, IntPtr.Zero);
-            Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, (IntPtr)tp_dictoffset);
             Marshal.WriteIntPtr(type, TypeOffset.clr_gchandle_offset, (IntPtr)extraTypeDataOffset);
 
             var flags = TypeFlags.Default;
@@ -205,6 +201,8 @@ namespace Python.Runtime
                 gc.Free();
                 return IntPtr.Zero;
             }
+
+            Debug.Assert(extraTypeDataOffset > Marshal.ReadInt32(type, TypeOffset.tp_dictoffset));
 
             IntPtr dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
             string mn = clrType.Namespace ?? "";

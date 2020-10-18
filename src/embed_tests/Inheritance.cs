@@ -104,6 +104,26 @@ namespace Python.EmbeddingTest {
                 Assert.AreEqual(expected: Inherited.X, actual);
             }
         }
+
+        [Test]
+        public void FromException() {
+            using var _ = Py.GIL();
+            var runtimeError = PythonEngine.Eval("RuntimeError");
+            PythonEngine.InteropConfiguration.PythonBaseTypeProviders.Add(
+                new TestRuntimeError.BaseProvdier());
+            var instance = new TestRuntimeError().ToPython();
+            bool isRuntimeError = PyIsInstance(instance, runtimeError);
+            Assert.IsTrue(isRuntimeError);
+        }
+    }
+
+    public class TestRuntimeError: Exception {
+        internal class BaseProvdier: IPythonBaseTypeProvider {
+            public IEnumerable<PyObject> GetBaseTypes(Type type, IList<PyObject> existingBases)
+            => type != typeof(TestRuntimeError)
+                ? existingBases
+                : new[] { PythonEngine.Eval("RuntimeError") };
+        }
     }
 
     class CustomBaseTypeProvider : IPythonBaseTypeProvider {
