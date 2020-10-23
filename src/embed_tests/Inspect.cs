@@ -26,6 +26,15 @@ namespace Python.EmbeddingTest {
             }
         }
 
+        [Test]
+        public void InstancePropertiesVisibleOnClass() {
+            var uri = new Uri("http://example.org").ToPython();
+            var uriClass = uri.GetPythonType();
+            var property = uriClass.GetAttr(nameof(Uri.AbsoluteUri));
+            var pyProp = ManagedType.GetManagedObject<PropertyObject>(property.Reference);
+            Assert.AreEqual(nameof(Uri.AbsoluteUri), pyProp.info.Name);
+        }
+
         class Class {
             public void Method(int a, int b = 10) { }
             public void Method(int a, object b) { }

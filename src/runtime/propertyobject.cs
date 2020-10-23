@@ -9,7 +9,7 @@ namespace Python.Runtime
     /// </summary>
     internal class PropertyObject : ExtensionType
     {
-        private PropertyInfo info;
+        internal PropertyInfo info;
         private MethodInfo getter;
         private MethodInfo setter;
 
@@ -44,9 +44,9 @@ namespace Python.Runtime
             {
                 if (!getter.IsStatic)
                 {
-                    Exceptions.SetError(Exceptions.TypeError,
-                        "instance property must be accessed through a class instance");
-                    return IntPtr.Zero;
+                    Runtime.XIncref(ds);
+                    // unbound property
+                    return ds;
                 }
 
                 try
