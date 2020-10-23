@@ -56,7 +56,8 @@ namespace Python.Runtime
                 }
                 catch (Exception e)
                 {
-                    return Exceptions.RaiseTypeError(e.Message);
+                    Exceptions.SetError(e);
+                    return IntPtr.Zero;
                 }
             }
 
