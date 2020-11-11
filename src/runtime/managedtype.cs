@@ -165,11 +165,6 @@ namespace Python.Runtime
             return _managedObjs;
         }
 
-        internal static void ClearTrackedObjects()
-        {
-            _managedObjs.Clear();
-        }
-
         internal static int PyVisit(IntPtr ob, IntPtr visit, IntPtr arg)
         {
             if (ob == IntPtr.Zero)
@@ -235,6 +230,15 @@ namespace Python.Runtime
         protected virtual void OnSave(InterDomainContext context) { }
         protected virtual void OnLoad(InterDomainContext context) { }
 
+        protected virtual void DisconnectLinksFromPython()
+        {
+            if (this.gcHandle.IsAllocated)
+            {
+                this.gcHandle.Free();
+                this.gcHandle = default;
+            }
+        }
+
         protected static void ClearObjectDict(IntPtr ob)
         {
             IntPtr dict = GetObjectDict(ob);
@@ -256,6 +260,23 @@ namespace Python.Runtime
         {
             IntPtr type = Runtime.PyObject_TYPE(ob);
             Marshal.WriteIntPtr(ob, ObjectOffset.TypeDictOffset(type), value);
+        }
+
+        internal static void DisconnectInstancesFromPython()
+        {
+            var objs = GetManagedObjects();
+            var copyObjs = objs.ToArray();
+            foreach (var entry in copyObjs)
+            {
+                ManagedType obj = entry.Key;
+                if (!objs.ContainsKey(obj))
+                {
+                    System.Diagnostics.Debug.Assert(obj.gcHandle == default);
+                    continue;
+                }
+                obj.DisconnectLinksFromPython();
+            }
+            _managedObjs.Clear();
         }
     }
 }

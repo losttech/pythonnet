@@ -369,7 +369,7 @@ namespace Python.Runtime
             ClearClrModules();
             RemoveClrRootModule();
 
-            MoveClrInstancesOnwershipToPython();
+            ManagedType.DisconnectInstancesFromPython();
             ClassManager.DisposePythonWrappersForClrTypes();
             TypeManager.RemoveTypes();
 
@@ -526,37 +526,6 @@ namespace Python.Runtime
                 throw new PythonException();
             }
             PyErr_Clear();
-        }
-
-        private static void MoveClrInstancesOnwershipToPython()
-        {
-            var objs = ManagedType.GetManagedObjects();
-            var copyObjs = objs.ToArray();
-            foreach (var entry in copyObjs)
-            {
-                ManagedType obj = entry.Key;
-                if (!objs.ContainsKey(obj))
-                {
-                    System.Diagnostics.Debug.Assert(obj.gcHandle == default);
-                    continue;
-                }
-                if (entry.Value == ManagedType.TrackTypes.Extension)
-                {
-                    obj.CallTypeClear();
-                    // obj's tp_type will degenerate to a pure Python type after TypeManager.RemoveTypes(),
-                    // thus just be safe to give it back to GC chain.
-                    if (!_PyObject_GC_IS_TRACKED(obj.pyHandle))
-                    {
-                        PyObject_GC_Track(obj.pyHandle);
-                    }
-                }
-                if (obj.gcHandle.IsAllocated)
-                {
-                    obj.gcHandle.Free();
-                }
-                obj.gcHandle = default;
-            }
-            ManagedType.ClearTrackedObjects();
         }
 
         internal static IntPtr PyBaseObjectType;

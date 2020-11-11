@@ -49,7 +49,6 @@ namespace Python.Runtime
             Runtime.PyObject_GC_UnTrack(pyHandle);
         }
 
-
         /// <summary>
         /// Common finalization code to support custom tp_deallocs.
         /// </summary>
@@ -59,6 +58,19 @@ namespace Python.Runtime
             Runtime.PyObject_GC_Del(self.pyHandle);
             // Not necessary for decref of `tpHandle`.
             self.FreeGCHandle();
+        }
+
+        protected override void DisconnectLinksFromPython()
+        {
+            this.CallTypeClear();
+            // obj's tp_type will degenerate to a pure Python type after TypeManager.RemoveTypes(),
+            // thus just be safe to give it back to GC chain.
+            if (!Runtime._PyObject_GC_IS_TRACKED(this.pyHandle))
+            {
+                Runtime.PyObject_GC_Track(this.pyHandle);
+            }
+
+            base.DisconnectLinksFromPython();
         }
 
         protected void Dealloc()
