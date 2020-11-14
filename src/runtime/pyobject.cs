@@ -135,7 +135,7 @@ namespace Python.Runtime
         public object AsManagedObject(Type t)
         {
             object result;
-            if (!Converter.ToManaged(obj, t, out result, false))
+            if (!Converter.ToManaged(obj, t, out result, setError: true))
             {
                 throw new InvalidCastException("cannot convert object to target type",
                     innerException: PythonException.FromPyErrOrNull());
