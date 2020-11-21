@@ -657,10 +657,6 @@ namespace Python.Runtime
         /// <summary>
         /// Length Method
         /// </summary>
-        /// <remarks>
-        /// Returns the length for objects that support the Python sequence
-        /// protocol, or 0 if the object does not support the protocol.
-        /// </remarks>
         public virtual long Length()
         {
             DebugUtil.EnsureGIL();
@@ -668,8 +664,7 @@ namespace Python.Runtime
             var s = Runtime.PyObject_Size(obj);
             if (s < 0)
             {
-                Runtime.PyErr_Clear();
-                return 0;
+                throw PythonException.ThrowLastAsClrException();
             }
             return s;
         }
