@@ -51,10 +51,6 @@ namespace Python.Runtime
         internal static ManagedType GetManagedObject(IntPtr ob)
             => GetManagedObject(new BorrowedReference(ob));
 
-        internal static T GetManagedObject<T>(BorrowedReference ob)
-            where T : ExtensionType
-            => (T)GetManagedObject(ob, ObjectOffset.GetDefaultGCHandleOffset());
-
         internal static ManagedType GetManagedObject(BorrowedReference ob, int gcHandleOffset)
         {
             if (ob.IsNull) throw new ArgumentNullException(nameof(ob));

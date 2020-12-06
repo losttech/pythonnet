@@ -16,7 +16,8 @@ namespace Python.Runtime
         internal MethodObject m;
         internal IntPtr target;
         internal IntPtr targetType;
-        internal BorrowedReference TargetReference => new BorrowedReference(this.target);
+        internal BorrowedReference Target => new BorrowedReference(this.target);
+        internal BorrowedReference TargetType => new BorrowedReference(this.targetType);
 
         public MethodBinding(MethodObject m, IntPtr target, IntPtr targetType)
         {
@@ -197,7 +198,7 @@ namespace Python.Runtime
             var disposeList = new List<IntPtr>();
             try
             {
-                IntPtr target = self.target;
+                var target = self.target;
 
                 if (target == IntPtr.Zero && !self.m.IsStatic())
                 {
@@ -221,14 +222,14 @@ namespace Python.Runtime
                 IntPtr superType = IntPtr.Zero;
                 if (Runtime.PyObject_TYPE(target) != self.targetType)
                 {
-                    var inst = GetManagedObject(target) as CLRObject;
+                    var inst = ManagedType.GetManagedObject(target) as CLRObject;
                     if (inst?.inst is IPythonDerivedType)
                     {
-                        var baseType = GetManagedObject(self.targetType) as ClassBase;
+                        var baseType = ManagedType.GetManagedObject(self.TargetType) as ClassBase;
                         if (baseType != null)
                         {
                             string baseMethodName = "_" + baseType.type.Name + "__" + self.m.name;
-                            using var baseMethod = Runtime.PyObject_GetAttrString(self.TargetReference, baseMethodName);
+                            using var baseMethod = Runtime.PyObject_GetAttrString(self.Target, baseMethodName);
                             if (!baseMethod.IsNull())
                             {
                                 BorrowedReference baseMethodType = Runtime.PyObject_TYPE(baseMethod);

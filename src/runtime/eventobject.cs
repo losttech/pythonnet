@@ -24,12 +24,12 @@ namespace Python.Runtime
         /// <summary>
         /// Register a new Python object event handler with the event.
         /// </summary>
-        internal bool AddEventHandler(IntPtr target, IntPtr handler)
+        internal bool AddEventHandler(BorrowedReference target, IntPtr handler)
         {
             object obj = null;
             if (target != IntPtr.Zero)
             {
-                var co = (CLRObject)GetManagedObject(target);
+                var co = (CLRObject)ManagedType.GetManagedObject(target);
                 obj = co.inst;
             }
 
@@ -69,12 +69,12 @@ namespace Python.Runtime
         /// <summary>
         /// Remove the given Python object event handler.
         /// </summary>
-        internal bool RemoveEventHandler(IntPtr target, IntPtr handler)
+        internal bool RemoveEventHandler(BorrowedReference target, IntPtr handler)
         {
             object obj = null;
             if (target != IntPtr.Zero)
             {
-                var co = (CLRObject)GetManagedObject(target);
+                var co = (CLRObject)ManagedType.GetManagedObject(target);
                 obj = co.inst;
             }
 

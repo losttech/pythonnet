@@ -178,7 +178,7 @@ namespace Python.Runtime
             // this descriptor was defined on then it will be because the base class method
             // is being called via super(Derived, self).method(...).
             // In which case create a MethodBinding bound to the base class.
-            var obj = GetManagedObject(ob) as CLRObject;
+            var obj = ManagedType.GetManagedObject(ob) as CLRObject;
             if (obj != null
                 && obj.inst.GetType() != self.type
                 && obj.inst is IPythonDerivedType

@@ -46,6 +46,23 @@ namespace Python.Runtime
         }
 
 
+        internal static T GetManagedObject<T>(BorrowedReference ob)
+            where T : ExtensionType
+            => (T)GetManagedObject(ob, ObjectOffset.GetDefaultGCHandleOffset());
+        [Obsolete]
+        internal static new ExtensionType GetManagedObject(IntPtr ob)
+            => (ExtensionType)GetManagedObject(new BorrowedReference(ob), ObjectOffset.GetDefaultGCHandleOffset());
+        [Obsolete]
+        internal static new ExtensionType GetManagedObject(BorrowedReference ob)
+            => (ExtensionType)GetManagedObject(ob, ObjectOffset.GetDefaultGCHandleOffset());
+
+        internal static bool IsExtensionType(BorrowedReference tp)
+        {
+            if (!IsManagedType(tp)) return false;
+            var metaType = Runtime.PyObject_TYPE(tp);
+            return metaType == Runtime.PyTypeType;
+        }
+
         /// <summary>
         /// Common finalization code to support custom tp_deallocs.
         /// </summary>

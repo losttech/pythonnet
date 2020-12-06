@@ -40,7 +40,7 @@ namespace Python.Runtime
         /// of a .Overloads[pyTypeOrType...] syntax to allow explicit ctor overload
         /// selection.
         /// </summary>
-        /// <param name="op"> PyObject* to a Constructors wrapper </param>
+        /// <param name="opRaw"> PyObject* to a Constructors wrapper </param>
         /// <param name="instance">
         /// the instance that the attribute was accessed through,
         /// or None when the attribute is accessed through the owner
@@ -59,9 +59,10 @@ namespace Python.Runtime
         /// the attribute was accessed through, or None when the attribute is accessed through the owner.
         /// This method should return the (computed) attribute value or raise an AttributeError exception.
         /// </remarks>
-        public static IntPtr tp_descr_get(IntPtr op, IntPtr instance, IntPtr owner)
+        public static IntPtr tp_descr_get(IntPtr opRaw, IntPtr instance, IntPtr owner)
         {
-            var self = (ConstructorBinding)GetManagedObject(op);
+            var op = new BorrowedReference(opRaw);
+            var self = GetManagedObject<ConstructorBinding>(op);
             if (self == null)
             {
                 return IntPtr.Zero;
@@ -86,9 +87,10 @@ namespace Python.Runtime
         /// Return element of o corresponding to the object key or NULL on failure.
         /// This is the equivalent of the Python expression o[key].
         /// </remarks>
-        public static IntPtr mp_subscript(IntPtr op, IntPtr key)
+        public static IntPtr mp_subscript(IntPtr opRaw, IntPtr key)
         {
-            var self = (ConstructorBinding)GetManagedObject(op);
+            var op = new BorrowedReference(opRaw);
+            var self = GetManagedObject<ConstructorBinding>(op);
 
             Type[] types = Runtime.PythonArgsToTypeArray(key);
             if (types == null)
@@ -110,9 +112,10 @@ namespace Python.Runtime
         /// <summary>
         /// ConstructorBinding  __repr__ implementation [borrowed from MethodObject].
         /// </summary>
-        public static IntPtr tp_repr(IntPtr ob)
+        public static IntPtr tp_repr(IntPtr obRaw)
         {
-            var self = (ConstructorBinding)GetManagedObject(ob);
+            var ob = new BorrowedReference(obRaw);
+            var self = GetManagedObject<ConstructorBinding>(ob);
             if (self.repr != IntPtr.Zero)
             {
                 Runtime.XIncref(self.repr);
@@ -139,9 +142,10 @@ namespace Python.Runtime
         /// <summary>
         /// ConstructorBinding dealloc implementation.
         /// </summary>
-        public new static void tp_dealloc(IntPtr ob)
+        public new static void tp_dealloc(IntPtr obRaw)
         {
-            var self = (ConstructorBinding)GetManagedObject(ob);
+            var ob = new BorrowedReference(obRaw);
+            var self = GetManagedObject<ConstructorBinding>(ob);
             Runtime.XDecref(self.repr);
             Runtime.XDecref(self.pyTypeHndl);
             ExtensionType.FinalizeObject(self);

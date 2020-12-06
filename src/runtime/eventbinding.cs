@@ -9,6 +9,7 @@ namespace Python.Runtime
     {
         private EventObject e;
         private IntPtr target;
+        internal BorrowedReference Target => new BorrowedReference(target);
 
         public EventBinding(EventObject e, IntPtr target)
         {
@@ -31,7 +32,7 @@ namespace Python.Runtime
                 return IntPtr.Zero;
             }
 
-            if (!self.e.AddEventHandler(self.target, arg))
+            if (!self.e.AddEventHandler(self.Target, arg))
             {
                 return IntPtr.Zero;
             }
@@ -54,7 +55,7 @@ namespace Python.Runtime
                 return IntPtr.Zero;
             }
 
-            if (!self.e.RemoveEventHandler(self.target, arg))
+            if (!self.e.RemoveEventHandler(self.Target, arg))
             {
                 return IntPtr.Zero;
             }

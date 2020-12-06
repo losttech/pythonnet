@@ -20,8 +20,9 @@ namespace Python.Runtime
         /// value of the field on the given object. The returned value
         /// is converted to an appropriately typed Python object.
         /// </summary>
-        public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
+        public static IntPtr tp_descr_get(IntPtr ds, IntPtr obRaw, IntPtr tp)
         {
+            var ob = new BorrowedReference(obRaw);
             var self = (FieldObject)GetManagedObject(ds);
             object result;
 
@@ -54,7 +55,7 @@ namespace Python.Runtime
 
             try
             {
-                var co = (CLRObject)GetManagedObject(ob);
+                var co = (CLRObject)ManagedType.GetManagedObject(ob);
                 result = info.GetValue(co.inst);
                 return Converter.ToPython(result);
             }
@@ -70,8 +71,9 @@ namespace Python.Runtime
         /// a field based on the given Python value. The Python value must be
         /// convertible to the type of the field.
         /// </summary>
-        public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
+        public new static int tp_descr_set(IntPtr ds, IntPtr obRaw, IntPtr val)
         {
+            var ob = new BorrowedReference(obRaw);
             var self = (FieldObject)GetManagedObject(ds);
             object newval;
 
@@ -114,7 +116,7 @@ namespace Python.Runtime
             {
                 if (!is_static)
                 {
-                    var co = (CLRObject)GetManagedObject(ob);
+                    var co = (CLRObject)ManagedType.GetManagedObject(ob);
                     info.SetValue(co.inst, newval);
                 }
                 else

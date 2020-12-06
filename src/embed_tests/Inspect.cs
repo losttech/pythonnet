@@ -31,7 +31,7 @@ namespace Python.EmbeddingTest {
             var uri = new Uri("http://example.org").ToPython();
             var uriClass = uri.GetPythonType();
             var property = uriClass.GetAttr(nameof(Uri.AbsoluteUri));
-            var pyProp = ManagedType.GetManagedObject<PropertyObject>(property.Reference);
+            var pyProp = ExtensionType.GetManagedObject<PropertyObject>(property.Reference);
             Assert.AreEqual(nameof(Uri.AbsoluteUri), pyProp.info.Name);
         }
 

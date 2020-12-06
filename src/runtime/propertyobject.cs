@@ -28,8 +28,9 @@ namespace Python.Runtime
         /// value of the property on the given object. The returned value
         /// is converted to an appropriately typed Python object.
         /// </summary>
-        public static IntPtr tp_descr_get(IntPtr ds, IntPtr ob, IntPtr tp)
+        public static IntPtr tp_descr_get(IntPtr ds, IntPtr obRaw, IntPtr tp)
         {
+            var ob = new BorrowedReference(obRaw);
             var self = GetInstance(ds);
             MethodInfo getter = self.getter;
             object result;
@@ -61,7 +62,7 @@ namespace Python.Runtime
                 }
             }
 
-            var co = GetManagedObject(ob) as CLRObject;
+            var co = ManagedType.GetManagedObject(ob) as CLRObject;
             if (co == null)
             {
                 return Exceptions.RaiseTypeError("invalid target");
@@ -89,8 +90,9 @@ namespace Python.Runtime
         /// a property based on the given Python value. The Python value must
         /// be convertible to the type of the property.
         /// </summary>
-        public new static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
+        public new static int tp_descr_set(IntPtr ds, IntPtr obRaw, IntPtr val)
         {
+            var ob = new BorrowedReference(obRaw);
             var self = GetInstance(ds);
             MethodInfo setter = self.setter;
             object newval;
@@ -128,7 +130,7 @@ namespace Python.Runtime
             {
                 if (!is_static)
                 {
-                    var co = GetManagedObject(ob) as CLRObject;
+                    var co = ManagedType.GetManagedObject(ob) as CLRObject;
                     if (co == null)
                     {
                         Exceptions.RaiseTypeError("invalid target");

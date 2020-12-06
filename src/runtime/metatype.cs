@@ -197,7 +197,7 @@ namespace Python.Runtime
 
                 if (dt == Runtime.PyWrapperDescriptorType
                     || dt == Runtime.PyMethodType
-                    || typeof(ExtensionType).IsInstanceOfType(GetManagedObject(descr))
+                    || ExtensionType.IsExtensionType(new BorrowedReference(dt))
                 )
                 {
                     IntPtr fp = Marshal.ReadIntPtr(dt, TypeOffset.tp_descr_set);
