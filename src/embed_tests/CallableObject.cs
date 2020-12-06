@@ -38,6 +38,18 @@ namespace Python.EmbeddingTest {
             }
         }
 
+        [Test]
+        public void CanOverwriteCall() {
+            var callViaInheritance = new CallViaInheritance();
+            using var _ = Py.GIL();
+            using var scope = Py.CreateScope();
+            scope.Set("o", callViaInheritance);
+            scope.Exec("orig_call = o.Call");
+            scope.Exec("o.Call = lambda a: orig_call(a*7)");
+            int result = scope.Eval<int>("o.Call(5)");
+            Assert.AreEqual(105, result);
+        }
+
         class Doubler {
             public int __call__(int arg) => 2 * arg;
         }

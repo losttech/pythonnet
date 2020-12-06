@@ -77,17 +77,6 @@ namespace Python.Runtime
 
 
         /// <summary>
-        /// Default __set__ implementation - this prevents descriptor instances
-        /// being silently replaced in a type __dict__ by default __setattr__.
-        /// </summary>
-        public static int tp_descr_set(IntPtr ds, IntPtr ob, IntPtr val)
-        {
-            Exceptions.SetError(Exceptions.AttributeError, "attribute is read-only");
-            return -1;
-        }
-
-
-        /// <summary>
         /// Default dealloc implementation.
         /// </summary>
         public static void tp_dealloc(IntPtr ob)
