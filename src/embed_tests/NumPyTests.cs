@@ -21,20 +21,22 @@ namespace Python.EmbeddingTest
             PythonEngine.Shutdown();
         }
 
+        static PyObject GetNumPy() {
+            PyObject np;
+            try {
+                np = Py.Import("numpy");
+            } catch (PythonException) {
+                Assert.Inconclusive("Numpy or dependency not installed");
+                throw;
+            }
+            return np;
+        }
+
         [Test]
         public void TestReadme()
         {
-            dynamic np;
-            try
-            {
-                np = Py.Import("numpy");
-            }
-            catch (PythonException)
-            {
-                Assert.Inconclusive("Numpy or dependency not installed");
-                return;
-            }
-            
+            dynamic np = GetNumPy();
+
             Assert.AreEqual("1.0", np.cos(np.pi * 2).ToString());
 
             dynamic sin = np.sin;
@@ -55,19 +57,27 @@ namespace Python.EmbeddingTest
         [Test]
         public void MultidimensionalNumPyArray()
         {
-            PyObject np;
-            try {
-                np = Py.Import("numpy");
-            } catch (PythonException) {
-                Assert.Inconclusive("Numpy or dependency not installed");
-                return;
-            }
+            PyObject np = GetNumPy();
 
             var array = new[,] { { 1, 2 }, { 3, 4 } };
             var ndarray = np.InvokeMethod("asarray", array.ToPython());
             Assert.AreEqual((2,2), ndarray.GetAttr("shape").As<(int,int)>());
             Assert.AreEqual(1, ndarray[(0, 0).ToPython()].As<int>());
             Assert.AreEqual(array[1, 0], ndarray[(1, 0).ToPython()].As<int>());
+        }
+
+        [Test]
+        public void Iterate()
+        {
+            PyObject np = GetNumPy();
+
+            var size = new[] { 3, 2 };
+            var ndarray = np.InvokeMethod("zeros", size.ToPython());
+            var iterator = ndarray.GetIterator();
+            Assert.True(iterator.MoveNext());
+            Assert.True(iterator.MoveNext());
+            Assert.True(iterator.MoveNext());
+            Assert.False(iterator.MoveNext());
         }
     }
 }

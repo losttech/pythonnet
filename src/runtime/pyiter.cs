@@ -25,7 +25,7 @@ namespace Python.Runtime
         {
         }
         /// <summary>
-        /// Creates new <see cref="PyIter"/> from an untyped reference to Python object.
+        /// Creates new <see cref="PyIter"/> from an untyped reference to Python iterator object.
         /// </summary>
         public PyIter(PyObject pyObject) : base(FromPyObject(pyObject)) { }
         static BorrowedReference FromPyObject(PyObject pyObject) {
