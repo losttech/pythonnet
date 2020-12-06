@@ -85,7 +85,8 @@ namespace Python.Runtime {
             Debug.Assert(ManagedType.IsManagedType(type));
             var meta = Runtime.PyObject_TYPE(type);
             if (Runtime.PyCLRMetaType != IntPtr.Zero && meta.DangerousGetAddress() != Runtime.PyCLRMetaType)
-                Debug.Assert(new PyObject(meta).ToString() == "<class 'CLR.CLR Metatype'>");
+                Debug.Assert(new PyObject(meta).ToString() == "<class 'CLR.CLR Metatype'>",
+                             $"Bad metatype: {new PyObject(meta)}");
 #endif
             int offset = (int)Marshal.ReadIntPtr(type.DangerousGetAddress(), TypeOffset.clr_gchandle_offset);
 #if DEBUG
@@ -106,7 +107,7 @@ namespace Python.Runtime {
         static void AssertIsClrType(IntPtr tp) => Debug.Assert(Runtime.PyObject_TYPE(tp) == Runtime.PyCLRMetaType);
         [Conditional("DEBUG")]
         internal static void ClrGcHandleOffsetAssertSanity(int offset)
-            => Debug.Assert(offset > 0 && offset < 1024 * 4, "GC handle offset is insane");
+            => Debug.Assert(offset > 0 && offset < 1024 * 4, $"GC handle offset is insane: {offset}");
 
         /// <summary>
         /// Returns dict offset in instances of the specified <paramref name="type"/>
