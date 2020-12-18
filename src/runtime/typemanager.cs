@@ -346,18 +346,34 @@ namespace Python.Runtime
                 return Exceptions.RaiseTypeError("invalid base class, expected CLR class type");
             }
 
+            Type subType;
             try
             {
-                Type subType = ClassDerivedObject.CreateDerivedType(name,
+                subType = ClassDerivedObject.CreateDerivedType(name,
                     baseClass.type,
                     py_dict,
                     (string)namespaceStr,
                     (string)assembly);
+            }
+            catch (Exception e)
+            {
+                return Exceptions.RaiseTypeError("Unable to generate derived type: " + e.Message);
+            }
 
+            IntPtr py_type;
+            try
+            {
                 // create the new ManagedType and python type
                 ClassBase subClass = ClassManager.GetClass(subType);
-                IntPtr py_type = GetTypeHandle(subClass, subType);
+                py_type = GetTypeHandle(subClass, subType);
+            }
+            catch (Exception e)
+            {
+                return Exceptions.RaiseTypeError("Unable to reflect new .NET type to Python: " + e.Message);
+            }
 
+            try
+            {
                 // by default the class dict will have all the C# methods in it, but as this is a
                 // derived class we want the python overrides in there instead if they exist.
                 IntPtr cls_dict = Marshal.ReadIntPtr(py_type, TypeOffset.tp_dict);
@@ -375,7 +391,7 @@ namespace Python.Runtime
             }
             catch (Exception e)
             {
-                return Exceptions.RaiseTypeError(e.Message);
+                return Exceptions.RaiseTypeError("Unable to update reflected type: " + e.Message);
             }
         }
 
