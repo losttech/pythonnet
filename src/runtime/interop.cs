@@ -5,6 +5,7 @@ using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Reflection;
 using System.Text;
+using M = System.Runtime.InteropServices.Marshal;
 
 namespace Python.Runtime
 {
@@ -302,18 +303,18 @@ namespace Python.Runtime
         {
             byte[] ascii = Encoding.ASCII.GetBytes(modulename);
             int size = name + ascii.Length + 1;
-            IntPtr ptr = Marshal.AllocHGlobal(size);
+            IntPtr ptr = M.AllocHGlobal(size);
             for (int i = 0; i <= m_free; i += IntPtr.Size)
-                Marshal.WriteIntPtr(ptr, i, IntPtr.Zero);
-            Marshal.Copy(ascii, 0, (IntPtr)(ptr + name), ascii.Length);
-            Marshal.WriteIntPtr(ptr, m_name, (IntPtr)(ptr + name));
-            Marshal.WriteByte(ptr, name + ascii.Length, 0);
+                M.WriteIntPtr(ptr, i, IntPtr.Zero);
+            M.Copy(ascii, 0, (IntPtr)(ptr + name), ascii.Length);
+            M.WriteIntPtr(ptr, m_name, (IntPtr)(ptr + name));
+            M.WriteByte(ptr, name + ascii.Length, 0);
             return ptr;
         }
 
         public static void FreeModuleDef(IntPtr ptr)
         {
-            Marshal.FreeHGlobal(ptr);
+            M.FreeHGlobal(ptr);
         }
 
         // typedef struct PyModuleDef{

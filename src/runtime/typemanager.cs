@@ -7,6 +7,7 @@ using System.Runtime.InteropServices;
 using System.Diagnostics;
 using Python.Runtime.Slots;
 using static Python.Runtime.PythonException;
+using M = System.Runtime.InteropServices.Marshal;
 
 namespace Python.Runtime
 {
@@ -397,10 +398,10 @@ namespace Python.Runtime
 
         internal static IntPtr WriteMethodDef(IntPtr mdef, IntPtr name, IntPtr func, int flags, IntPtr doc)
         {
-            Marshal.WriteIntPtr(mdef, name);
-            Marshal.WriteIntPtr(mdef, 1 * IntPtr.Size, func);
-            Marshal.WriteInt32(mdef, 2 * IntPtr.Size, flags);
-            Marshal.WriteIntPtr(mdef, 3 * IntPtr.Size, doc);
+            M.WriteIntPtr(mdef, name);
+            M.WriteIntPtr(mdef, 1 * IntPtr.Size, func);
+            M.WriteInt32(mdef, 2 * IntPtr.Size, flags);
+            M.WriteIntPtr(mdef, 3 * IntPtr.Size, doc);
             return mdef + 4 * IntPtr.Size;
         }
 

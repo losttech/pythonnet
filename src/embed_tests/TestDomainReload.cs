@@ -7,6 +7,8 @@ using NUnit.Framework;
 using Python.Runtime;
 
 using PyRuntime = Python.Runtime.Runtime;
+
+using Marshal = System.Runtime.InteropServices.Marshal;
 //
 // This test case is disabled on .NET Standard because it doesn't have all the
 // APIs we use. We could work around that, but .NET Core doesn't implement

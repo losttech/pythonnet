@@ -3,6 +3,8 @@ using Python.Runtime;
 using Python.Runtime.Platform;
 using System.Runtime.InteropServices;
 
+using Marshal = System.Runtime.InteropServices.Marshal;
+
 namespace Python.EmbeddingTest
 {
     class TestTypeManager
