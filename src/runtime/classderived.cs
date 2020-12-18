@@ -7,6 +7,8 @@ using System.Resources;
 using System.Runtime.InteropServices;
 using System.Threading.Tasks;
 
+using static Python.Runtime.PythonDerivedType;
+
 namespace Python.Runtime
 {
     /// <summary>
@@ -89,7 +91,7 @@ namespace Python.Runtime
         {
             // derived types have a __pyobj__ field that gets set to the python
             // object in the overridden constructor
-            FieldInfo fi = obj.GetType().GetField("__pyobj__");
+            FieldInfo fi = obj.GetType().GetField(PyObjFieldName);
             var self = (CLRObject)fi.GetValue(obj);
 
             Runtime.XIncref(self.pyHandle);
@@ -159,7 +161,7 @@ namespace Python.Runtime
 
             // add a field for storing the python object pointer
             // FIXME: fb not used
-            FieldBuilder fb = typeBuilder.DefineField("__pyobj__", typeof(CLRObject), FieldAttributes.Public);
+            FieldBuilder fb = typeBuilder.DefineField(PyObjFieldName, typeof(CLRObject), FieldAttributes.Public);
 
             // override any constructors
             ConstructorInfo[] constructors = baseClass.GetConstructors();
@@ -189,6 +191,7 @@ namespace Python.Runtime
                                 AddPythonProperty(propertyName, value, typeBuilder);
                             }
                         }
+                        pyKey.Dispose();
                     }
                 }
             }
@@ -243,6 +246,7 @@ namespace Python.Runtime
                                 AddPythonMethod(methodName, value, typeBuilder);
                             }
                         }
+                        pyKey.Dispose();
                     }
                 }
             }
@@ -257,7 +261,7 @@ namespace Python.Runtime
                 Type.EmptyTypes);
             ILGenerator il = methodBuilder.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod("Finalize"));
+            il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod(nameof(PythonDerivedType.Finalize)));
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Call, baseClass.GetMethod("Finalize", BindingFlags.NonPublic | BindingFlags.Instance));
             il.Emit(OpCodes.Ret);
@@ -329,7 +333,7 @@ namespace Python.Runtime
                 il.Emit(OpCodes.Stelem, typeof(object));
             }
             il.Emit(OpCodes.Ldloc_0);
-            il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod("InvokeCtor"));
+            il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod(nameof(InvokeCtor)));
             il.Emit(OpCodes.Ret);
         }
 
@@ -409,12 +413,12 @@ namespace Python.Runtime
             il.Emit(OpCodes.Ldloc_0);
             if (method.ReturnType == typeof(void))
             {
-                il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod("InvokeMethodVoid"));
+                il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod(nameof(InvokeMethodVoid)));
             }
             else
             {
                 il.Emit(OpCodes.Call,
-                    typeof(PythonDerivedType).GetMethod("InvokeMethod").MakeGenericMethod(method.ReturnType));
+                    typeof(PythonDerivedType).GetMethod(nameof(InvokeMethod)).MakeGenericMethod(method.ReturnType));
             }
             il.Emit(OpCodes.Ret);
         }
@@ -496,12 +500,12 @@ namespace Python.Runtime
                 il.Emit(OpCodes.Ldloc_0);
                 if (returnType == typeof(void))
                 {
-                    il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod("InvokeMethodVoid"));
+                    il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod(nameof(InvokeMethodVoid)));
                 }
                 else
                 {
                     il.Emit(OpCodes.Call,
-                        typeof(PythonDerivedType).GetMethod("InvokeMethod").MakeGenericMethod(returnType));
+                        typeof(PythonDerivedType).GetMethod(nameof(InvokeMethod)).MakeGenericMethod(returnType));
                 }
                 il.Emit(OpCodes.Ret);
             }
@@ -551,7 +555,7 @@ namespace Python.Runtime
                             il.Emit(OpCodes.Ldarg_0);
                             il.Emit(OpCodes.Ldstr, propertyName);
                             il.Emit(OpCodes.Call,
-                                typeof(PythonDerivedType).GetMethod("InvokeGetProperty").MakeGenericMethod(propertyType));
+                                typeof(PythonDerivedType).GetMethod(nameof(InvokeGetProperty)).MakeGenericMethod(propertyType));
                             il.Emit(OpCodes.Ret);
 
                             propertyBuilder.SetGetMethod(methodBuilder);
@@ -575,7 +579,7 @@ namespace Python.Runtime
                             il.Emit(OpCodes.Ldstr, propertyName);
                             il.Emit(OpCodes.Ldarg_1);
                             il.Emit(OpCodes.Call,
-                                typeof(PythonDerivedType).GetMethod("InvokeSetProperty").MakeGenericMethod(propertyType));
+                                typeof(PythonDerivedType).GetMethod(nameof(InvokeSetProperty)).MakeGenericMethod(propertyType));
                             il.Emit(OpCodes.Ret);
 
                             propertyBuilder.SetSetMethod(methodBuilder);
@@ -629,6 +633,7 @@ namespace Python.Runtime
     /// </remarks>
     public class PythonDerivedType
     {
+        internal const string PyObjFieldName = "__pyobj__";
         /// <summary>
         /// This is the implementation of the overridden methods in the derived
         /// type. It looks for a python method with the same name as the method
@@ -638,7 +643,7 @@ namespace Python.Runtime
         /// </summary>
         public static T InvokeMethod<T>(IPythonDerivedType obj, string methodName, string origMethodName, object[] args)
         {
-            FieldInfo fi = obj.GetType().GetField("__pyobj__");
+            FieldInfo fi = obj.GetType().GetField(PyObjFieldName);
             var self = (CLRObject)fi.GetValue(obj);
 
             if (null != self)
@@ -701,7 +706,7 @@ namespace Python.Runtime
         public static void InvokeMethodVoid(IPythonDerivedType obj, string methodName, string origMethodName,
             object[] args)
         {
-            FieldInfo fi = obj.GetType().GetField("__pyobj__");
+            FieldInfo fi = obj.GetType().GetField(PyObjFieldName);
             var self = (CLRObject)fi.GetValue(obj);
             if (null != self)
             {
@@ -762,7 +767,7 @@ namespace Python.Runtime
 
         public static T InvokeGetProperty<T>(IPythonDerivedType obj, string propertyName)
         {
-            FieldInfo fi = obj.GetType().GetField("__pyobj__");
+            FieldInfo fi = obj.GetType().GetField(PyObjFieldName);
             var self = (CLRObject)fi.GetValue(obj);
 
             if (null == self)
@@ -788,7 +793,7 @@ namespace Python.Runtime
 
         public static void InvokeSetProperty<T>(IPythonDerivedType obj, string propertyName, T value)
         {
-            FieldInfo fi = obj.GetType().GetField("__pyobj__");
+            FieldInfo fi = obj.GetType().GetField(PyObjFieldName);
             var self = (CLRObject)fi.GetValue(obj);
 
             if (null == self)
@@ -831,7 +836,7 @@ namespace Python.Runtime
 
                 // set __pyobj__ to self and deref the python object which will allow this
                 // object to be collected.
-                FieldInfo fi = obj.GetType().GetField("__pyobj__");
+                FieldInfo fi = obj.GetType().GetField(PyObjFieldName);
                 fi.SetValue(obj, self);
             }
             finally
@@ -850,7 +855,7 @@ namespace Python.Runtime
 
         public static void Finalize(IPythonDerivedType obj)
         {
-            FieldInfo fi = obj.GetType().GetField("__pyobj__");
+            FieldInfo fi = obj.GetType().GetField(PyObjFieldName);
             var self = (CLRObject)fi.GetValue(obj);
 
             // If python's been terminated then just free the gchandle.

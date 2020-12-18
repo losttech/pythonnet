@@ -174,7 +174,7 @@ namespace Python.Runtime
                 impl = new ExceptionClassObject(type);
             }
 
-            else if (null != type.GetField("__pyobj__"))
+            else if (null != type.GetField(PythonDerivedType.PyObjFieldName))
             {
                 impl = new ClassDerivedObject(type);
             }
