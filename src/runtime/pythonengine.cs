@@ -1,9 +1,13 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
 using System.Runtime.InteropServices;
+
+using Python.Runtime.Native;
+using static Python.Runtime.Runtime;
 
 namespace Python.Runtime
 {
@@ -18,7 +22,7 @@ namespace Python.Runtime
             set => Runtime.ShutdownMode = value;
         }
 
-        public static ShutdownMode DefaultShutdownMode => Runtime.GetDefaultShutdownMode();
+        public static ShutdownMode DefaultShutdownMode => GetDefaultShutdownMode();
 
         private static DelegateManager delegateManager;
         private static bool initialized;
@@ -199,7 +203,7 @@ namespace Python.Runtime
             }
 
             // Load the clr.py resource into the clr module
-            NewReference clr = Python.Runtime.ImportHook.GetCLRModule();
+            NewReference clr = ImportHook.GetCLRModule();
             BorrowedReference clr_dict = Runtime.PyModule_GetDict(clr);
 
             var locals = new PyDict();
@@ -293,7 +297,7 @@ namespace Python.Runtime
                 return IntPtr.Zero;
             }
 
-            return Python.Runtime.ImportHook.GetCLRModule()
+            return ImportHook.GetCLRModule()
                    .DangerousMoveToPointerOrNull();
         }
 
@@ -316,11 +320,14 @@ namespace Python.Runtime
             // don't call shutdown again.
             AppDomain.CurrentDomain.DomainUnload -= OnDomainUnload;
 
-            PyScopeManager.Global.Clear();
+            ClearClrModules();
+
             ExecuteShutdownHandlers();
-            // Remember to shut down the runtime.
-            Runtime.Shutdown(mode);
-            PyObjectConversions.Reset();
+            Runtime.Disconnect();
+            if (mode == ShutdownMode.Normal)
+            {
+                Runtime.Shutdown();
+            }
 
             initialized = false;
         }
@@ -468,62 +475,6 @@ namespace Python.Runtime
             Runtime.PyEval_RestoreThread(ts);
         }
 
-
-        /// <summary>
-        /// ImportModule Method
-        /// </summary>
-        /// <remarks>
-        /// Given a fully-qualified module or package name, import the
-        /// module and return the resulting module object as a PyObject
-        /// or null if an exception is raised.
-        /// </remarks>
-        public static PyObject ImportModule(string name)
-        {
-            IntPtr op = Runtime.PyImport_ImportModule(name);
-            PythonException.ThrowIfIsNull(op);
-            return new PyObject(op);
-        }
-
-
-        /// <summary>
-        /// ReloadModule Method
-        /// </summary>
-        /// <remarks>
-        /// Given a PyObject representing a previously loaded module, reload
-        /// the module.
-        /// </remarks>
-        public static PyObject ReloadModule(PyObject module)
-        {
-            IntPtr op = Runtime.PyImport_ReloadModule(module.Handle);
-            PythonException.ThrowIfIsNull(op);
-            return new PyObject(op);
-        }
-
-
-        /// <summary>
-        /// ModuleFromString Method
-        /// </summary>
-        /// <remarks>
-        /// Given a string module name and a string containing Python code,
-        /// execute the code in and return a module of the given name.
-        /// </remarks>
-        public static PyObject ModuleFromString(string name, string code)
-        {
-            IntPtr c = Runtime.Py_CompileString(code, "none", (int)RunFlagType.File);
-            PythonException.ThrowIfIsNull(c);
-            IntPtr m = Runtime.PyImport_ExecCodeModule(name, c);
-            PythonException.ThrowIfIsNull(m);
-            return new PyObject(m);
-        }
-
-        public static PyObject Compile(string code, string filename = "", RunFlagType mode = RunFlagType.File)
-        {
-            var flag = (int)mode;
-            IntPtr ptr = Runtime.Py_CompileString(code, filename, flag);
-            PythonException.ThrowIfIsNull(ptr);
-            return new PyObject(ptr);
-        }
-
         /// <summary>
         /// Eval Method
         /// </summary>
@@ -650,13 +601,70 @@ namespace Python.Runtime
                 tempGlobals.Dispose();
             }
         }
-    }
 
-    public enum RunFlagType : int
-    {
-        Single = 256,
-        File = 257, /* Py_file_input */
-        Eval = 258
+        public static void MoveClrInstancesOwnershipToPython()
+        {
+            var objs = ManagedType.GetManagedObjects();
+            var copyObjs = objs.ToArray();
+            foreach (var entry in copyObjs)
+            {
+                ManagedType obj = entry.Key;
+                if (!objs.ContainsKey(obj))
+                {
+                    Debug.Assert(obj.gcHandle == default);
+                    continue;
+                }
+                if (entry.Value == ManagedType.TrackTypes.Extension)
+                {
+                    obj.CallTypeClear();
+                    // obj's tp_type will degenerate to a pure Python type after TypeManager.RemoveTypes(),
+                    // thus just be safe to give it back to GC chain.
+                    if (!Runtime._PyObject_GC_IS_TRACKED(obj.ObjectReference))
+                    {
+                        Runtime.PyObject_GC_Track(obj.pyHandle);
+                    }
+                }
+                if (obj.gcHandle.IsAllocated)
+                {
+                    obj.gcHandle.Free();
+                }
+                obj.gcHandle = default;
+            }
+            ManagedType.ClearTrackedObjects();
+        }
+
+        internal static ShutdownMode GetDefaultShutdownMode()
+        {
+            string modeEvn = Environment.GetEnvironmentVariable("PYTHONNET_SHUTDOWN_MODE");
+            if (modeEvn == null)
+            {
+                return ShutdownMode.Normal;
+            }
+            ShutdownMode mode;
+            if (Enum.TryParse(modeEvn, true, out mode))
+            {
+                return mode;
+            }
+            return ShutdownMode.Normal;
+        }
+
+        private static void ClearClrModules()
+        {
+            var modules = PyImport_GetModuleDict();
+            var items = PyDict_Items(modules);
+            long length = PyList_Size(items);
+            for (long i = 0; i < length; i++)
+            {
+                var item = PyList_GetItem(items, i);
+                var name = PyTuple_GetItem(item, 0);
+                var module = PyTuple_GetItem(item, 1);
+                if (ManagedType.IsManagedType(module))
+                {
+                    PyDict_DelItem(modules, name);
+                }
+            }
+            items.Dispose();
+        }
     }
 
     public static class Py
@@ -708,43 +716,9 @@ namespace Python.Runtime
             }
         }
 
-        public class KeywordArguments : PyDict
-        {
-        }
-
-        public static KeywordArguments kw(params object[] kv)
-        {
-            var dict = new KeywordArguments();
-            if (kv.Length % 2 != 0)
-            {
-                throw new ArgumentException("Must have an equal number of keys and values");
-            }
-            for (var i = 0; i < kv.Length; i += 2)
-            {
-                IntPtr value;
-                if (kv[i + 1] is PyObject)
-                {
-                    value = ((PyObject)kv[i + 1]).Handle;
-                }
-                else
-                {
-                    value = Converter.ToPython(kv[i + 1], kv[i + 1]?.GetType());
-                }
-                if (Runtime.PyDict_SetItemString(dict.Handle, (string)kv[i], value) != 0)
-                {
-                    throw new ArgumentException(string.Format("Cannot add key '{0}' to dictionary.", (string)kv[i]));
-                }
-                if (!(kv[i + 1] is PyObject))
-                {
-                    Runtime.XDecref(value);
-                }
-            }
-            return dict;
-        }
-
         public static PyObject Import(string name)
         {
-            return PythonEngine.ImportModule(name);
+            return PyModule.Import(name);
         }
 
         public static void SetArgv()

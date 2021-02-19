@@ -22,7 +22,7 @@ namespace Python.Runtime
 
         public PythonException()
         {
-            IntPtr gs = PythonEngine.AcquireLock();
+            IntPtr gs = Runtime.PyGILState_Ensure();
             Runtime.PyErr_Fetch(out _pyType, out _pyValue, out _pyTB);
             if (_pyType != IntPtr.Zero && _pyValue != IntPtr.Zero)
             {
@@ -48,7 +48,7 @@ namespace Python.Runtime
 
             if (_pyTB != IntPtr.Zero)
             {
-                using PyObject tb_module = PythonEngine.ImportModule("traceback");
+                using PyObject tb_module = PyModule.Import("traceback");
 
                 Runtime.XIncref(_pyTB);
                 using var pyTB = new PyObject(_pyTB);
@@ -63,7 +63,7 @@ namespace Python.Runtime
                 }
                 _tb = sb.ToString();
             }
-            PythonEngine.ReleaseLock(gs);
+            Runtime.PyGILState_Release(gs);
         }
 
         // Ensure that encapsulated Python objects are decref'ed appropriately
@@ -86,12 +86,12 @@ namespace Python.Runtime
         /// </summary>
         public void Restore()
         {
-            IntPtr gs = PythonEngine.AcquireLock();
+            IntPtr gs = Runtime.PyGILState_Ensure();
             Runtime.PyErr_Restore(_pyType, _pyValue, _pyTB);
             _pyType = IntPtr.Zero;
             _pyValue = IntPtr.Zero;
             _pyTB = IntPtr.Zero;
-            PythonEngine.ReleaseLock(gs);
+            Runtime.PyGILState_Release(gs);
         }
 
         /// <summary>
@@ -161,7 +161,7 @@ namespace Python.Runtime
         /// </summary>
         public void Normalize()
         {
-            IntPtr gs = PythonEngine.AcquireLock();
+            IntPtr gs = Runtime.PyGILState_Ensure();
             try
             {
                 if (Exceptions.ErrorOccurred()) throw new InvalidOperationException("Cannot normalize when an error is set");
@@ -170,7 +170,7 @@ namespace Python.Runtime
             }
             finally
             {
-                PythonEngine.ReleaseLock(gs);
+                Runtime.PyGILState_Release(gs);
             }
         }
 
@@ -181,7 +181,7 @@ namespace Python.Runtime
         public string Format()
         {
             string res;
-            IntPtr gs = PythonEngine.AcquireLock();
+            IntPtr gs = Runtime.PyGILState_Ensure();
             try
             {
                 if (_pyTB != IntPtr.Zero && _pyType != IntPtr.Zero && _pyValue != IntPtr.Zero)
@@ -198,7 +198,7 @@ namespace Python.Runtime
                     using (PyObject pyType = new PyObject(type))
                     using (PyObject pyValue = new PyObject(value))
                     using (PyObject pyTB = new PyObject(tb))
-                    using (PyObject tb_mod = PythonEngine.ImportModule("traceback"))
+                    using (PyObject tb_mod = PyModule.Import("traceback"))
                     {
                         var buffer = new StringBuilder();
                         var values = tb_mod.InvokeMethod("format_exception", pyType, pyValue, pyTB);
@@ -216,7 +216,7 @@ namespace Python.Runtime
             }
             finally
             {
-                PythonEngine.ReleaseLock(gs);
+                Runtime.PyGILState_Release(gs);
             }
             return res;
         }
@@ -241,7 +241,7 @@ namespace Python.Runtime
             {
                 if (Runtime.Py_IsInitialized() > 0 && !Runtime.IsFinalizing)
                 {
-                    IntPtr gs = PythonEngine.AcquireLock();
+                    IntPtr gs = Runtime.PyGILState_Ensure();
                     if (_pyType != IntPtr.Zero)
                     {
                         Runtime.XDecref(_pyType);
@@ -260,7 +260,7 @@ namespace Python.Runtime
                         Runtime.XDecref(_pyTB);
                         _pyTB = IntPtr.Zero;
                     }
-                    PythonEngine.ReleaseLock(gs);
+                    Runtime.PyGILState_Release(gs);
                 }
                 GC.SuppressFinalize(this);
                 disposed = true;

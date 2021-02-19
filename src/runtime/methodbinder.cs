@@ -543,7 +543,7 @@ namespace Python.Runtime
                 // is a generic method and info is null. That happens when a generic
                 // method was not called using the [] syntax. Let's introspect the
                 // type of the arguments and use it to construct the correct method.
-                Type[] types = Runtime.PythonArgsToTypeArray(args, true);
+                Type[] types = ManagedType.PythonArgsToTypeArray(args, true);
                 MethodInfo mi = MatchParameters(methodinfo, types);
                 if (mi != null)
                 {

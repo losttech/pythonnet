@@ -4,9 +4,9 @@
     <Platforms>AnyCPU</Platforms>
     <LangVersion>9.0</LangVersion>
     <RootNamespace>Python.Runtime</RootNamespace>
-    <AssemblyName>Python.Runtime</AssemblyName>
+    <AssemblyName>Python.Binding</AssemblyName>
 
-    <PackageId>pythonnet</PackageId>
+    <PackageId>pythonnet.binding</PackageId>
     <PackageLicenseFile>LICENSE</PackageLicenseFile>
     <RepositoryUrl>https://github.com/pythonnet/pythonnet</RepositoryUrl>
     <RepositoryType>git</RepositoryType>
@@ -23,14 +23,14 @@
     <AssemblyOriginatorKeyFile>..\pythonnet.snk</AssemblyOriginatorKeyFile>
     <SignAssembly>true</SignAssembly>
 
-    <NoWarn>1591;NU1701</NoWarn>
+    <NoWarn>1591</NoWarn>
     <AllowUnsafeBlocks>True</AllowUnsafeBlocks>
 
     <IsPackable>true</IsPackable>
   </PropertyGroup>
 
   <PropertyGroup>
-    <OutputPath>..\..\pythonnet\runtime</OutputPath>
+    <OutputPath>..\..\pythonnet\binding</OutputPath>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
   </PropertyGroup>
 
@@ -39,19 +39,12 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Remove="resources\clr.py" />
-    <EmbeddedResource Include="resources\clr.py">
-      <LogicalName>clr.py</LogicalName>
-    </EmbeddedResource>
-  </ItemGroup>
-
-  <ItemGroup>
-    <PackageReference Include="System.Security.Permissions" Version="4.4.0" />
-    <PackageReference Include="System.Reflection.Emit" Version="4.3.0" />
     <PackageReference Include="Microsoft.SourceLink.GitHub" Version="1.0.0" PrivateAssets="All" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\binding\Python.Binding.csproj" />
+    <None Update="intern_.tt">
+      <Generator>TextTemplatingFileGenerator</Generator>
+    </None>
   </ItemGroup>
 </Project>

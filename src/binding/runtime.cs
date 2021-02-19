@@ -100,20 +100,8 @@ namespace Python.Runtime
         /// </summary>
         /// <remarks>Always call this method from the Main thread.  After the
         /// first call to this method, the main thread has acquired the GIL.</remarks>
-        internal static void Initialize(bool initSigs = false, ShutdownMode mode = ShutdownMode.Default)
+        internal static void Initialize(bool initSigs = false)
         {
-            if (_isInitialized)
-            {
-                return;
-            }
-            _isInitialized = true;
-
-            if (mode == ShutdownMode.Default)
-            {
-                mode = GetDefaultShutdownMode();
-            }
-            ShutdownMode = mode;
-
             if (Py_IsInitialized() == 0)
             {
                 Py_InitializeEx(initSigs ? 1 : 0);
@@ -121,22 +109,10 @@ namespace Python.Runtime
                 {
                     PyEval_InitThreads();
                 }
-                // XXX: Reload mode may reduct to Soft mode,
-                // so even on Reload mode it still needs to save the RuntimeState
-                if (mode == ShutdownMode.Soft || mode == ShutdownMode.Reload)
-                {
-                    RuntimeState.Save();
-                }
             }
             else
             {
-                // If we're coming back from a domain reload or a soft shutdown,
-                // we have previously released the thread state. Restore the main
-                // thread state here.
-                if (mode != ShutdownMode.Extension)
-                {
-                    PyGILState_Ensure();
-                }
+                throw new InvalidOperationException();
             }
             MainManagedThreadId = Thread.CurrentThread.ManagedThreadId;
 
@@ -150,35 +126,8 @@ namespace Python.Runtime
 
             GenericUtil.Reset();
             PyScopeManager.Reset();
-            ClassManager.Reset();
-            ClassDerivedObject.Reset();
-            TypeManager.Initialize();
-
-            // Initialize modules that depend on the runtime class.
-            AssemblyManager.Initialize();
-            OperatorMethod.Initialize();
-            if (mode == ShutdownMode.Reload && RuntimeData.HasStashData())
-            {
-                RuntimeData.RestoreRuntimeData();
-            }
-            else
-            {
-                PyCLRMetaType = MetaType.Initialize(); // Steal a reference
-                ImportHook.Initialize();
-            }
+            
             Exceptions.Initialize();
-
-            // Need to add the runtime directory to sys.path so that we
-            // can find built-in assemblies like System.Data, et. al.
-            string rtdir = RuntimeEnvironment.GetRuntimeDirectory();
-            IntPtr path = PySys_GetObject("path").DangerousGetAddress();
-            IntPtr item = PyString_FromString(rtdir);
-            if (PySequence_Contains(path, item) == 0)
-            {
-                PyList_Append(new BorrowedReference(path), item);
-            }
-            XDecref(item);
-            AssemblyManager.UpdatePath();
         }
 
         private static void InitPyMembers()
@@ -318,135 +267,40 @@ namespace Python.Runtime
             }
         }
 
-        internal static void Shutdown(ShutdownMode mode)
+        internal static void Disconnect()
         {
-            if (Py_IsInitialized() == 0 || !_isInitialized)
-            {
-                return;
-            }
-            _isInitialized = false;
-
-            // If the shutdown mode specified is not the the same as the one specified
-            // during Initialization, we need to validate it; we can only downgrade,
-            // not upgrade the shutdown mode.
-            mode = TryDowngradeShutdown(mode);
-
             var state = PyGILState_Ensure();
 
-            if (mode == ShutdownMode.Soft)
-            {
-                RunExitFuncs();
-            }
-            if (mode == ShutdownMode.Reload)
-            {
-                RuntimeData.Stash();
-            }
-            AssemblyManager.Shutdown();
-            OperatorMethod.Shutdown();
-            ImportHook.Shutdown();
-
-            ClearClrModules();
+            PyScopeManager.Global.Clear();
             RemoveClrRootModule();
-
-            MoveClrInstancesOnwershipToPython();
-            ClassManager.DisposePythonWrappersForClrTypes();
-            TypeManager.RemoveTypes();
-
-            MetaType.Release();
-            PyCLRMetaType = IntPtr.Zero;
 
             Exceptions.Shutdown();
             Finalizer.Shutdown();
             InternString.Shutdown();
 
-            if (mode != ShutdownMode.Normal && mode != ShutdownMode.Extension)
+            ResetPyMembers();
+            GC.Collect();
+            try
             {
-                PyGC_Collect();
-                if (mode == ShutdownMode.Soft)
-                {
-                    RuntimeState.Restore();
-                }
-                ResetPyMembers();
-                GC.Collect();
-                try
-                {
-                    GC.WaitForFullGCComplete();
-                }
-                catch (NotImplementedException)
-                {
-                    // Some clr runtime didn't implement GC.WaitForFullGCComplete yet.
-                }
-                GC.WaitForPendingFinalizers();
-                PyGILState_Release(state);
-                // Then release the GIL for good, if there is somehting to release
-                // Use the unchecked version as the checked version calls `abort()`
-                // if the current state is NULL.
-                if (_PyThreadState_UncheckedGet() != IntPtr.Zero)
-                {
-                    PyEval_SaveThread();
-                }
+                GC.WaitForFullGCComplete();
+            }
+            catch (NotImplementedException)
+            {
+                // Some clr runtime didn't implement GC.WaitForFullGCComplete yet.
+            }
+            GC.WaitForPendingFinalizers();
+            PyGILState_Release(state);
 
-            }
-            else
-            {
-                ResetPyMembers();
-                if (mode != ShutdownMode.Extension)
-                {
-                    Py_Finalize();
-                }
-            }
+            PyObjectConversions.Reset();
         }
 
         internal static void Shutdown()
         {
-            var mode = ShutdownMode;
-            Shutdown(mode);
-        }
-
-        internal static ShutdownMode GetDefaultShutdownMode()
-        {
-            string modeEvn = Environment.GetEnvironmentVariable("PYTHONNET_SHUTDOWN_MODE");
-            if (modeEvn == null)
+            if (Py_IsInitialized() == 0)
             {
-                return ShutdownMode.Normal;
+                throw new InvalidOperationException();
             }
-            ShutdownMode mode;
-            if (Enum.TryParse(modeEvn, true, out mode))
-            {
-                return mode;
-            }
-            return ShutdownMode.Normal;
-        }
-
-        private static void RunExitFuncs()
-        {
-            PyObject atexit;
-            try
-            {
-                atexit = Py.Import("atexit");
-            }
-            catch (PythonException e)
-            {
-                if (!e.IsMatches(Exceptions.ImportError))
-                {
-                    throw;
-                }
-                e.Dispose();
-                // The runtime may not provided `atexit` module.
-                return;
-            }
-            using (atexit)
-            {
-                try
-                {
-                    atexit.InvokeMethod("_run_exitfuncs").Dispose();
-                }
-                catch (PythonException e)
-                {
-                    Console.Error.WriteLine(e);
-                    e.Dispose();
-                }
-            }
+            Py_Finalize();
         }
 
         private static void SetPyMember(ref IntPtr obj, IntPtr value, Action onRelease)
@@ -462,23 +316,7 @@ namespace Python.Runtime
             _pyRefs.Release();
         }
 
-        private static void ClearClrModules()
-        {
-            var modules = PyImport_GetModuleDict();
-            var items = PyDict_Items(modules);
-            long length = PyList_Size(items);
-            for (long i = 0; i < length; i++)
-            {
-                var item = PyList_GetItem(items, i);
-                var name = PyTuple_GetItem(item, 0);
-                var module = PyTuple_GetItem(item, 1);
-                if (ManagedType.IsManagedType(module))
-                {
-                    PyDict_DelItem(modules, name);
-                }
-            }
-            items.Dispose();
-        }
+        
 
         private static void RemoveClrRootModule()
         {
@@ -498,37 +336,6 @@ namespace Python.Runtime
                 throw new PythonException();
             }
             PyErr_Clear();
-        }
-
-        private static void MoveClrInstancesOnwershipToPython()
-        {
-            var objs = ManagedType.GetManagedObjects();
-            var copyObjs = objs.ToArray();
-            foreach (var entry in copyObjs)
-            {
-                ManagedType obj = entry.Key;
-                if (!objs.ContainsKey(obj))
-                {
-                    System.Diagnostics.Debug.Assert(obj.gcHandle == default);
-                    continue;
-                }
-                if (entry.Value == ManagedType.TrackTypes.Extension)
-                {
-                    obj.CallTypeClear();
-                    // obj's tp_type will degenerate to a pure Python type after TypeManager.RemoveTypes(),
-                    // thus just be safe to give it back to GC chain.
-                    if (!_PyObject_GC_IS_TRACKED(obj.ObjectReference))
-                    {
-                        PyObject_GC_Track(obj.pyHandle);
-                    }
-                }
-                if (obj.gcHandle.IsAllocated)
-                {
-                    obj.gcHandle.Free();
-                }
-                obj.gcHandle = default;
-            }
-            ManagedType.ClearTrackedObjects();
         }
 
         internal static IntPtr PyBaseObjectType;
@@ -617,72 +424,6 @@ namespace Python.Runtime
             }
 
             return items;
-        }
-
-        internal static Type[] PythonArgsToTypeArray(IntPtr arg)
-        {
-            return PythonArgsToTypeArray(arg, false);
-        }
-
-        internal static Type[] PythonArgsToTypeArray(IntPtr arg, bool mangleObjects)
-        {
-            // Given a PyObject * that is either a single type object or a
-            // tuple of (managed or unmanaged) type objects, return a Type[]
-            // containing the CLR Type objects that map to those types.
-            IntPtr args = arg;
-            var free = false;
-
-            if (!PyTuple_Check(arg))
-            {
-                args = PyTuple_New(1);
-                XIncref(arg);
-                PyTuple_SetItem(args, 0, arg);
-                free = true;
-            }
-
-            var n = PyTuple_Size(args);
-            var types = new Type[n];
-            Type t = null;
-
-            for (var i = 0; i < n; i++)
-            {
-                IntPtr op = PyTuple_GetItem(args, i);
-                if (mangleObjects && (!PyType_Check(op)))
-                {
-                    op = PyObject_TYPE(op);
-                }
-                ManagedType mt = ManagedType.GetManagedObject(op);
-
-                if (mt is ClassBase)
-                {
-                    MaybeType _type = ((ClassBase)mt).type;
-                    t = _type.Valid ?  _type.Value : null;
-                }
-                else if (mt is CLRObject)
-                {
-                    object inst = ((CLRObject)mt).inst;
-                    if (inst is Type)
-                    {
-                        t = inst as Type;
-                    }
-                }
-                else
-                {
-                    t = Converter.GetTypeByAlias(op);
-                }
-
-                if (t == null)
-                {
-                    types = null;
-                    break;
-                }
-                types[i] = t;
-            }
-            if (free)
-            {
-                XDecref(args);
-            }
-            return types;
         }
 
         /// <summary>

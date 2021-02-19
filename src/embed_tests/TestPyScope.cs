@@ -5,6 +5,8 @@ using Python.Runtime;
 
 namespace Python.EmbeddingTest
 {
+    using Python.Runtime.Native;
+
     public class PyScopeTest
     {
         private PyScope ps;
@@ -67,10 +69,11 @@ namespace Python.EmbeddingTest
         {
             using (Py.GIL())
             {
-                ps.Set("bb", 100); //declare a global variable
-                ps.Set("cc", 10); //declare a local variable
-                PyObject script = PythonEngine.Compile("bb + cc + 3", "", RunFlagType.Eval);
-                var result = ps.Execute<int>(script);
+                this.ps.Set("bb", 100); //declare a global variable
+                this.ps.Set("cc", 10); //declare a local variable
+                RunFlagType mode = RunFlagType.Eval;
+                PyObject script = PyModule.Compile("bb + cc + 3", "", mode);
+                var result = this.ps.Execute<int>(script);
                 Assert.AreEqual(113, result);
             }
         }
@@ -85,11 +88,11 @@ namespace Python.EmbeddingTest
         {
             using (Py.GIL())
             {
-                ps.Set("bb", 100); //declare a global variable
-                ps.Set("cc", 10); //declare a local variable
-                PyObject script = PythonEngine.Compile("aa = bb + cc + 3", "", RunFlagType.File);
-                ps.Execute(script);
-                var result = ps.Get<int>("aa");
+                this.ps.Set("bb", 100); //declare a global variable
+                this.ps.Set("cc", 10); //declare a local variable
+                PyObject script = PyModule.Compile("aa = bb + cc + 3", "", RunFlagType.File);
+                this.ps.Execute(script);
+                var result = this.ps.Get<int>("aa");
                 Assert.AreEqual(113, result);
             }
         }

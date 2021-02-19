@@ -25,7 +25,7 @@ namespace Python.EmbeddingTest
         public void TestKeywordArgs()
         {
             dynamic a = CreateTestClass();
-            var result = (int)a.Test3(2, Py.kw("a4", 8));
+            var result = (int)a.Test3(2, KeywordArguments.FromKeysAndValues("a4", 8));
 
             Assert.AreEqual(12, result);
         }

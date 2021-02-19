@@ -51,7 +51,7 @@ namespace Python.Runtime
         /// </summary>
         public virtual IntPtr type_subscript(IntPtr idx)
         {
-            Type[] types = Runtime.PythonArgsToTypeArray(idx);
+            Type[] types = PythonArgsToTypeArray(idx);
             if (types == null)
             {
                 return Exceptions.RaiseTypeError("type(s) expected");

@@ -33,7 +33,7 @@ namespace Python.Runtime
 
             // Fix the BaseException args (and __cause__ in case of Python 3)
             // slot if wrapping a CLR exception
-            Exceptions.SetArgsAndCause(py);
+            SetArgsAndCause(py);
         }
 
         protected CLRObject()
@@ -102,6 +102,45 @@ namespace Python.Runtime
             base.OnLoad(context);
             GCHandle gc = AllocGCHandle(TrackTypes.Wrapper);
             Marshal.WriteIntPtr(pyHandle, ObjectOffset.magic(tpHandle), (IntPtr)gc);
+        }
+
+        /// <summary>
+        /// Set the 'args' slot on a python exception object that wraps
+        /// a CLR exception. This is needed for pickling CLR exceptions as
+        /// BaseException_reduce will only check the slots, bypassing the
+        /// __getattr__ implementation, and thus dereferencing a NULL
+        /// pointer.
+        /// </summary>
+        /// <param name="ob">The python object wrapping </param>
+        private static void SetArgsAndCause(IntPtr ob)
+        {
+            // e: A CLR Exception
+            Exception e = ExceptionClassObject.ToException(ob);
+            if (e == null)
+            {
+                return;
+            }
+
+            IntPtr args;
+            if (!string.IsNullOrEmpty(e.Message))
+            {
+                args = Runtime.PyTuple_New(1);
+                IntPtr msg = Runtime.PyUnicode_FromString(e.Message);
+                Runtime.PyTuple_SetItem(args, 0, msg);
+            }
+            else
+            {
+                args = Runtime.PyTuple_New(0);
+            }
+
+            Marshal.WriteIntPtr(ob, ExceptionOffset.args, args);
+
+            if (e.InnerException != null)
+            {
+                // Note: For an AggregateException, InnerException is only the first of the InnerExceptions.
+                IntPtr cause = CLRObject.GetInstHandle(e.InnerException);
+                Marshal.WriteIntPtr(ob, ExceptionOffset.cause, cause);
+            }
         }
     }
 }

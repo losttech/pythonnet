@@ -27,18 +27,18 @@ namespace Python.Runtime
         internal IntPtr pyHandle; // PyObject *
         internal IntPtr tpHandle; // PyType *
 
-        internal BorrowedReference ObjectReference => new BorrowedReference(pyHandle);
+        internal BorrowedReference ObjectReference => new BorrowedReference(this.pyHandle);
 
         private static readonly Dictionary<ManagedType, TrackTypes> _managedObjs = new Dictionary<ManagedType, TrackTypes>();
 
         internal void IncrRefCount()
         {
-            Runtime.XIncref(pyHandle);
+            Runtime.XIncref(this.pyHandle);
         }
 
         internal void DecrRefCount()
         {
-            Runtime.XDecref(pyHandle);
+            Runtime.XDecref(this.pyHandle);
         }
 
         internal long RefCount
@@ -48,7 +48,7 @@ namespace Python.Runtime
                 var gs = Runtime.PyGILState_Ensure();
                 try
                 {
-                    return Runtime.Refcount(pyHandle);
+                    return Runtime.Refcount(this.pyHandle);
                 }
                 finally
                 {
@@ -59,21 +59,21 @@ namespace Python.Runtime
 
         internal GCHandle AllocGCHandle(TrackTypes track = TrackTypes.Untrack)
         {
-            gcHandle = GCHandle.Alloc(this);
+            this.gcHandle = GCHandle.Alloc(this);
             if (track != TrackTypes.Untrack)
             {
                 _managedObjs.Add(this, track);
             }
-            return gcHandle;
+            return this.gcHandle;
         }
 
         internal void FreeGCHandle()
         {
             _managedObjs.Remove(this);
-            if (gcHandle.IsAllocated)
+            if (this.gcHandle.IsAllocated)
             {
-                gcHandle.Free();
-                gcHandle = default;
+                this.gcHandle.Free();
+                this.gcHandle = default;
             }
         }
 
@@ -163,7 +163,7 @@ namespace Python.Runtime
 
         public bool IsTypeObject()
         {
-            return pyHandle == tpHandle;
+            return this.pyHandle == this.tpHandle;
         }
 
         internal static IDictionary<ManagedType, TrackTypes> GetManagedObjects()
@@ -191,17 +191,17 @@ namespace Python.Runtime
         /// </summary>
         internal void CallTypeClear()
         {
-            if (tpHandle == IntPtr.Zero || pyHandle == IntPtr.Zero)
+            if (this.tpHandle == IntPtr.Zero || this.pyHandle == IntPtr.Zero)
             {
                 return;
             }
-            var clearPtr = Marshal.ReadIntPtr(tpHandle, TypeOffset.tp_clear);
+            var clearPtr = Marshal.ReadIntPtr(this.tpHandle, TypeOffset.tp_clear);
             if (clearPtr == IntPtr.Zero)
             {
                 return;
             }
             var clearFunc = NativeCall.GetDelegate<Interop.InquiryFunc>(clearPtr);
-            clearFunc(pyHandle);
+            clearFunc(this.pyHandle);
         }
 
         /// <summary>
@@ -209,11 +209,11 @@ namespace Python.Runtime
         /// </summary>
         internal void CallTypeTraverse(Interop.ObjObjFunc visitproc, IntPtr arg)
         {
-            if (tpHandle == IntPtr.Zero || pyHandle == IntPtr.Zero)
+            if (this.tpHandle == IntPtr.Zero || this.pyHandle == IntPtr.Zero)
             {
                 return;
             }
-            var traversePtr = Marshal.ReadIntPtr(tpHandle, TypeOffset.tp_traverse);
+            var traversePtr = Marshal.ReadIntPtr(this.tpHandle, TypeOffset.tp_traverse);
             if (traversePtr == IntPtr.Zero)
             {
                 return;
@@ -221,22 +221,22 @@ namespace Python.Runtime
             var traverseFunc = NativeCall.GetDelegate<Interop.ObjObjArgFunc>(traversePtr);
 
             var visiPtr = Marshal.GetFunctionPointerForDelegate(visitproc);
-            traverseFunc(pyHandle, visiPtr, arg);
+            traverseFunc(this.pyHandle, visiPtr, arg);
         }
 
         protected void TypeClear()
         {
-            ClearObjectDict(pyHandle);
+            ClearObjectDict(this.pyHandle);
         }
 
         internal void Save(InterDomainContext context)
         {
-            OnSave(context);
+            this.OnSave(context);
         }
 
         internal void Load(InterDomainContext context)
         {
-            OnLoad(context);
+            this.OnLoad(context);
         }
 
         protected virtual void OnSave(InterDomainContext context) { }
@@ -263,6 +263,72 @@ namespace Python.Runtime
         {
             IntPtr type = Runtime.PyObject_TYPE(ob);
             Marshal.WriteIntPtr(ob, ObjectOffset.TypeDictOffset(type), value);
+        }
+
+        internal static Type[] PythonArgsToTypeArray(IntPtr arg)
+        {
+            return PythonArgsToTypeArray(arg, false);
+        }
+
+        internal static Type[] PythonArgsToTypeArray(IntPtr arg, bool mangleObjects)
+        {
+            // Given a PyObject * that is either a single type object or a
+            // tuple of (managed or unmanaged) type objects, return a Type[]
+            // containing the CLR Type objects that map to those types.
+            IntPtr args = arg;
+            var free = false;
+
+            if (!Runtime.PyTuple_Check(arg))
+            {
+                args = Runtime.PyTuple_New((long)1);
+                Runtime.XIncref(arg);
+                Runtime.PyTuple_SetItem(args, (long)0, arg);
+                free = true;
+            }
+
+            var n = Runtime.PyTuple_Size(args);
+            var types = new Type[n];
+            Type t = null;
+
+            for (var i = 0; i < n; i++)
+            {
+                IntPtr op = Runtime.PyTuple_GetItem(args, (long)i);
+                if (mangleObjects && (!Runtime.PyType_Check(op)))
+                {
+                    op = Runtime.PyObject_TYPE(op);
+                }
+                ManagedType mt = ManagedType.GetManagedObject(op);
+
+                if (mt is ClassBase)
+                {
+                    MaybeType _type = ((ClassBase)mt).type;
+                    t = _type.Valid ?  _type.Value : null;
+                }
+                else if (mt is CLRObject)
+                {
+                    object inst = ((CLRObject)mt).inst;
+                    if (inst is Type)
+                    {
+                        t = inst as Type;
+                    }
+                }
+                else
+                {
+                    t = Converter.GetTypeByAlias(op);
+                }
+
+                if (t == null)
+                {
+                    types = null;
+                    break;
+                }
+                types[i] = t;
+            }
+            if (free)
+            {
+                Runtime.XDecref(args);
+            }
+            return types;
         }
     }
 }

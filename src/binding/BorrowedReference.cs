@@ -1,6 +1,9 @@
+using System;
+
+using Python.Runtime.Tricks;
+
 namespace Python.Runtime
 {
-    using System;
     /// <summary>
     /// Represents a reference to a Python object, that is being lent, and
     /// can only be safely used until execution returns to the caller.
@@ -28,6 +31,11 @@ namespace Python.Runtime
             => a.pointer == b.pointer;
         public static bool operator !=(BorrowedReference a, BorrowedReference b)
             => a.pointer != b.pointer;
+
+        public static bool operator ==(BorrowedReference reference, NullOnly @null)
+            => reference.IsNull;
+        public static bool operator !=(BorrowedReference reference, NullOnly @null)
+            => !reference.IsNull;
 
         public override bool Equals(object obj) {
             if (obj is IntPtr ptr)

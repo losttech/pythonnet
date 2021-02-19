@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using System.Dynamic;
+using Python.Runtime.Native;
 
 namespace Python.Runtime
 {
@@ -117,13 +118,13 @@ namespace Python.Runtime
             Manager.TryGet(name, out scope);
             if (scope != null)
             {
-                Import(scope, asname);
+                this.Import(scope, asname);
                 return scope;
             }
             else
             {
-                PyObject module = PythonEngine.ImportModule(name);
-                Import(module, asname);
+                PyObject module = PyModule.Import(name);
+                this.Import(module, asname);
                 return module;
             }
         }
@@ -168,13 +169,13 @@ namespace Python.Runtime
             Manager.TryGet(name, out scope);
             if (scope != null)
             {
-                ImportAll(scope);
+                this.ImportAll(scope);
                 return;
             }
             else
             {
-                PyObject module = PythonEngine.ImportModule(name);
-                ImportAll(module);
+                PyObject module = PyModule.Import(name);
+                this.ImportAll(module);
             }
         }
 

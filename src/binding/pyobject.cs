@@ -102,28 +102,6 @@ namespace Python.Runtime
             get { return obj; }
         }
 
-
-        /// <summary>
-        /// Gets raw Python proxy for this object (bypasses all conversions,
-        /// except <c>null</c> &lt;==&gt; <c>None</c>)
-        /// </summary>
-        /// <remarks>
-        /// Given an arbitrary managed object, return a Python instance that
-        /// reflects the managed object.
-        /// </remarks>
-        public static PyObject FromManagedObject(object ob)
-        {
-            // Special case: if ob is null, we return None.
-            if (ob == null)
-            {
-                Runtime.XIncref(Runtime.PyNone);
-                return new PyObject(Runtime.PyNone);
-            }
-            IntPtr op = CLRObject.GetInstHandle(ob);
-            return new PyObject(op);
-        }
-
-
         /// <summary>
         /// AsManagedObject Method
         /// </summary>
@@ -156,7 +134,6 @@ namespace Python.Runtime
             }
             return (T)AsManagedObject(typeof(T));
         }
-
 
         /// <summary>
         /// Dispose Method
@@ -1151,13 +1128,13 @@ namespace Python.Runtime
                 namedArgs[i * 2] = callInfo.ArgumentNames[i];
                 namedArgs[i * 2 + 1] = inargs[regularArgumentCount + i];
             }
-            kwargs = Py.kw(namedArgs);
+            kwargs = KeywordArguments.FromKeysAndValues(namedArgs);
         }
 
         private void GetArgs(object[] inargs, out PyTuple args, out PyDict kwargs)
         {
             int arg_count;
-            for (arg_count = 0; arg_count < inargs.Length && !(inargs[arg_count] is Py.KeywordArguments); ++arg_count)
+            for (arg_count = 0; arg_count < inargs.Length && !(inargs[arg_count] is KeywordArguments); ++arg_count)
             {
                 ;
             }
@@ -1171,17 +1148,17 @@ namespace Python.Runtime
             kwargs = null;
             for (int i = arg_count; i < inargs.Length; i++)
             {
-                if (!(inargs[i] is Py.KeywordArguments))
+                if (!(inargs[i] is KeywordArguments))
                 {
                     throw new ArgumentException("Keyword arguments must come after normal arguments.");
                 }
                 if (kwargs == null)
                 {
-                    kwargs = (Py.KeywordArguments)inargs[i];
+                    kwargs = (KeywordArguments)inargs[i];
                 }
                 else
                 {
-                    kwargs.Update((Py.KeywordArguments)inargs[i]);
+                    kwargs.Update((KeywordArguments)inargs[i]);
                 }
             }
         }

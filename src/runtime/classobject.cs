@@ -147,7 +147,7 @@ namespace Python.Runtime
             // If there are generics in our namespace with the same base name
             // as the current type, then [<type>] means the caller wants to
             // bind the generic type matching the given type parameters.
-            Type[] types = Runtime.PythonArgsToTypeArray(idx);
+            Type[] types = PythonArgsToTypeArray(idx);
             if (types == null)
             {
                 return Exceptions.RaiseTypeError("type(s) expected");

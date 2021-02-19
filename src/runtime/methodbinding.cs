@@ -55,7 +55,7 @@ namespace Python.Runtime
         {
             var self = (MethodBinding)GetManagedObject(tp);
 
-            Type[] types = Runtime.PythonArgsToTypeArray(idx);
+            Type[] types = PythonArgsToTypeArray(idx);
             if (types == null)
             {
                 return Exceptions.RaiseTypeError("type(s) expected");
@@ -118,7 +118,7 @@ namespace Python.Runtime
                 if (info.IsGenericMethod)
                 {
                     var len = Runtime.PyTuple_Size(args); //FIXME: Never used
-                    Type[] sigTp = Runtime.PythonArgsToTypeArray(args, true);
+                    Type[] sigTp = PythonArgsToTypeArray(args, true);
                     if (sigTp != null)
                     {
                         Type[] genericTp = info.GetGenericArguments();

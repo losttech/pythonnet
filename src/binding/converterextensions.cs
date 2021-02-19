@@ -1,12 +1,13 @@
+using System;
+using System.Collections.Concurrent;
+using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
+
+using Python.Runtime.Codecs;
+
 namespace Python.Runtime
 {
-    using System;
-    using System.Collections.Concurrent;
-    using System.Collections.Generic;
-    using System.Linq;
-    using System.Reflection;
-    using Python.Runtime.Codecs;
-
     /// <summary>
     /// Defines <see cref="PyObject"/> conversion to CLR types (unmarshalling)
     /// </summary>

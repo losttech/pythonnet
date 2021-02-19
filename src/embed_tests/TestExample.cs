@@ -44,7 +44,7 @@ namespace Python.EmbeddingTest
             dynamic a = np.array(new List<float> { 1, 2, 3 });
             Assert.AreEqual("float64", a.dtype.ToString());
 
-            dynamic b = np.array(new List<float> { 6, 5, 4 }, Py.kw("dtype", np.int32));
+            dynamic b = np.array(new List<float> { 6, 5, 4 }, KeywordArguments.FromKeysAndValues("dtype", np.int32));
             Assert.AreEqual("int32", b.dtype.ToString());
 
             Assert.AreEqual("[ 6. 10. 12.]", (a * b).ToString().Replace("  ", " "));

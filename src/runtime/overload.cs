@@ -30,7 +30,7 @@ namespace Python.Runtime
             // and a generic method that takes N params, then we always
             // prefer the non-generic version in doing overload selection.
 
-            Type[] types = Runtime.PythonArgsToTypeArray(idx);
+            Type[] types = PythonArgsToTypeArray(idx);
             if (types == null)
             {
                 return Exceptions.RaiseTypeError("type(s) expected");

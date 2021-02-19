@@ -98,7 +98,7 @@ namespace Python.Runtime
             }
             Type tp = self.type.Value;
 
-            Type[] types = Runtime.PythonArgsToTypeArray(key);
+            Type[] types = PythonArgsToTypeArray(key);
             if (types == null)
             {
                 return Exceptions.RaiseTypeError("type(s) expected");
