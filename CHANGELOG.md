@@ -36,6 +36,9 @@ when .NET expects an integer [#1342][i1342]
 -   BREAKING: Methods with `ref` or `out` parameters and void return type return a tuple of only the `ref` and `out` parameters.
 -   BREAKING: to call Python from .NET `Runtime.PythonDLL` property must be set to Python DLL name
 or the DLL must be loaded in advance. This must be done before calling any other Python.NET functions.
+-   BREAKING: disabled implicit conversion from C# enums to Python `int` and back.
+One must now either use enum members (e.g. `MyEnum.Option`), or use enum constructor
+(e.g. `MyEnum(42)` or `MyEnum(42, True)` when `MyEnum` does not have a member with value 42).
 -   Sign Runtime DLL with a strong name
 -   Implement loading through `clr_loader` instead of the included `ClrModule`, enables
     support for .NET Core
