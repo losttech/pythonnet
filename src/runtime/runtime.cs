@@ -2006,6 +2006,8 @@ namespace Python.Runtime
 
 
         private static IntPtr PyType_GenericAlloc(IntPtr type, IntPtr n) => Delegates.PyType_GenericAlloc(type, n);
+        
+        internal static NewReference PyType_FromSpecWithBases(in NativeTypeSpec spec, BorrowedReference bases) => Delegates.PyType_FromSpecWithBases(in spec, bases);
 
         /// <summary>
         /// Finalize a type object. This should be called on all type objects to finish their initialization. This function is responsible for adding inherited slots from a type’s base class. Return 0 on success, or return -1 and sets an exception on error.
@@ -2510,6 +2512,7 @@ namespace Python.Runtime
                 PyException_SetCause = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void>)GetFunctionByName(nameof(PyException_SetCause), GetUnmanagedDll(_PythonDll));
                 PyThreadState_SetAsyncExcLLP64 = (delegate* unmanaged[Cdecl]<uint, IntPtr, int>)GetFunctionByName("PyThreadState_SetAsyncExc", GetUnmanagedDll(_PythonDll));
                 PyThreadState_SetAsyncExcLP64 = (delegate* unmanaged[Cdecl]<ulong, IntPtr, int>)GetFunctionByName("PyThreadState_SetAsyncExc", GetUnmanagedDll(_PythonDll));
+                PyType_FromSpecWithBases = (delegate* unmanaged[Cdecl]<in NativeTypeSpec, BorrowedReference, NewReference>)GetFunctionByName(nameof(PyType_FromSpecWithBases), GetUnmanagedDll(PythonDLL));
             }
 
             static global::System.IntPtr GetUnmanagedDll(string libraryName)
@@ -2775,6 +2778,7 @@ namespace Python.Runtime
             internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, void> PyException_SetCause { get; }
             internal static delegate* unmanaged[Cdecl]<uint, IntPtr, int> PyThreadState_SetAsyncExcLLP64 { get; }
             internal static delegate* unmanaged[Cdecl]<ulong, IntPtr, int> PyThreadState_SetAsyncExcLP64 { get; }
+            internal static delegate* unmanaged[Cdecl]<in NativeTypeSpec, BorrowedReference, NewReference> PyType_FromSpecWithBases { get; }
         }
     }
 
