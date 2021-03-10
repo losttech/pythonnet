@@ -14,17 +14,6 @@ namespace Python.Runtime
             System.Diagnostics.Debug.Assert(tp != IntPtr.Zero);
             IntPtr py = Runtime.PyType_GenericAlloc(tp, 0);
 
-            long flags = Util.ReadCLong(tp, TypeOffset.tp_flags);
-            if ((flags & TypeFlags.Subclass) != 0)
-            {
-                IntPtr dict = Marshal.ReadIntPtr(py, ObjectOffset.TypeDictOffset(tp));
-                if (dict == IntPtr.Zero)
-                {
-                    dict = Runtime.PyDict_New();
-                    Marshal.WriteIntPtr(py, ObjectOffset.TypeDictOffset(tp), dict);
-                }
-            }
-
             GCHandle gc = AllocGCHandle(TrackTypes.Wrapper);
             Marshal.WriteIntPtr(py, ObjectOffset.magic(tp), (IntPtr)gc);
             tpHandle = tp;
