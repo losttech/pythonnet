@@ -544,54 +544,6 @@ namespace Python.Runtime
             return mdef;
         }
 
-        internal static IntPtr BasicSubType(string name, IntPtr base_, Type impl)
-        {
-            // Utility to create a subtype of a std Python type, but with
-            // a managed type able to override implementation
-
-            IntPtr type = AllocateTypeObject(name, metatype: Runtime.PyTypeType);
-            //Marshal.WriteIntPtr(type, TypeOffset.tp_basicsize, (IntPtr)obSize);
-            //Marshal.WriteIntPtr(type, TypeOffset.tp_itemsize, IntPtr.Zero);
-
-            //IntPtr offset = (IntPtr)ObjectOffset.ob_dict;
-            //Marshal.WriteIntPtr(type, TypeOffset.tp_dictoffset, offset);
-
-            //IntPtr dc = Runtime.PyDict_Copy(dict);
-            //Marshal.WriteIntPtr(type, TypeOffset.tp_dict, dc);
-
-            Marshal.WriteIntPtr(type, TypeOffset.tp_base, base_);
-            Runtime.XIncref(base_);
-
-            int flags = TypeFlags.Default;
-            flags |= TypeFlags.Managed;
-            flags |= TypeFlags.HeapType;
-            flags |= TypeFlags.HaveGC;
-            Util.WriteCLong(type, TypeOffset.tp_flags, flags);
-
-            CopySlot(base_, type, TypeOffset.tp_traverse);
-            CopySlot(base_, type, TypeOffset.tp_clear);
-            CopySlot(base_, type, TypeOffset.tp_is_gc);
-
-            SlotsHolder slotsHolder = CreateSolotsHolder(type);
-            InitializeSlots(type, impl, slotsHolder);
-
-            if (Runtime.PyType_Ready(type) != 0)
-            {
-                throw new PythonException();
-            }
-
-            IntPtr tp_dict = Marshal.ReadIntPtr(type, TypeOffset.tp_dict);
-            IntPtr mod = Runtime.PyString_FromString("CLR");
-            Runtime.PyDict_SetItem(tp_dict, PyIdentifier.__module__, mod);
-            
-            // The type has been modified after PyType_Ready has been called
-            // Refresh the type
-            Runtime.PyType_Modified(type);
-
-            return type;
-        }
-
-
         /// <summary>
         /// Utility method to allocate a type object &amp; do basic initialization.
         /// </summary>
