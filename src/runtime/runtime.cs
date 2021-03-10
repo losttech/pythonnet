@@ -1707,7 +1707,7 @@ namespace Python.Runtime
         internal static NewReference PyDict_Keys(BorrowedReference pointer) => Delegates.PyDict_Keys(pointer);
 
 
-        internal static IntPtr PyDict_Values(IntPtr pointer) => Delegates.PyDict_Values(pointer);
+        internal static NewReference PyDict_Values(BorrowedReference pointer) => Delegates.PyDict_Values(pointer);
 
 
         internal static NewReference PyDict_Items(BorrowedReference pointer) => Delegates.PyDict_Items(pointer);
@@ -1721,13 +1721,8 @@ namespace Python.Runtime
 
         internal static void PyDict_Clear(IntPtr pointer) => Delegates.PyDict_Clear(pointer);
 
-        internal static long PyDict_Size(IntPtr pointer)
-        {
-            return (long)_PyDict_Size(pointer);
-        }
 
-
-        internal static IntPtr _PyDict_Size(IntPtr pointer) => Delegates._PyDict_Size(pointer);
+        internal static nint PyDict_Size(BorrowedReference pointer) => Delegates.PyDict_Size(pointer);
 
 
         internal static NewReference PySet_New(BorrowedReference iterable) => Delegates.PySet_New(iterable);
@@ -2425,12 +2420,12 @@ namespace Python.Runtime
                 PyDict_DelItemString = (delegate* unmanaged[Cdecl]<BorrowedReference, StrPtr, int>)GetFunctionByName(nameof(PyDict_DelItemString), GetUnmanagedDll(_PythonDll));
                 PyMapping_HasKey = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int>)GetFunctionByName(nameof(PyMapping_HasKey), GetUnmanagedDll(_PythonDll));
                 PyDict_Keys = (delegate* unmanaged[Cdecl]<BorrowedReference, NewReference>)GetFunctionByName(nameof(PyDict_Keys), GetUnmanagedDll(_PythonDll));
-                PyDict_Values = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)GetFunctionByName(nameof(PyDict_Values), GetUnmanagedDll(_PythonDll));
+                PyDict_Values = (delegate* unmanaged[Cdecl]<BorrowedReference, NewReference>)GetFunctionByName(nameof(PyDict_Values), GetUnmanagedDll(_PythonDll));
                 PyDict_Items = (delegate* unmanaged[Cdecl]<BorrowedReference, NewReference>)GetFunctionByName(nameof(PyDict_Items), GetUnmanagedDll(_PythonDll));
                 PyDict_Copy = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)GetFunctionByName(nameof(PyDict_Copy), GetUnmanagedDll(_PythonDll));
                 PyDict_Update = (delegate* unmanaged[Cdecl]<BorrowedReference, BorrowedReference, int>)GetFunctionByName(nameof(PyDict_Update), GetUnmanagedDll(_PythonDll));
                 PyDict_Clear = (delegate* unmanaged[Cdecl]<IntPtr, void>)GetFunctionByName(nameof(PyDict_Clear), GetUnmanagedDll(_PythonDll));
-                _PyDict_Size = (delegate* unmanaged[Cdecl]<IntPtr, IntPtr>)GetFunctionByName("PyDict_Size", GetUnmanagedDll(_PythonDll));
+                PyDict_Size = (delegate* unmanaged[Cdecl]<BorrowedReference, nint>)GetFunctionByName(nameof(PyDict_Size), GetUnmanagedDll(_PythonDll));
                 PySet_New = (delegate* unmanaged[Cdecl]<BorrowedReference, NewReference>)GetFunctionByName(nameof(PySet_New), GetUnmanagedDll(_PythonDll));
                 PySet_Add = (delegate* unmanaged[Cdecl]<BorrowedReference, BorrowedReference, int>)GetFunctionByName(nameof(PySet_Add), GetUnmanagedDll(_PythonDll));
                 PySet_Contains = (delegate* unmanaged[Cdecl]<BorrowedReference, BorrowedReference, int>)GetFunctionByName(nameof(PySet_Contains), GetUnmanagedDll(_PythonDll));
@@ -2702,12 +2697,12 @@ namespace Python.Runtime
             internal static delegate* unmanaged[Cdecl]<BorrowedReference, StrPtr, int> PyDict_DelItemString { get; }
             internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr, int> PyMapping_HasKey { get; }
             internal static delegate* unmanaged[Cdecl]<BorrowedReference, NewReference> PyDict_Keys { get; }
-            internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> PyDict_Values { get; }
+            internal static delegate* unmanaged[Cdecl]<BorrowedReference, NewReference> PyDict_Values { get; }
             internal static delegate* unmanaged[Cdecl]<BorrowedReference, NewReference> PyDict_Items { get; }
             internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> PyDict_Copy { get; }
             internal static delegate* unmanaged[Cdecl]<BorrowedReference, BorrowedReference, int> PyDict_Update { get; }
             internal static delegate* unmanaged[Cdecl]<IntPtr, void> PyDict_Clear { get; }
-            internal static delegate* unmanaged[Cdecl]<IntPtr, IntPtr> _PyDict_Size { get; }
+            internal static delegate* unmanaged[Cdecl]<BorrowedReference, nint> PyDict_Size { get; }
             internal static delegate* unmanaged[Cdecl]<BorrowedReference, NewReference> PySet_New { get; }
             internal static delegate* unmanaged[Cdecl]<BorrowedReference, BorrowedReference, int> PySet_Add { get; }
             internal static delegate* unmanaged[Cdecl]<BorrowedReference, BorrowedReference, int> PySet_Contains { get; }

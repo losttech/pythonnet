@@ -82,6 +82,25 @@ namespace Python.Runtime
         [Pure]
         internal static bool IsNull(in NewReference reference)
             => reference.pointer == IntPtr.Zero;
+
+        public static bool operator ==(in NewReference reference, NullOnly @null)
+            => reference.IsNull();
+        public static bool operator !=(in NewReference reference, NullOnly @null)
+            => !reference.IsNull();
+        public static bool operator ==(NullOnly @null, in NewReference reference)
+            => reference.IsNull();
+        public static bool operator !=(NullOnly @null, in NewReference reference)
+            => !reference.IsNull();
+
+        public override bool Equals(object obj)
+        {
+            if (obj is IntPtr ptr)
+                return ptr == pointer;
+
+            return false;
+        }
+
+        public override int GetHashCode() => pointer.GetHashCode();
     }
 
     /// <summary>

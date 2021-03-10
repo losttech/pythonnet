@@ -121,12 +121,12 @@ namespace Python.Runtime
         /// </remarks>
         public PyObject Values()
         {
-            IntPtr items = Runtime.PyDict_Values(obj);
-            if (items == IntPtr.Zero)
+            using var items = Runtime.PyDict_Values(Reference);
+            if (items == null)
             {
                 throw new PythonException();
             }
-            return new PyObject(items);
+            return items.MoveToPyObject();
         }
 
 
