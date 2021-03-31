@@ -671,7 +671,6 @@ namespace Python.Runtime
                             }
 
                             PyObject py_result = method.Invoke(pyargs);
-                            disposeList.Add(py_result);
                             return (T)py_result.AsManagedObject(typeof(T));
                         }
                     }
@@ -774,12 +773,10 @@ namespace Python.Runtime
             try
             {
                 Runtime.XIncref(self.pyHandle);
-                using (var pyself = new PyObject(self.pyHandle))
-                using (PyObject pyvalue = pyself.GetAttr(propertyName))
-                {
+                using var pyself = new PyObject(self.pyHandle);
+                PyObject pyvalue = pyself.GetAttr(propertyName);
                     return (T)pyvalue.AsManagedObject(typeof(T));
                 }
-            }
             finally
             {
                 Runtime.PyGILState_Release(gs);
