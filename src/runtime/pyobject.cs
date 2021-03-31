@@ -27,7 +27,16 @@ namespace Python.Runtime
 
         protected internal IntPtr obj = IntPtr.Zero;
 
-        internal BorrowedReference Reference => new BorrowedReference(obj);
+        internal BorrowedReference Reference
+        {
+            get
+            {
+#if DEBUG
+                this.CheckDisposed();
+#endif
+                return new BorrowedReference(obj);
+            }
+        }
 
         /// <summary>
         /// PyObject Constructor
@@ -99,7 +108,13 @@ namespace Python.Runtime
         /// </remarks>
         public IntPtr Handle
         {
-            get { return obj; }
+            get
+            {
+#if DEBUG
+                this.CheckDisposed();
+#endif
+                return obj;
+            }
         }
 
 
@@ -211,6 +226,14 @@ namespace Python.Runtime
                 throw new InvalidOperationException("Runtime is already finalizing");
             }
             this.obj = IntPtr.Zero;
+        }
+
+        private void CheckDisposed()
+        {
+            if (this.IsDisposed)
+            {
+                throw new ObjectDisposedException(nameof(PyObject));
+            }
         }
 
         public void Dispose()

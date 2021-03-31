@@ -59,6 +59,10 @@ namespace Python.Runtime
 
         internal GCHandle AllocGCHandle(TrackTypes track = TrackTypes.Untrack)
         {
+#if DEBUG
+            if (gcHandle != default)
+                throw new InvalidOperationException();
+#endif
             gcHandle = GCHandle.Alloc(this);
             if (track != TrackTypes.Untrack)
             {
