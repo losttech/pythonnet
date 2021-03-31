@@ -257,7 +257,7 @@ namespace Python.Runtime
                 Type.EmptyTypes);
             ILGenerator il = methodBuilder.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
-            il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod("Finalize"));
+            il.Emit(OpCodes.Call, typeof(PythonDerivedType).GetMethod(nameof(PythonDerivedType.Finalize)));
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Call, baseClass.GetMethod("Finalize", BindingFlags.NonPublic | BindingFlags.Instance));
             il.Emit(OpCodes.Ret);
@@ -775,8 +775,8 @@ namespace Python.Runtime
                 Runtime.XIncref(self.pyHandle);
                 using var pyself = new PyObject(self.pyHandle);
                 PyObject pyvalue = pyself.GetAttr(propertyName);
-                    return (T)pyvalue.AsManagedObject(typeof(T));
-                }
+                return (T)pyvalue.AsManagedObject(typeof(T));
+            }
             finally
             {
                 Runtime.PyGILState_Release(gs);
@@ -886,7 +886,7 @@ namespace Python.Runtime
                             Runtime.XDecref(dict);
                         }
                         Runtime.PyObject_GC_Del(self.pyHandle);
-                        self.gcHandle.Free();
+                        if (self.gcHandle.IsAllocated) self.gcHandle.Free();
                     }
                     finally
                     {
