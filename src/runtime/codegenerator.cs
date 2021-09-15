@@ -16,13 +16,19 @@ namespace Python.Runtime
         private AssemblyBuilder aBuilder;
         private ModuleBuilder mBuilder;
 
+        internal const string DynamicAssemblyName = "__PythonNET__CodeGenerator__DynamicAssembly";
+
         internal CodeGenerator()
         {
-            var aname = new AssemblyName { Name = "__CodeGenerator_Assembly" };
+            var aname = new AssemblyName
+            {
+                Name = DynamicAssemblyName,
+                KeyPair = GetStrongNameKeyPair(),
+            };
             var aa = AssemblyBuilderAccess.Run;
 
             aBuilder = Thread.GetDomain().DefineDynamicAssembly(aname, aa);
-            mBuilder = aBuilder.DefineDynamicModule("__CodeGenerator_Module");
+            mBuilder = aBuilder.DefineDynamicModule(DynamicAssemblyName);
         }
 
         /// <summary>
@@ -41,6 +47,14 @@ namespace Python.Runtime
         {
             var attrs = TypeAttributes.Public;
             return mBuilder.DefineType(name, attrs, basetype);
+        }
+
+        static StrongNameKeyPair GetStrongNameKeyPair()
+        {
+            using var stream = Assembly.GetExecutingAssembly().GetManifestResourceStream("pythonnet.snk");
+            using var temp = new System.IO.MemoryStream();
+            stream.CopyTo(temp);
+            return new StrongNameKeyPair(temp.ToArray());
         }
     }
 }

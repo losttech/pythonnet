@@ -43,6 +43,9 @@
     <EmbeddedResource Include="resources\clr.py">
       <LogicalName>clr.py</LogicalName>
     </EmbeddedResource>
+    <EmbeddedResource Include="..\pythonnet.snk">
+      <LogicalName>pythonnet.snk</LogicalName>
+    </EmbeddedResource>
   </ItemGroup>
 
   <ItemGroup>
