@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -273,6 +274,8 @@ namespace Python.Runtime
         /// CPython interpreter process - this bootstraps the managed runtime
         /// when it is imported by the CLR extension module.
         /// </summary>
+        [EditorBrowsable(EditorBrowsableState.Never)]
+        [Obsolete(Util.InternalUseOnly)]
         public static IntPtr InitExt()
         {
             try
@@ -442,7 +445,7 @@ namespace Python.Runtime
         /// For more information, see the "Extending and Embedding" section
         /// of the Python documentation on www.python.org.
         /// </remarks>
-        public static IntPtr AcquireLock()
+        internal static IntPtr AcquireLock()
         {
             return Runtime.PyGILState_Ensure();
         }
@@ -457,7 +460,7 @@ namespace Python.Runtime
         /// For more information, see the "Extending and Embedding" section
         /// of the Python documentation on www.python.org.
         /// </remarks>
-        public static void ReleaseLock(IntPtr gs)
+        internal static void ReleaseLock(IntPtr gs)
         {
             Runtime.PyGILState_Release(gs);
         }
@@ -493,18 +496,6 @@ namespace Python.Runtime
         {
             Runtime.PyEval_RestoreThread(ts);
         }
-
-        [Obsolete("Use PyModule.Import")]
-        public static PyObject ImportModule(string name) => PyModule.Import(name);
-
-        [Obsolete("Use PyModule.Reload")]
-        public static PyObject ReloadModule(PyObject module)
-            => module is PyModule pyModule ? pyModule.Reload() : new PyModule(module).Reload();
-
-        [Obsolete("Use PyModule.FromString")]
-        public static PyObject ModuleFromString(string name, string code)
-            => PyModule.FromString(name, code);
-
 
         public static PyObject Compile(string code, string filename = "", RunFlagType mode = RunFlagType.File)
         {
@@ -609,6 +600,8 @@ namespace Python.Runtime
         /// </remarks>
         internal static PyObject RunString(string code, BorrowedReference globals, BorrowedReference locals, RunFlagType flag)
         {
+            if (code is null) throw new ArgumentNullException(nameof(code));
+
             NewReference tempGlobals = default;
             if (globals.IsNull)
             {
@@ -670,6 +663,8 @@ namespace Python.Runtime
 
         public static PyScope CreateScope(string name)
         {
+            if (name is null) throw new ArgumentNullException(nameof(name));
+
             var scope = PyScopeManager.Global.Create(name);
             return scope;
         }
@@ -781,6 +776,8 @@ namespace Python.Runtime
 
         public static void SetArgv(IEnumerable<string> argv)
         {
+            if (argv is null) throw new ArgumentNullException(nameof(argv));
+
             using (GIL())
             {
                 string[] arr = argv.ToArray();
@@ -791,6 +788,9 @@ namespace Python.Runtime
 
         public static void With(PyObject obj, Action<dynamic> Body)
         {
+            if (obj is null) throw new ArgumentNullException(nameof(obj));
+            if (Body is null) throw new ArgumentNullException(nameof(Body));
+
             // Behavior described here:
             // https://docs.python.org/2/reference/datamodel.html#with-statement-context-managers
 

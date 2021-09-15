@@ -9,15 +9,7 @@ namespace Python.Runtime
     /// </summary>
     public class PyFloat : PyNumber
     {
-        /// <summary>
-        /// PyFloat Constructor
-        /// </summary>
-        /// <remarks>
-        /// Creates a new PyFloat from an existing object reference. Note
-        /// that the instance assumes ownership of the object reference.
-        /// The object reference is not checked for type-correctness.
-        /// </remarks>
-        public PyFloat(IntPtr ptr) : base(ptr)
+        internal PyFloat(in StolenReference ptr) : base(ptr)
         {
         }
 
@@ -30,7 +22,7 @@ namespace Python.Runtime
         /// ArgumentException will be thrown if the given object is not a
         /// Python float object.
         /// </remarks>
-        public PyFloat(PyObject o) : base(FromObject(o))
+        public PyFloat(PyObject o) : base(FromObject(o).Steal())
         {
         }
 
@@ -41,34 +33,37 @@ namespace Python.Runtime
         /// <remarks>
         /// Creates a new Python float from a double value.
         /// </remarks>
-        public PyFloat(double value) : base(FromDouble(value))
+        public PyFloat(double value) : base(FromDouble(value).Steal())
         {
         }
 
-        private static IntPtr FromObject(PyObject o)
+        private static NewReference FromObject(PyObject o)
         {
-            if (o == null || !IsFloatType(o))
+            if (o is null) throw new ArgumentNullException(nameof(o));
+
+            if (!IsFloatType(o))
             {
                 throw new ArgumentException("object is not a float");
             }
-            Runtime.XIncref(o.obj);
-            return o.obj;
+            return new NewReference(o.Reference);
         }
 
-        private static IntPtr FromDouble(double value)
+        private static NewReference FromDouble(double value)
         {
             IntPtr val = Runtime.PyFloat_FromDouble(value);
             PythonException.ThrowIfIsNull(val);
-            return val;
+            return NewReference.DangerousFromPointer(val);
         }
 
-        private static IntPtr FromString(string value)
+        private static StolenReference FromString(string value)
         {
+            if (value is null) throw new ArgumentNullException(nameof(value));
+
             using (var s = new PyString(value))
             {
                 NewReference val = Runtime.PyFloat_FromString(s.Reference);
                 PythonException.ThrowIfIsNull(val);
-                return val.DangerousMoveToPointerOrNull();
+                return val.Steal();
             }
         }
 
@@ -107,7 +102,7 @@ namespace Python.Runtime
         {
             IntPtr op = Runtime.PyNumber_Float(value.obj);
             PythonException.ThrowIfIsNull(op);
-            return new PyFloat(op);
+            return new PyFloat(NewReference.DangerousFromPointer(op).Steal());
         }
     }
 }

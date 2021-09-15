@@ -76,7 +76,7 @@ namespace Python.Runtime
             var cc = CallingConventions.Standard;
             Type[] args = { ptrtype, typetype };
             ConstructorBuilder cb = tb.DefineConstructor(ma, cc, args);
-            ConstructorInfo ci = basetype.GetConstructor(args);
+            ConstructorInfo ci = basetype.GetConstructor(BindingFlags.Instance | BindingFlags.NonPublic, null, args, null);
             ILGenerator il = cb.GetILGenerator();
             il.Emit(OpCodes.Ldarg_0);
             il.Emit(OpCodes.Ldarg_1);
@@ -229,7 +229,7 @@ namespace Python.Runtime
         private bool _disposed = false;
         private bool _finalized = false;
 
-        public Dispatcher(IntPtr target, Type dtype)
+        protected Dispatcher(IntPtr target, Type dtype)
         {
             Runtime.XIncref(target);
             this.target = target;

@@ -9,6 +9,8 @@ namespace Python.Runtime
             "This API is unstable, and might be changed or removed in the next minor release";
         internal const string MinimalPythonVersionRequired =
             "Only Python 3.5 or newer is supported";
+        internal const string InternalUseOnly =
+            "This API is for internal use only";
 
         internal static Int64 ReadCLong(IntPtr tp, int offset)
         {

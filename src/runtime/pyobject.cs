@@ -40,7 +40,7 @@ namespace Python.Runtime
         /// and the reference will be DECREFed when the PyObject is garbage
         /// collected or explicitly disposed.
         /// </remarks>
-        public PyObject(IntPtr ptr)
+        internal PyObject(IntPtr ptr)
         {
             if (ptr == IntPtr.Zero) throw new ArgumentNullException(nameof(ptr));
 
@@ -80,7 +80,7 @@ namespace Python.Runtime
 #endif
         }
 
-        internal PyObject(StolenReference reference)
+        internal PyObject(in StolenReference reference)
         {
             if (reference == null) throw new ArgumentNullException(nameof(reference));
 
@@ -104,12 +104,9 @@ namespace Python.Runtime
 
 
         /// <summary>
-        /// Handle Property
-        /// </summary>
-        /// <remarks>
         /// Gets the native handle of the underlying Python object. This
         /// value is generally for internal use by the PythonNet runtime.
-        /// </remarks>
+        /// </summary>
         public IntPtr Handle
         {
             get { return obj; }
@@ -254,7 +251,7 @@ namespace Python.Runtime
         /// Returns true if the object o is of type typeOrClass or a subtype
         /// of typeOrClass.
         /// </remarks>
-        public bool TypeCheck(PyObject typeOrClass)
+        public bool TypeCheck(PyType typeOrClass)
         {
             if (typeOrClass == null) throw new ArgumentNullException(nameof(typeOrClass));
 
@@ -686,22 +683,11 @@ namespace Python.Runtime
 
 
         /// <summary>
-        /// GetIterator Method
-        /// </summary>
-        /// <remarks>
         /// Return a new (Python) iterator for the object. This is equivalent
-        /// to the Python expression "iter(object)". A PythonException will be
-        /// raised if the object cannot be iterated.
-        /// </remarks>
-        public PyObject GetIterator()
-        {
-            IntPtr r = Runtime.PyObject_GetIter(obj);
-            if (r == IntPtr.Zero)
-            {
-                throw PythonException.ThrowLastAsClrException();
-            }
-            return new PyObject(r);
-        }
+        /// to the Python expression "iter(object)".
+        /// </summary>
+        /// <exception cref="PythonException">Thrown if the object can not be iterated.</exception>
+        public PyIter GetIterator() => PyIter.GetIter(this);
 
         /// <summary>
         /// GetEnumerator Method
@@ -1025,7 +1011,7 @@ namespace Python.Runtime
             {
                 throw PythonException.ThrowLastAsClrException();
             }
-            return new PyList(r);
+            return new PyList(NewReference.DangerousFromPointer(r).Steal());
         }
 
 
@@ -1162,7 +1148,7 @@ namespace Python.Runtime
             {
                 AddArgument(argTuple, i, inargs[i]);
             }
-            args = new PyTuple(argTuple);
+            args = new PyTuple(StolenReference.DangerousFromPointer(argTuple));
 
             var namedArgs = new object[namedArgumentCount * 2];
             for (int i = 0; i < namedArgumentCount; ++i)
@@ -1185,7 +1171,7 @@ namespace Python.Runtime
             {
                 AddArgument(argtuple, i, inargs[i]);
             }
-            args = new PyTuple(argtuple);
+            args = new PyTuple(StolenReference.DangerousFromPointer(argtuple));
 
             kwargs = null;
             for (int i = arg_count; i < inargs.Length; i++)
