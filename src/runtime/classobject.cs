@@ -81,9 +81,18 @@ namespace Python.Runtime
                 }
 
                 IntPtr op = Runtime.PyTuple_GetItem(args, 0);
-                object result;
 
-                if (!Converter.ToManaged(op, type, out result, true))
+                object result;
+                if (type == typeof(float))
+                {
+                    if (!Converter.ToFloat32(new BorrowedReference(op), out var num))
+                    {
+                        return IntPtr.Zero;
+                    }
+
+                    result = num;
+                }
+                else if (!Converter.ToManaged(op, type, out result, true))
                 {
                     return IntPtr.Zero;
                 }

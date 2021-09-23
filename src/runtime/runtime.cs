@@ -1353,6 +1353,8 @@ namespace Python.Runtime
         internal static NewReference PyFloat_FromString(BorrowedReference value) => Delegates.PyFloat_FromString(value);
 
 
+        internal static double PyFloat_AsDouble(BorrowedReference ob)
+            => PyFloat_AsDouble(ob.DangerousGetAddress());
         internal static double PyFloat_AsDouble(IntPtr ob) => Delegates.PyFloat_AsDouble(ob);
 
 

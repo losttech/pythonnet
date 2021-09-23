@@ -758,24 +758,6 @@ namespace Python.Runtime
                         return true;
                     }
 
-                case TypeCode.Single:
-                    {
-                        double num = Runtime.PyFloat_AsDouble(value);
-                        if (num == -1.0 && Exceptions.ErrorOccurred())
-                        {
-                            goto convert_error;
-                        }
-                        if (num > Single.MaxValue || num < Single.MinValue)
-                        {
-                            if (!double.IsInfinity(num))
-                            {
-                                goto overflow;
-                            }
-                        }
-                        result = (float)num;
-                        return true;
-                    }
-
                 case TypeCode.Double:
                     {
                         double num = Runtime.PyFloat_AsDouble(value);
@@ -820,6 +802,24 @@ namespace Python.Runtime
                 Exceptions.SetError(Exceptions.OverflowError, "value too large to convert");
             }
             return false;
+        }
+
+        internal static bool ToFloat32(BorrowedReference pyfloat, out double num)
+        {
+            num = Runtime.PyFloat_AsDouble(pyfloat);
+            if (num == -1.0 && Exceptions.ErrorOccurred())
+            {
+                return false;
+            }
+            if (num > Single.MaxValue || num < Single.MinValue)
+            {
+                if (!double.IsInfinity(num))
+                {
+                    Exceptions.SetError(Exceptions.OverflowError, "value too large to convert");
+                    return false;
+                }
+            }
+            return true;
         }
 
         private static void SetConversionError(IntPtr value, Type target)
