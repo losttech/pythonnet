@@ -535,6 +535,26 @@ namespace Python.Runtime
             }
             return checked((int)num);
         }
+        
+        internal static bool ToFloat32(BorrowedReference pyfloat, out float result)
+        {
+            double num = Runtime.PyFloat_AsDouble(pyfloat);
+            result = float.NaN;
+            if (num == -1.0 && Exceptions.ErrorOccurred())
+            {
+                return false;
+            }
+            if (num > Single.MaxValue || num < Single.MinValue)
+            {
+                if (!double.IsInfinity(num))
+                {
+                    Exceptions.SetError(Exceptions.OverflowError, "value too large to convert");
+                    return false;
+                }
+            }
+            result = (float)num;
+            return true;
+        }
 
         /// <summary>
         /// Convert a Python value to an instance of a primitive managed type.
