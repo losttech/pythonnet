@@ -1,6 +1,8 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
+using System.Reflection;
 using System.Runtime.InteropServices;
 
 namespace Python.Runtime
@@ -556,6 +558,92 @@ namespace Python.Runtime
             }
 
             return 0;
+        }
+
+        static IntPtr tp_call_impl(IntPtr ob, IntPtr args, IntPtr kw)
+        {
+            IntPtr tp = Runtime.PyObject_TYPE(ob);
+            var self = (ClassBase)GetManagedObject(tp);
+
+            if (!self.type.Valid)
+            {
+                return Exceptions.RaiseTypeError(self.type.DeletedMessage);
+            }
+
+            Type type = self.type.Value;
+
+            var calls = GetCallImplementations(type).ToList();
+            if (calls.Count > 0)
+            {
+                var callBinder = new MethodBinder();
+                foreach (MethodInfo call in calls)
+                {
+                    callBinder.AddMethod(call);
+                }
+                return callBinder.Invoke(ob, args, kw);
+            }
+
+            return InvokeCallInheritedFromPython(new BorrowedReference(ob), args, kw);
+        }
+
+        static IEnumerable<MethodInfo> GetCallImplementations(Type type)
+            => type.GetMethods(BindingFlags.Public | BindingFlags.Instance)
+                .Where(m => m.Name == "__call__");
+
+        /// <summary>
+        /// Find bases defined in Python and use their __call__ if any
+        /// </summary>
+        static IntPtr InvokeCallInheritedFromPython(BorrowedReference ob, IntPtr args, IntPtr kw)
+        {
+            BorrowedReference tp = Runtime.PyObject_TYPE(ob);
+            using var super = new PyObject(new BorrowedReference(Runtime.PySuper_Type));
+            using var pyInst = new PyObject(ob);
+
+            BorrowedReference mro = PyType.GetMRO(tp);
+            nint mroLen = Runtime.PyTuple_Size(mro);
+            for (int baseIndex = 0; baseIndex < mroLen - 1; baseIndex++)
+            {
+                BorrowedReference @base = Runtime.PyTuple_GetItem(mro, baseIndex);
+                if (!IsManagedType(@base)) continue;
+
+                BorrowedReference nextBase = Runtime.PyTuple_GetItem(mro, baseIndex + 1);
+                if (ManagedType.IsManagedType(nextBase)) continue;
+
+                // call via super
+                using var managedBase = new PyObject(@base);
+                using var superInstance = super.Invoke(managedBase, pyInst);
+                using var call = Runtime.PyObject_GetAttrString(superInstance.Reference, "__call__");
+                if (call.IsNull())
+                {
+                    if (Exceptions.ExceptionMatches(Exceptions.AttributeError))
+                    {
+                        Runtime.PyErr_Clear();
+                        continue;
+                    }
+                    else
+                    {
+                        return IntPtr.Zero;
+                    }
+                }
+
+                return Runtime.PyObject_Call(call.DangerousGetAddress(), args, kw);
+            }
+
+            Exceptions.SetError(Exceptions.TypeError, "object is not callable");
+            return IntPtr.Zero;
+        }
+
+        static readonly Interop.TernaryFunc tp_call_delegate = tp_call_impl;
+
+        public virtual void InitializeSlots(SlotsHolder slotsHolder)
+        {
+            if (!this.type.Valid) return;
+
+            if (GetCallImplementations(this.type.Value).Any()
+                && !slotsHolder.IsHolding(TypeOffset.tp_call))
+            {
+                TypeManager.InitializeSlot(ObjectReference, TypeOffset.tp_call, tp_call_delegate, slotsHolder);
+            }
         }
     }
 }
