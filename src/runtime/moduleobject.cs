@@ -357,12 +357,14 @@ namespace Python.Runtime
         [ForbidPythonThreads]
         public new static int tp_setattro(IntPtr ob, IntPtr key, IntPtr val)
         {
+            BorrowedReference keyRef = new(key);
+            BorrowedReference valRef = new(val);
             var managedKey = Runtime.GetManagedString(key);
             if ((settableAttributes.Contains(managedKey)) || 
                 (ManagedType.GetManagedObject(val)?.GetType() == typeof(ModuleObject)) )
             {
                 var self = (ModuleObject)ManagedType.GetManagedObject(ob);
-                return Runtime.PyDict_SetItem(self.dict, key, val);
+                return Runtime.PyDict_SetItem(self.DictRef, keyRef, valRef);
             }
 
             return ExtensionType.tp_setattro(ob, key, val);

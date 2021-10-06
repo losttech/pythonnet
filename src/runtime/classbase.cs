@@ -325,14 +325,11 @@ namespace Python.Runtime
                 }
 
                 //otherwise use the standard object.__repr__(inst)
-                IntPtr args = Runtime.PyTuple_New(1);
-                Runtime.XIncref(ob);
-                Runtime.PyTuple_SetItem(args, 0, ob);
-                IntPtr reprFunc = Runtime.PyObject_GetAttr(Runtime.PyBaseObjectType, PyIdentifier.__repr__);
-                var output =  Runtime.PyObject_Call(reprFunc, args, IntPtr.Zero);
-                Runtime.XDecref(args);
-                Runtime.XDecref(reprFunc);
-                return output;
+                using var args = NewReference.DangerousFromPointer(Runtime.PyTuple_New(1));
+                Runtime.PyTuple_SetItem(args, 0, new BorrowedReference(ob));
+                using var reprFunc = Runtime.PyObject_GetAttr(new BorrowedReference(Runtime.PyBaseObjectType), PyIdentifier.__repr__);
+                var output =  Runtime.PyObject_Call(reprFunc, args, BorrowedReference.Null);
+                return output.DangerousMoveToPointerOrNull();
             }
             catch (Exception e)
             {

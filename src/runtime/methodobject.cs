@@ -135,6 +135,7 @@ namespace Python.Runtime
         /// </summary>
         public static IntPtr tp_getattro(IntPtr ob, IntPtr key)
         {
+            var keyRef = new BorrowedReference(key);
             var self = (MethodObject)GetManagedObject(ob);
 
             if (!Runtime.PyString_Check(key))
@@ -142,7 +143,7 @@ namespace Python.Runtime
                 return Exceptions.RaiseTypeError("string expected");
             }
 
-            if (Runtime.PyUnicode_Compare(key, PyIdentifier.__doc__) == 0)
+            if (Runtime.PyUnicode_Compare(keyRef, PyIdentifier.__doc__) == 0)
             {
                 IntPtr doc = self.GetDocString();
                 Runtime.XIncref(doc);

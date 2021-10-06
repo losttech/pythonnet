@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Reflection;
 
 namespace Python.Runtime
 {
@@ -8,10 +9,12 @@ namespace Python.Runtime
     {
         private static Dictionary<string, IntPtr> _string2interns;
         private static Dictionary<IntPtr, string> _intern2strings;
+        const BindingFlags PyIdentifierFieldFlags = BindingFlags.Static | BindingFlags.NonPublic;
 
         static InternString()
         {
-            var identifierNames = typeof(PyIdentifier).GetFields().Select(fi => fi.Name);
+            var identifierNames = typeof(PyIdentifier).GetFields(PyIdentifierFieldFlags)
+                                    .Select(fi => fi.Name.Substring(1));
             var validNames = new HashSet<string>(identifierNames);
             if (validNames.Count != _builtinNames.Length)
             {
@@ -36,7 +39,8 @@ namespace Python.Runtime
             {
                 IntPtr op = Runtime.PyUnicode_InternFromString(name);
                 SetIntern(name, op);
-                type.GetField(name).SetValue(null, op);
+                var field = type.GetField("f" + name, PyIdentifierFieldFlags)!;
+                field.SetValue(null, op);
             }
         }
 
@@ -45,7 +49,8 @@ namespace Python.Runtime
             foreach (var entry in _intern2strings)
             {
                 Runtime.XDecref(entry.Key);
-                typeof(PyIdentifier).GetField(entry.Value).SetValue(null, IntPtr.Zero);
+                var field = typeof(PyIdentifier).GetField("f" + entry.Value, PyIdentifierFieldFlags)!;
+                field.SetValue(null, IntPtr.Zero);
             }
             _string2interns = null;
             _intern2strings = null;

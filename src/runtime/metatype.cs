@@ -1,4 +1,5 @@
 using System;
+using System.Diagnostics;
 using System.Runtime.InteropServices;
 using System.Runtime.Serialization;
 
@@ -76,7 +77,7 @@ namespace Python.Runtime
 
             IntPtr name = Runtime.PyTuple_GetItem(args, 0);
             IntPtr bases = Runtime.PyTuple_GetItem(args, 1);
-            IntPtr dict = Runtime.PyTuple_GetItem(args, 2);
+            BorrowedReference dict = new(Runtime.PyTuple_GetItem(args, 2));
 
             // We do not support multiple inheritance, so the bases argument
             // should be a 1-item tuple containing the type we are subtyping.
@@ -115,8 +116,9 @@ namespace Python.Runtime
                 }
             }
 
-            IntPtr slots = Runtime.PyDict_GetItem(dict, PyIdentifier.__slots__);
-            if (slots != IntPtr.Zero)
+            Debug.Assert(dict != null);
+            var slots = Runtime.PyDict_GetItem(dict, PyIdentifier.__slots__);
+            if (slots != null)
             {
                 return Exceptions.RaiseTypeError("subclasses of managed classes do not support __slots__");
             }
@@ -125,14 +127,11 @@ namespace Python.Runtime
             // a managed sub type.
             // This creates a new managed type that can be used from .net to call back
             // into python.
-            if (IntPtr.Zero != dict)
+            using (var clsDict = new PyDict(dict))
             {
-                using (var clsDict = new PyDict(new BorrowedReference(dict)))
+                if (clsDict.HasKey("__assembly__") || clsDict.HasKey("__namespace__"))
                 {
-                    if (clsDict.HasKey("__assembly__") || clsDict.HasKey("__namespace__"))
-                    {
-                        return TypeManager.CreateSubType(name, base_type, clsDict.Reference);
-                    }
+                    return TypeManager.CreateSubType(name, base_type, clsDict.Reference);
                 }
             }
 
@@ -203,35 +202,41 @@ namespace Python.Runtime
                 return Exceptions.RaiseTypeError("invalid object");
             }
 
-            IntPtr obj = NativeCall.Call_3(func, tp, args, kw);
-            if (obj == IntPtr.Zero)
+            var argsRef = new BorrowedReference(args);
+            var kwRef = new BorrowedReference(kw);
+
+            using var obj = NewReference.DangerousFromPointer(NativeCall.Call_3(func, tp, args, kw));
+            if (obj.IsNull())
             {
                 return IntPtr.Zero;
             }
 
-            return CallInit(obj, args, kw);
-        }
-
-        private static IntPtr CallInit(IntPtr obj, IntPtr args, IntPtr kw)
-        {
-            var init = Runtime.PyObject_GetAttr(obj, PyIdentifier.__init__);
-            Runtime.PyErr_Clear();
-
-            if (init != IntPtr.Zero)
+            using var initResult = CallInit(obj, argsRef, kwRef);
+            if (initResult.IsNull())
             {
-                IntPtr result = Runtime.PyObject_Call(init, args, kw);
-                Runtime.XDecref(init);
-
-                if (result == IntPtr.Zero)
-                {
-                    Runtime.XDecref(obj);
-                    return IntPtr.Zero;
-                }
-
-                Runtime.XDecref(result);
+                return IntPtr.Zero;
             }
 
-            return obj;
+            return obj.DangerousMoveToPointer();
+        }
+
+        private static NewReference CallInit(BorrowedReference obj, BorrowedReference args, BorrowedReference kw)
+        {
+            using var init = Runtime.PyObject_GetAttr(obj, PyIdentifier.__init__);
+            if (init.IsNull())
+            {
+                if (Exceptions.ExceptionMatches(Exceptions.AttributeError))
+                {
+                    Runtime.PyErr_Clear();
+                    return new NewReference(new BorrowedReference(Runtime.PyNone));
+                }
+                else
+                {
+                    return default;
+                }
+            }
+
+            return Runtime.PyObject_Call(init, args, kw);
         }
 
 
