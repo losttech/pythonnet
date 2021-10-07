@@ -95,11 +95,14 @@ def test_subclass_with_no_arg_constructor():
     from Python.Test import ClassCtorTest1
 
     class SubClass(ClassCtorTest1):
+        def __new__(cls, *args, **kwargs):
+            return super().__new__(cls)
         def __init__(self, name):
             self.name = name
 
     # This failed in earlier versions
-    _ = SubClass('test')
+    inst = SubClass('test')
+    assert inst.name == 'test'
 
 
 def test_subclass_with_various_constructors():

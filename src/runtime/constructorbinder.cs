@@ -87,32 +87,18 @@ namespace Python.Runtime
 
             if (binding == null)
             {
-                // It is possible for __new__ to be invoked on construction
-                // of a Python subclass of a managed class, so args may
-                // reflect more args than are required to instantiate the
-                // class. So if we cant find a ctor that matches, we'll see
-                // if there is a default constructor and, if so, assume that
-                // any extra args are intended for the subclass' __init__.
-
-                IntPtr eargs = Runtime.PyTuple_New(0);
-                binding = Bind(inst, eargs, IntPtr.Zero);
-                Runtime.XDecref(eargs);
-
-                if (binding == null)
+                var errorMessage = new StringBuilder("No constructor matches given arguments");
+                if (info != null && info.IsConstructor && info.DeclaringType != null)
                 {
-                    var errorMessage = new StringBuilder("No constructor matches given arguments");
-                    if (info != null && info.IsConstructor && info.DeclaringType != null)
-                    {
-                        errorMessage.Append(" for ").Append(info.DeclaringType.Name);
-                    }
-
-                    errorMessage.Append(": ");
-                    Runtime.PyErr_Fetch(out var errType, out var errVal, out var errTrace);
-                    AppendArgumentTypes(to: errorMessage, args);
-                    Runtime.PyErr_Restore(errType.StealNullable(), errVal.StealNullable(), errTrace.StealNullable());
-                    Exceptions.RaiseTypeError(errorMessage.ToString());
-                    return null;
+                    errorMessage.Append(" for ").Append(info.DeclaringType.Name);
                 }
+
+                errorMessage.Append(": ");
+                Runtime.PyErr_Fetch(out var errType, out var errVal, out var errTrace);
+                AppendArgumentTypes(to: errorMessage, args);
+                Runtime.PyErr_Restore(errType.StealNullable(), errVal.StealNullable(), errTrace.StealNullable());
+                Exceptions.RaiseTypeError(errorMessage.ToString());
+                return null;
             }
 
             // Fire the selected ctor and catch errors...

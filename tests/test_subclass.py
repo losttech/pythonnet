@@ -239,6 +239,8 @@ def test_namespace_and_init():
     calls = []
     class TestX(System.Object):
         __namespace__ = "test_clr_subclass_with_init_args"
+        def __new__(cls, *args, **kwargs):
+            return super().__new__()
         def __init__(self, *args, **kwargs):
             calls.append((args, kwargs))
     t = TestX(1,2,3,foo="bar")
@@ -269,6 +271,8 @@ def test_construction_from_clr():
     calls = []
     class TestX(System.Object):
         __namespace__ = "test_clr_subclass_init_from_clr"
+        def __new__(cls, *args, **kwargs):
+            super().__new__()
         @clr.clrmethod(None, [int, str])
         def __init__(self, i, s):
             calls.append((i, s))

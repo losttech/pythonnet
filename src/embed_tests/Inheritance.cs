@@ -110,6 +110,19 @@ namespace Python.EmbeddingTest
             scope.Set("exn", null);
             Assert.AreEqual(1, msg.Refcount);
         }
+
+        // regression for https://github.com/pythonnet/pythonnet/issues/238
+        [Test]
+        public void NoFallbackToParameterlessConstructor()
+        {
+            using var scope = Py.CreateScope();
+            scope.Import(typeof(ConstructorOverloadDefault).Namespace, asname: "test");
+            var cls = scope.Eval("test." + nameof(ConstructorOverloadDefault));
+            var inst = cls.Invoke(new PyInt(2));
+            Assert.AreEqual(2.0, inst.GetAttr(nameof(ConstructorOverloadDefault.a)).As<double>(), 0.001);
+            var err = Assert.Throws<PythonException>(() => cls.Invoke(new PyString("2")));
+            Assert.AreEqual("No constructor matches given arguments: (<class 'str'>)", err.Message);
+        }
     }
 
     class ExtraBaseTypeProvider : IPythonBaseTypeProvider
@@ -181,5 +194,13 @@ namespace Python.EmbeddingTest
             }
             set => this.extras[nameof(this.XProp)] = value;
         }
+    }
+
+    public class ConstructorOverloadDefault
+    {
+        public ConstructorOverloadDefault() { a = 1; }
+        public ConstructorOverloadDefault(double ax) { a = ax; }
+
+        public double a;
     }
 }
