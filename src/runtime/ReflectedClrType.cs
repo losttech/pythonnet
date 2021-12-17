@@ -11,9 +11,9 @@ internal sealed class ReflectedClrType : PyType
 {
     private ReflectedClrType(StolenReference reference) : base(reference, prevalidated: true) { }
     internal ReflectedClrType(ReflectedClrType original) : base(original, prevalidated: true) { }
-    ReflectedClrType(SerializationInfo info, StreamingContext context) : base(info, context) { }
 
-    internal ClassBase Impl => (ClassBase)ManagedType.GetManagedObject(this)!;
+    ClassBase? impl;
+    internal ClassBase Impl => impl ??= (ClassBase)ManagedType.GetManagedObject(this)!;
 
     /// <summary>
     /// Get the Python type that reflects the given CLR type.
@@ -49,19 +49,21 @@ internal sealed class ReflectedClrType : PyType
         return pyType;
     }
 
-    internal void Restore(InterDomainContext context)
+    internal void Restore()
     {
-        var cb = context.Storage.GetValue<ClassBase>("impl");
+        Debug.Assert(impl is not null);
 
-        Debug.Assert(cb is not null);
+        impl!.OnLoad(this);
 
-        cb!.Load(this, context);
-
-        Restore(cb);
+        Restore(impl);
     }
 
     internal void Restore(ClassBase cb)
     {
+        if (cb is null) throw new ArgumentNullException(nameof(cb));
+
+        impl = cb;
+
         ClassManager.InitClassBase(cb.type.Value, cb, this);
 
         TypeManager.InitializeClass(this, cb, cb.type.Value);
@@ -117,4 +119,14 @@ internal sealed class ReflectedClrType : PyType
 
     public override bool Equals(PyObject? other) => other != null && rawPtr == other.rawPtr;
     public override int GetHashCode() => rawPtr.GetHashCode();
+
+    ReflectedClrType(SerializationInfo info, StreamingContext context) : base(info, context)
+    {
+        impl = (ClassBase)info.GetValue("i", typeof(ClassBase));
+    }
+    protected override void GetObjectData(SerializationInfo info, StreamingContext context)
+    {
+        base.GetObjectData(info, context);
+        info.AddValue("i", Impl);
+    }
 }

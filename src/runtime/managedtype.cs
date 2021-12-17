@@ -109,19 +109,8 @@ namespace Python.Runtime
             return clearFunc(ob);
         }
 
-        internal void Save(BorrowedReference ob, InterDomainContext context)
-        {
-            OnSave(ob, context);
-        }
-
-#warning context appears to be unused
-        internal void Load(BorrowedReference ob, InterDomainContext? context)
-        {
-            OnLoad(ob, context);
-        }
-
-        protected virtual void OnSave(BorrowedReference ob, InterDomainContext context) { }
-        protected virtual void OnLoad(BorrowedReference ob, InterDomainContext? context) { }
+        protected internal virtual void OnSave(BorrowedReference ob) { }
+        protected internal virtual void OnLoad(BorrowedReference ob) { }
 
         protected static void ClearObjectDict(BorrowedReference ob)
         {

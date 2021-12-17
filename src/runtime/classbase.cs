@@ -390,15 +390,9 @@ namespace Python.Runtime
             return clear(ob);
         }
 
-        protected override void OnSave(BorrowedReference ob, InterDomainContext context)
+        protected internal override void OnLoad(BorrowedReference ob)
         {
-            base.OnSave(ob, context);
-            context.Storage.AddValue("impl", this);
-        }
-
-        protected override void OnLoad(BorrowedReference ob, InterDomainContext? context)
-        {
-            base.OnLoad(ob, context);
+            base.OnLoad(ob);
             var gcHandle = GCHandle.Alloc(this);
             SetGCHandle(ob, gcHandle);
         }

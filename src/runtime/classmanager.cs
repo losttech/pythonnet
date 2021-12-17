@@ -65,12 +65,10 @@ namespace Python.Runtime
 
         internal static ClassManagerState SaveRuntimeData()
         {
-            var contexts = new Dictionary<ReflectedClrType, InterDomainContext>();
             foreach (var cls in cache)
             {
-                var context = contexts[cls.Value] = new InterDomainContext();
                 var cb = (ClassBase)ManagedType.GetManagedObject(cls.Value)!;
-                cb.Save(cls.Value, context);
+                cb.OnSave(cls.Value);
 
                 // Remove all members added in InitBaseClass.
                 // this is done so that if domain reloads and a member of a
@@ -99,7 +97,6 @@ namespace Python.Runtime
 
             return new()
             {
-                Contexts = contexts,
                 Cache = cache,
             };
         }
@@ -108,19 +105,17 @@ namespace Python.Runtime
         {
             cache = storage.Cache;
             var invalidClasses = new List<KeyValuePair<MaybeType, ReflectedClrType>>();
-            var contexts = storage.Contexts;
             foreach (var pair in cache)
             {
-                var context = contexts[pair.Value];
                 if (pair.Key.Valid)
                 {
-                    pair.Value.Restore(context);
+                    pair.Value.Restore();
                 }
                 else
                 {
                     invalidClasses.Add(pair);
                     var cb = new UnloadedClass(pair.Key.Name);
-                    cb.Load(pair.Value, context);
+                    cb.OnLoad(pair.Value);
                     pair.Value.Restore(cb);
                 }
             }

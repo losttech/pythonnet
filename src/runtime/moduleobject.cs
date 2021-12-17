@@ -353,9 +353,9 @@ namespace Python.Runtime
             return ExtensionType.tp_setattro(ob, key, val);
         }
 
-        protected override void OnSave(BorrowedReference ob, InterDomainContext context)
+        protected internal override void OnSave(BorrowedReference ob)
         {
-            base.OnSave(ob, context);
+            base.OnSave(ob);
             System.Diagnostics.Debug.Assert(dict == GetObjectDict(ob));
             // destroy the cache(s)
             foreach (var pair in cache)
@@ -376,9 +376,9 @@ namespace Python.Runtime
             cache.Clear();
         }
 
-        protected override void OnLoad(BorrowedReference ob, InterDomainContext? context)
+        protected internal override void OnLoad(BorrowedReference ob)
         {
-            base.OnLoad(ob, context);
+            base.OnLoad(ob);
             SetObjectDict(ob, new NewReference(dict).Steal());
         }
     }

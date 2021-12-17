@@ -13,5 +13,4 @@ internal class SharedObjectsState
     public Dictionary<PyObject, CLRObject> InternalStores { get; init; }
     public Dictionary<PyObject, ExtensionType> Extensions { get; init; }
     public RuntimeDataStorage Wrappers { get; init; }
-    public Dictionary<PyObject, InterDomainContext> Contexts { get; init; }
 }

@@ -138,7 +138,6 @@ namespace Python.Runtime
 
         private static SharedObjectsState SaveRuntimeDataObjects()
         {
-            var contexts = new Dictionary<PyObject, InterDomainContext>(PythonReferenceComparer.Instance);
             var extensionObjs = new Dictionary<PyObject, ExtensionType>(PythonReferenceComparer.Instance);
             // make a copy with strongly typed references to avoid concurrent modification
             var extensions = ExtensionType.loadedExtensions
@@ -151,9 +150,7 @@ namespace Python.Runtime
             {
                 var extension = (ExtensionType)ManagedType.GetManagedObject(pyObj)!;
                 Debug.Assert(CheckSerializable(extension));
-                var context = new InterDomainContext();
-                contexts[pyObj] = context;
-                extension.Save(pyObj, context);
+                extension.OnSave(pyObj);
                 extensionObjs.Add(pyObj, extension);
             }
 
@@ -214,7 +211,6 @@ namespace Python.Runtime
                 InternalStores = internalStores,
                 Extensions = extensionObjs,
                 Wrappers = wrapperStorage,
-                Contexts = contexts,
             };
         }
 
@@ -222,14 +218,13 @@ namespace Python.Runtime
         {
             var extensions = storage.Extensions;
             var internalStores = storage.InternalStores;
-            var contexts = storage.Contexts;
             foreach (var extension in extensions)
             {
-                extension.Value.Load(extension.Key, contexts[extension.Key]);
+                extension.Value.OnLoad(extension.Key);
             }
             foreach (var clrObj in internalStores)
             {
-                clrObj.Value.Load(clrObj.Key, null);
+                clrObj.Value.OnLoad(clrObj.Key);
             }
             if (WrappersStorer != null)
             {
@@ -240,8 +235,7 @@ namespace Python.Runtime
                     object obj = item.Instance;
                     foreach (var pyRef in item.PyRefs ?? new List<PyObject>())
                     {
-                        var context = contexts[pyRef];
-                        CLRObject.Restore(obj, pyRef, context);
+                        CLRObject.Restore(obj, pyRef);
                     }
                 }
             }
@@ -282,13 +276,5 @@ namespace Python.Runtime
         {
             return (T?)GetValue(name);
         }
-    }
-
-
-    [Serializable]
-    class InterDomainContext
-    {
-        private RuntimeDataStorage? _storage;
-        public RuntimeDataStorage Storage => _storage ?? (_storage = new RuntimeDataStorage());
     }
 }
