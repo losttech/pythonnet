@@ -373,8 +373,10 @@ DateTimeDecoder.Setup()
         {
             PyObjectConversions.RegisterDecoder(new InstancelessExceptionDecoder());
             using var scope = Py.CreateScope();
-            var error = Assert.Throws<ValueErrorWrapper>(() => PythonEngine.Exec(
-                $"[].__iter__().__next__()"));
+            var error = Assert.Throws<ValueErrorWrapper>(() => PythonEngine.Exec(@$"
+from {typeof(TestPythonException).Namespace} import {nameof(TestPythonException)}
+
+{nameof(TestPythonException)}.{nameof(TestPythonException.RaiseInstanceless)}()"));
             Assert.AreEqual(TestExceptionMessage, error.Message);
         }
 

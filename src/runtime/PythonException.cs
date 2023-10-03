@@ -283,7 +283,7 @@ namespace Python.Runtime
         /// <summary>Restores python error.</summary>
         internal void Restore()
         {
-            NewReference type = Type.NewReferenceOrNull();
+            NewReference type = new NewReference(Type);
             NewReference value = Value.NewReferenceOrNull();
             NewReference traceback = Traceback.NewReferenceOrNull();
 

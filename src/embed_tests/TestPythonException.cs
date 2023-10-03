@@ -176,5 +176,11 @@ class TestException(NameError):
             Assert.Throws<InvalidOperationException>(() => pythonException.Normalize());
             Exceptions.Clear();
         }
+
+        public static void RaiseInstanceless()
+        {
+            var stopIteration = new PyType(Exceptions.StopIteration);
+            throw new PythonException(stopIteration, value: null, traceback: null);
+        }
     }
 }
